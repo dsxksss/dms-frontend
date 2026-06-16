@@ -1,15 +1,41 @@
+import { lazy } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { ProtectedRoute } from '@/auth/ProtectedRoute'
 import { AppLayout } from '@/components/app-layout'
 import { LoginPage } from '@/features/auth/LoginPage'
-import { ProjectsListPage } from '@/features/projects/ProjectsListPage'
-import { ProjectDetailPage } from '@/features/projects/ProjectDetailPage'
-import { DatasetsListPage } from '@/features/datasets/DatasetsListPage'
-import { DatasetDetailPage } from '@/features/datasets/DatasetDetailPage'
-import { OrgsListPage } from '@/features/orgs/OrgsListPage'
-import { OrgDetailPage } from '@/features/orgs/OrgDetailPage'
-import { AuditPage } from '@/features/audit/AuditPage'
-import { SettingsPage } from '@/features/settings/SettingsPage'
+
+// 业务页面按路由懒加载（首屏只载登录/壳）。
+const lazyPage = <T extends Record<string, React.ComponentType>>(
+  loader: () => Promise<T>,
+  name: keyof T,
+) => lazy(() => loader().then((m) => ({ default: m[name] })))
+
+const ProjectsListPage = lazyPage(
+  () => import('@/features/projects/ProjectsListPage'),
+  'ProjectsListPage',
+)
+const ProjectDetailPage = lazyPage(
+  () => import('@/features/projects/ProjectDetailPage'),
+  'ProjectDetailPage',
+)
+const DatasetsListPage = lazyPage(
+  () => import('@/features/datasets/DatasetsListPage'),
+  'DatasetsListPage',
+)
+const DatasetDetailPage = lazyPage(
+  () => import('@/features/datasets/DatasetDetailPage'),
+  'DatasetDetailPage',
+)
+const OrgsListPage = lazyPage(() => import('@/features/orgs/OrgsListPage'), 'OrgsListPage')
+const OrgDetailPage = lazyPage(
+  () => import('@/features/orgs/OrgDetailPage'),
+  'OrgDetailPage',
+)
+const AuditPage = lazyPage(() => import('@/features/audit/AuditPage'), 'AuditPage')
+const SettingsPage = lazyPage(
+  () => import('@/features/settings/SettingsPage'),
+  'SettingsPage',
+)
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },

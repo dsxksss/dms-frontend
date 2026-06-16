@@ -1,4 +1,3 @@
-/// <reference types="vitest/config" />
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
@@ -22,6 +21,10 @@ export default defineConfig({
       '/readyz': { target: API_TARGET, changeOrigin: true },
       '/metrics': { target: API_TARGET, changeOrigin: true },
     },
+  },
+  build: {
+    // 路由已按需分包；主包为共享核心(React/Router/Query/i18n/UI 原语)，体量正常。
+    chunkSizeWarningLimit: 700,
   },
   test: {
     environment: 'jsdom',

@@ -1,10 +1,11 @@
-import { useState, type ComponentType } from 'react'
+import { Suspense, useState, type ComponentType } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Building2,
   Database,
   FolderKanban,
+  Loader2,
   LogOut,
   Menu,
   ScrollText,
@@ -137,7 +138,15 @@ export function AppLayout() {
         </header>
 
         <main className="flex-1 overflow-auto p-6">
-          <Outlet />
+          <Suspense
+            fallback={
+              <div className="flex h-full items-center justify-center">
+                <Loader2 className="text-muted-foreground size-6 animate-spin" />
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

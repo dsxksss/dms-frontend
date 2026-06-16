@@ -1,0 +1,33 @@
+# 前端独立部署。前端通过 nginx 反代 /v1 到 `backend:8080`（同源、无 CORS）。
+# 后端在另一仓库（dms-backend）。联合本地运行有两种方式：
+#   A) 取消下方 backend / db 注释，先在 dms-backend 构建镜像 `dms-backend:latest`；
+#   B) 仅起前端，并把后端跑在同一 docker 网络、服务名为 `backend`。
+services:
+  web:
+    build: .
+    ports:
+      - '8088:80'
+    networks: [dms]
+    restart: unless-stopped
+
+  # --- 可选：一键起后端 + 数据库（需先在 dms-backend 构建镜像） ---
+  # backend:
+  #   image: dms-backend:latest
+  #   environment:
+  #     APP_ENV: local
+  #     DMS__DATABASE__URL: postgres://dms_app:dms_app@db:5432/dms
+  #     DMS__DATABASE__MIGRATION_URL: postgres://dms:dms@db:5432/dms
+  #     DMS__DATABASE__RUN_MIGRATIONS_ON_START: 'true'
+  #     DMS__AUTH__JWT_SECRET: change-me-in-prod
+  #   depends_on: [db]
+  #   networks: [dms]
+  # db:
+  #   image: postgres:16
+  #   environment:
+  #     POSTGRES_USER: dms
+  #     POSTGRES_PASSWORD: dms
+  #     POSTGRES_DB: dms
+  #   networks: [dms]
+
+networks:
+  dms: {}
