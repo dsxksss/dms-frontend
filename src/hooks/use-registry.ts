@@ -184,3 +184,17 @@ export function useComponentTree(
     enabled: enabled && !!entityId,
   })
 }
+
+/** 谱系（Lineage）：按 derived_from 递归遍历，返回扁平节点。 */
+export function useLineage(projectId: string, entityId: string, enabled = true) {
+  return useQuery({
+    queryKey: [...root(projectId), 'lineage', entityId],
+    queryFn: () =>
+      registryApi.graph(projectId, entityId, {
+        kind: 'derived_from',
+        direction: 'out',
+        depth: 10,
+      }),
+    enabled: enabled && !!entityId,
+  })
+}

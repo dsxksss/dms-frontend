@@ -24,6 +24,7 @@ import {
   useComponentTree,
   useDeleteRelation,
   useEntityTypes,
+  useLineage,
   useRelations,
 } from '@/hooks/use-registry'
 import { useToastError } from '@/hooks/use-toast-error'
@@ -52,6 +53,7 @@ export function EntityRelationsDialog({
   )
   const relations = useRelations(projectId, entity.id, { direction: 'out' })
   const tree = useComponentTree(projectId, entity.id, open)
+  const lineage = useLineage(projectId, entity.id, open)
   const add = useAddRelation(projectId, entity.id)
   const del = useDeleteRelation(projectId)
   const toastError = useToastError()
@@ -166,6 +168,31 @@ export function EntityRelationsDialog({
               </div>
             ) : (
               <EmptyState title={t('tree.empty')} />
+            )}
+          </div>
+
+          {/* lineage (derived_from) */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium">{t('lineage.title')}</h3>
+            <p className="text-muted-foreground text-xs">{t('lineage.desc')}</p>
+            {lineage.isLoading ? (
+              <TableSkeleton rows={2} cols={1} />
+            ) : lineage.data && lineage.data.length > 0 ? (
+              <ul className="divide-y rounded-md border">
+                {lineage.data.map((n) => (
+                  <li
+                    key={n.id}
+                    className="flex items-center gap-2 px-3 py-2 text-sm"
+                  >
+                    <span className="font-mono text-xs">{shortId(n.id)}</span>
+                    <Badge variant="secondary" className="text-xs">
+                      {typeMap[n.type_id] ?? shortId(n.type_id)}
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-muted-foreground text-sm">{t('lineage.empty')}</p>
             )}
           </div>
         </div>

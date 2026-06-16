@@ -5,7 +5,18 @@
     "tagline": "药物研发的数据资产管理"
   },
   "comingSoon": "即将上线",
-  "settings": { "appearance": "外观", "appearanceDesc": "主题与界面语言偏好" },
+  "settings": {
+    "appearance": "外观",
+    "appearanceDesc": "主题与界面语言偏好",
+    "profile": "个人资料",
+    "profileDesc": "显示名与目录可见性",
+    "displayName": "显示名",
+    "displayNamePlaceholder": "你在成员/审计里显示的名字",
+    "searchable": "可被搜索（目录可见）",
+    "searchableHint": "关闭=隐身：不出现在用户搜索里，但仍可被凭 ID 邀请",
+    "save": "保存",
+    "saved": "已保存"
+  },
   "nav": {
     "projects": "项目",
     "datasets": "数据集",

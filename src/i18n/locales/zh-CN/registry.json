@@ -105,6 +105,11 @@
     "empty": "暂无组合关系",
     "rootMissing": "选择一个实体查看其组合树"
   },
+  "lineage": {
+    "title": "谱系 (Lineage)",
+    "desc": "按 derived_from 向上游追溯来源。",
+    "empty": "无上游来源"
+  },
   "picker": {
     "title": "选择实体",
     "type": "类型",

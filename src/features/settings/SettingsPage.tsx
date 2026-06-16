@@ -3,12 +3,14 @@ import { PageHeader } from '@/components/page-header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { LangToggle } from '@/components/lang-toggle'
+import { ProfileCard } from './ProfileCard'
 
 export function SettingsPage() {
   const { t } = useTranslation()
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader title={t('nav.settings')} />
+      <ProfileCard />
       <Card className="max-w-xl">
         <CardHeader>
           <CardTitle>{t('settings.appearance')}</CardTitle>

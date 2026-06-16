@@ -4,6 +4,7 @@ export interface UserCard {
   id: string
   display_name: string
   email: string
+  searchable?: boolean
 }
 
 export type InvitationKind = 'org' | 'project'
@@ -64,6 +65,8 @@ export const membershipApi = {
   searchUsers: (search: string, limit = 10) =>
     request<UserCard[]>('/v1/users', { query: { search, limit } }),
   getUser: (id: string) => request<UserCard>(`/v1/users/${id}`),
+  updateMe: (body: { display_name?: string; searchable?: boolean }) =>
+    request<void>('/v1/me', { method: 'PATCH', body, responseType: 'void' }),
 
   // ---- invitations (send/list/revoke) ----
   inviteToOrg: (orgId: string, body: InviteBody) =>

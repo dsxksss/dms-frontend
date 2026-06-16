@@ -105,6 +105,11 @@
     "empty": "No composition relations",
     "rootMissing": "Select an entity to view its component tree"
   },
+  "lineage": {
+    "title": "Lineage",
+    "desc": "Trace upstream sources via derived_from.",
+    "empty": "No upstream sources"
+  },
   "picker": {
     "title": "Select entity",
     "type": "Type",

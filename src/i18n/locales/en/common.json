@@ -5,7 +5,18 @@
     "tagline": "Data asset management for drug R&D"
   },
   "comingSoon": "Coming soon",
-  "settings": { "appearance": "Appearance", "appearanceDesc": "Theme and interface language" },
+  "settings": {
+    "appearance": "Appearance",
+    "appearanceDesc": "Theme and interface language",
+    "profile": "Profile",
+    "profileDesc": "Display name and directory visibility",
+    "displayName": "Display name",
+    "displayNamePlaceholder": "Name shown in members / audit",
+    "searchable": "Searchable (visible in directory)",
+    "searchableHint": "Off = invisible: not shown in user search, but can still be invited by ID",
+    "save": "Save",
+    "saved": "Saved"
+  },
   "nav": {
     "projects": "Projects",
     "datasets": "Datasets",

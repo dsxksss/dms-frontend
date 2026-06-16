@@ -45,6 +45,19 @@ export function useUser(id: string | null | undefined) {
   })
 }
 
+/** 改本人资料（display_name / 隐身 searchable）。 */
+export function useUpdateMe(myId: string | null | undefined) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { display_name?: string; searchable?: boolean }) =>
+      membershipApi.updateMe(body),
+    onSuccess: () => {
+      if (myId) qc.invalidateQueries({ queryKey: ['membership', 'user', myId] })
+      qc.invalidateQueries({ queryKey: ['membership', 'users'] })
+    },
+  })
+}
+
 // ---- invitations: send / list / revoke ----
 export function useProjectInvitations(projectId: string) {
   return useQuery({
