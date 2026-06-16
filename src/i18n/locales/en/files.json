@@ -26,5 +26,19 @@
   "uploaded": "File uploaded",
   "deleted": "File deleted",
   "deleteTitle": "Delete file?",
-  "deleteDesc": "This deletes \"{{name}}\"."
+  "deleteDesc": "This deletes \"{{name}}\".",
+  "confidential": "Confidential",
+  "confidentialHint": "Confidential: hidden from and undownloadable by non-granted members (Manager+ and uploader always see it)",
+  "badge": "Confidential",
+  "setConfidential": "Mark confidential",
+  "unsetConfidential": "Unmark confidential",
+  "confidentialChanged": "Confidentiality updated",
+  "grants": {
+    "title": "Confidential access",
+    "desc": "Grant specific users visibility and download of this confidential file.",
+    "manage": "Manage access",
+    "empty": "No grants yet",
+    "granted": "Granted",
+    "revoked": "Revoked"
+  }
 }

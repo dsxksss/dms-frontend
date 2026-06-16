@@ -26,5 +26,19 @@
   "uploaded": "文件已上传",
   "deleted": "文件已删除",
   "deleteTitle": "删除文件？",
-  "deleteDesc": "将删除「{{name}}」。"
+  "deleteDesc": "将删除「{{name}}」。",
+  "confidential": "保密",
+  "confidentialHint": "标为保密：非授权成员看不到、无法下载（Manager+ 与上传者始终可见）",
+  "badge": "保密",
+  "setConfidential": "设为保密",
+  "unsetConfidential": "取消保密",
+  "confidentialChanged": "密级已更新",
+  "grants": {
+    "title": "保密授权",
+    "desc": "授权指定用户可见并下载此保密文件。",
+    "manage": "授权",
+    "empty": "暂无授权",
+    "granted": "已授权",
+    "revoked": "已撤销"
+  }
 }

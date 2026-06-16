@@ -42,6 +42,13 @@ export interface FileItem {
   sha256: string
   size: number
   content_type: string
+  confidential: boolean
+}
+
+export interface FileGrant {
+  id: string
+  file_id: string
+  user_id: string
 }
 
 const base = (projectId: string) => `/v1/projects/${projectId}/files`
@@ -54,7 +61,7 @@ export const filesApi = {
   upload: (
     projectId: string,
     file: File,
-    meta: { category: string; folder?: string; name?: string },
+    meta: { category: string; folder?: string; name?: string; confidential?: boolean },
   ) =>
     request<FileItem>(base(projectId), {
       method: 'POST',
@@ -64,8 +71,27 @@ export const filesApi = {
         folder: meta.folder,
         name: meta.name ?? file.name,
         content_type: file.type || undefined,
+        confidential: meta.confidential ? true : undefined,
       },
       headers: { 'content-type': file.type || 'application/octet-stream' },
+    }),
+  setConfidential: (projectId: string, fileId: string, confidential: boolean) =>
+    request<FileItem>(`${base(projectId)}/${fileId}`, {
+      method: 'PATCH',
+      body: { confidential },
+    }),
+  listGrants: (projectId: string, fileId: string) =>
+    request<FileGrant[]>(`${base(projectId)}/${fileId}/grants`),
+  grant: (projectId: string, fileId: string, userId: string) =>
+    request<FileGrant>(`${base(projectId)}/${fileId}/grants`, {
+      method: 'POST',
+      body: { user_id: userId },
+    }),
+  revoke: (projectId: string, fileId: string, userId: string) =>
+    request<void>(`${base(projectId)}/${fileId}/grants`, {
+      method: 'DELETE',
+      query: { user_id: userId },
+      responseType: 'void',
     }),
   remove: (projectId: string, fileId: string) =>
     request<void>(`${base(projectId)}/${fileId}`, {

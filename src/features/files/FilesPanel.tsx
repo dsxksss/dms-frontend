@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Download, Loader2, MoreHorizontal, Trash2, Upload } from 'lucide-react'
+import { Download, Lock, Loader2, MoreHorizontal, ShieldCheck, Trash2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { DataTable } from '@/components/data-table'
@@ -10,6 +10,7 @@ import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -24,8 +25,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useProjectRole } from '@/hooks/use-projects'
-import { useDeleteFile, useFiles, useUploadFile } from '@/hooks/use-files'
+import {
+  useDeleteFile,
+  useFiles,
+  useSetFileConfidential,
+  useUploadFile,
+} from '@/hooks/use-files'
 import { useToastError } from '@/hooks/use-toast-error'
+import { FileGrantsDialog } from './FileGrantsDialog'
 import { roleAtLeast } from '@/lib/roles'
 import { formatBytes } from '@/lib/format'
 import {
@@ -41,11 +48,13 @@ export function FilesPanel({ projectId }: { projectId: string }) {
   const { t } = useTranslation('files')
   const role = useProjectRole(projectId)
   const canWrite = roleAtLeast(role, 'contributor')
+  const canManage = roleAtLeast(role, 'manager')
   const toastError = useToastError()
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [catFilter, setCatFilter] = useState<string>('')
   const [uploadCat, setUploadCat] = useState<FileCategory>('misc')
+  const [uploadConfidential, setUploadConfidential] = useState(false)
   const [page, setPage] = useState({ limit: 20, offset: 0 })
   const query = useFiles(projectId, {
     category: catFilter || undefined,
@@ -53,7 +62,9 @@ export function FilesPanel({ projectId }: { projectId: string }) {
   })
   const upload = useUploadFile(projectId)
   const del = useDeleteFile(projectId)
+  const setConf = useSetFileConfidential(projectId)
   const [delTarget, setDelTarget] = useState<FileItem | null>(null)
+  const [grantsTarget, setGrantsTarget] = useState<FileItem | null>(null)
 
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -65,10 +76,23 @@ export function FilesPanel({ projectId }: { projectId: string }) {
       return
     }
     try {
-      await upload.mutateAsync({ file, category: uploadCat })
+      await upload.mutateAsync({
+        file,
+        category: uploadCat,
+        confidential: uploadConfidential,
+      })
       toast.success(t('uploaded'))
     } catch (err) {
       toastError(err)
+    }
+  }
+
+  const toggleConfidential = async (f: FileItem) => {
+    try {
+      await setConf.mutateAsync({ id: f.id, confidential: !f.confidential })
+      toast.success(t('confidentialChanged'))
+    } catch (e) {
+      toastError(e)
     }
   }
 
@@ -77,7 +101,20 @@ export function FilesPanel({ projectId }: { projectId: string }) {
       {
         accessorKey: 'name',
         header: t('columns.name'),
-        cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
+        cell: ({ row }) => (
+          <span className="flex items-center gap-1.5">
+            <span className="font-medium">{row.original.name}</span>
+            {row.original.confidential && (
+              <Badge
+                variant="outline"
+                className="text-warning border-warning/40 gap-1"
+              >
+                <Lock className="size-3" />
+                {t('badge')}
+              </Badge>
+            )}
+          </span>
+        ),
       },
       {
         accessorKey: 'category',
@@ -124,6 +161,20 @@ export function FilesPanel({ projectId }: { projectId: string }) {
                     <Download className="size-4" />
                     {t('actions.download', { ns: 'common' })}
                   </DropdownMenuItem>
+                  {canManage && (
+                    <DropdownMenuItem onClick={() => toggleConfidential(f)}>
+                      <ShieldCheck className="size-4" />
+                      {f.confidential
+                        ? t('unsetConfidential')
+                        : t('setConfidential')}
+                    </DropdownMenuItem>
+                  )}
+                  {canManage && f.confidential && (
+                    <DropdownMenuItem onClick={() => setGrantsTarget(f)}>
+                      <Lock className="size-4" />
+                      {t('grants.manage')}
+                    </DropdownMenuItem>
+                  )}
                   {canWrite && (
                     <DropdownMenuItem
                       className="text-destructive"
@@ -140,7 +191,7 @@ export function FilesPanel({ projectId }: { projectId: string }) {
         },
       },
     ],
-    [t, projectId, canWrite, toastError],
+    [t, projectId, canWrite, canManage, toastError],
   )
 
   const onDelete = async () => {
@@ -200,6 +251,14 @@ export function FilesPanel({ projectId }: { projectId: string }) {
                 </SelectContent>
               </Select>
             </div>
+            <label className="flex items-center gap-2 pb-2 text-sm">
+              <Switch
+                checked={uploadConfidential}
+                onCheckedChange={setUploadConfidential}
+              />
+              <Lock className="text-muted-foreground size-3.5" />
+              {t('confidential')}
+            </label>
             <input
               ref={fileRef}
               type="file"
@@ -248,6 +307,14 @@ export function FilesPanel({ projectId }: { projectId: string }) {
         loading={del.isPending}
         onConfirm={onDelete}
       />
+      {grantsTarget && (
+        <FileGrantsDialog
+          projectId={projectId}
+          file={grantsTarget}
+          open={!!grantsTarget}
+          onOpenChange={(o) => !o && setGrantsTarget(null)}
+        />
+      )}
     </div>
   )
 }

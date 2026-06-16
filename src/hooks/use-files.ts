@@ -24,11 +24,46 @@ export function useUploadFile(projectId: string) {
       file,
       category,
       folder,
+      confidential,
     }: {
       file: File
       category: string
       folder?: string
-    }) => filesApi.upload(projectId, file, { category, folder }),
+      confidential?: boolean
+    }) => filesApi.upload(projectId, file, { category, folder, confidential }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: root(projectId) }),
+  })
+}
+
+export function useSetFileConfidential(projectId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, confidential }: { id: string; confidential: boolean }) =>
+      filesApi.setConfidential(projectId, id, confidential),
+    onSuccess: () => qc.invalidateQueries({ queryKey: root(projectId) }),
+  })
+}
+
+export function useFileGrants(projectId: string, fileId: string, enabled = true) {
+  return useQuery({
+    queryKey: [...root(projectId), 'grants', fileId],
+    queryFn: () => filesApi.listGrants(projectId, fileId),
+    enabled: enabled && !!fileId,
+  })
+}
+
+export function useGrantFile(projectId: string, fileId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (userId: string) => filesApi.grant(projectId, fileId, userId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: root(projectId) }),
+  })
+}
+
+export function useRevokeFile(projectId: string, fileId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (userId: string) => filesApi.revoke(projectId, fileId, userId),
     onSuccess: () => qc.invalidateQueries({ queryKey: root(projectId) }),
   })
 }
