@@ -17,6 +17,7 @@ import { TableSkeleton } from '@/components/states'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { useToastError } from '@/hooks/use-toast-error'
 import { shortId } from '@/lib/format'
+import { UserName } from '@/components/user-name'
 import type { Invitation, UserCard } from '@/api/membership'
 import { UserPicker } from './UserPicker'
 
@@ -137,9 +138,7 @@ export function InvitePanel({
                 className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
               >
                 <span className="flex items-center gap-2">
-                  <span className="font-mono text-xs">
-                    {shortId(inv.invitee_user_id)}
-                  </span>
+                  <UserName id={inv.invitee_user_id} className="text-sm" />
                   <Badge variant="secondary">{roleLabel(inv.role)}</Badge>
                   <span className="text-muted-foreground text-xs">{inv.status}</span>
                 </span>

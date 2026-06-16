@@ -35,6 +35,16 @@ export function useUserSearch(search: string) {
   })
 }
 
+/** 解析单个用户卡片（按 id），长缓存、跨组件去重。 */
+export function useUser(id: string | null | undefined) {
+  return useQuery({
+    queryKey: ['membership', 'user', id],
+    queryFn: () => membershipApi.getUser(id!),
+    enabled: !!id,
+    staleTime: 5 * 60_000,
+  })
+}
+
 // ---- invitations: send / list / revoke ----
 export function useProjectInvitations(projectId: string) {
   return useQuery({

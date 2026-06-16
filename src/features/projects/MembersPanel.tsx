@@ -16,7 +16,7 @@ import {
 } from '@/hooks/use-membership'
 import { useToastError } from '@/hooks/use-toast-error'
 import { PROJECT_ROLES, roleAtLeast } from '@/lib/roles'
-import { shortId } from '@/lib/format'
+import { UserName } from '@/components/user-name'
 import type { Member } from '@/api/projects'
 import { InvitePanel } from '@/features/membership/InvitePanel'
 
@@ -61,7 +61,7 @@ export function MembersPanel({ projectId }: { projectId: string }) {
                 className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
               >
                 <span className="flex items-center gap-2">
-                  <span className="font-mono text-xs">{shortId(m.user_id)}</span>
+                  <UserName id={m.user_id} className="text-sm" />
                   {me?.user_id === m.user_id && (
                     <span className="text-muted-foreground text-xs">
                       {t('members.you')}

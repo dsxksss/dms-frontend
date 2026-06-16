@@ -25,7 +25,7 @@ import {
   useRevokeField,
 } from '@/hooks/use-registry'
 import { useToastError } from '@/hooks/use-toast-error'
-import { shortId } from '@/lib/format'
+import { UserName } from '@/components/user-name'
 import type { EntityType } from '@/api/registry'
 import type { UserCard } from '@/api/membership'
 import { UserPicker } from '@/features/membership/UserPicker'
@@ -136,9 +136,7 @@ export function FieldGrantsDialog({
                   >
                     <span className="flex items-center gap-2">
                       <Badge variant="secondary">{g.field}</Badge>
-                      <span className="font-mono text-xs">
-                        {shortId(g.user_id)}
-                      </span>
+                      <UserName id={g.user_id} className="text-sm" />
                     </span>
                     <Button
                       variant="ghost"

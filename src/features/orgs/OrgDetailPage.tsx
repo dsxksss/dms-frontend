@@ -35,7 +35,7 @@ import {
 } from '@/hooks/use-membership'
 import { membershipApi } from '@/api/membership'
 import { orgsApi, type GrantRequest } from '@/api/orgs'
-import { shortId } from '@/lib/format'
+import { UserName } from '@/components/user-name'
 import { InvitePanel } from '@/features/membership/InvitePanel'
 import { AddMemberDialog } from './AddMemberDialog'
 
@@ -201,7 +201,7 @@ function JoinRequestsTab({ orgId }: { orgId: string }) {
               className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
             >
               <span className="flex flex-col">
-                <span className="font-mono text-xs">{shortId(r.user_id)}</span>
+                <UserName id={r.user_id} className="text-sm" />
                 {r.message && (
                   <span className="text-muted-foreground text-xs">{r.message}</span>
                 )}

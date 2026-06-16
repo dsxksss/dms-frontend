@@ -41,4 +41,13 @@ export const handlers = [
     if (request.headers.get('authorization')) return HttpResponse.json(ME)
     return problem(401)
   }),
+  // 用户目录单查（UserName 组件按 id 解析显示名）。
+  http.get('*/v1/users/:id', ({ params }) => {
+    const id = String(params.id)
+    return HttpResponse.json({
+      id,
+      display_name: `User ${id.slice(0, 4)}`,
+      email: `${id}@acme.test`,
+    })
+  }),
 ]

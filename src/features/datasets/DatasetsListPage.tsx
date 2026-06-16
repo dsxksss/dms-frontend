@@ -21,7 +21,7 @@ import { Can } from '@/auth/Can'
 import { useAuth, useCan } from '@/auth/auth-context'
 import { useDatasets, useDeleteDataset } from '@/hooks/use-datasets'
 import { useToastError } from '@/hooks/use-toast-error'
-import { shortId } from '@/lib/format'
+import { UserName } from '@/components/user-name'
 import type { Dataset, Visibility } from '@/api/datasets'
 import { CreateDatasetDialog } from './CreateDatasetDialog'
 
@@ -71,10 +71,10 @@ export function DatasetsListPage() {
         accessorKey: 'owner_id',
         header: t('columns.owner'),
         cell: ({ row }) => (
-          <span className="font-mono text-xs">
-            {shortId(row.original.owner_id)}
+          <span className="flex items-center gap-1 text-sm">
+            <UserName id={row.original.owner_id} />
             {me?.user_id === row.original.owner_id && (
-              <span className="text-muted-foreground ml-1">{t('you')}</span>
+              <span className="text-muted-foreground">{t('you')}</span>
             )}
           </span>
         ),

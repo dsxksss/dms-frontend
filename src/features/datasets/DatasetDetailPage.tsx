@@ -14,6 +14,7 @@ import { useAuth, useCan } from '@/auth/auth-context'
 import { useDataset, useDeleteDataset } from '@/hooks/use-datasets'
 import { useToastError } from '@/hooks/use-toast-error'
 import { shortId } from '@/lib/format'
+import { UserName } from '@/components/user-name'
 import type { Visibility } from '@/api/datasets'
 import { CreateDatasetDialog } from './CreateDatasetDialog'
 import { DatasetVersionsPanel } from './DatasetVersionsPanel'
@@ -110,8 +111,8 @@ export function DatasetDetailPage() {
             <dt className="text-muted-foreground">{t('overview.id')}</dt>
             <dd className="font-mono">{shortId(dataset.id)}</dd>
             <dt className="text-muted-foreground">{t('overview.owner')}</dt>
-            <dd className="font-mono">
-              {shortId(dataset.owner_id)}
+            <dd>
+              <UserName id={dataset.owner_id} />
               {isOwner && <span className="text-muted-foreground ml-1">{t('you')}</span>}
             </dd>
             <dt className="text-muted-foreground">{t('overview.visibility')}</dt>
