@@ -30,8 +30,20 @@ npm run dev        # http://localhost:5173 （/v1 经 proxy 转发到后端 8080
 | `npm run build` | 类型检查 + 生产构建 |
 | `npm run typecheck` | 仅类型检查 |
 | `npm test` | 单元/组件测试（Vitest） |
-| `npm run e2e` | 端到端烟测（Playwright） |
+| `npm run e2e` | 端到端烟测（Playwright，需后端 :8080 + dev :5173 在跑；首次 `npx playwright install chromium`） |
 | `npm run lint` / `npm run format` | 代码检查 / 格式化 |
+
+## 部署
+
+```bash
+docker build -t dms-frontend .
+# 前端经 nginx 反代 /v1 到同网络的 backend:8080（同源、无 CORS、透传 X-Forwarded-For）
+docker compose up -d        # web → :8088（后端见 docker-compose.yml 注释）
+```
+
+- 多阶段 `Dockerfile`（node 构建 → nginx 托管），`nginx.conf` 含 SPA 回退 + API 反代。
+- 后端在另一仓库（dms-backend）；compose 里以服务名 `backend` 反代，或解开注释一键起后端+DB。
+- CI：`.github/workflows/ci.yml`（lint / typecheck / test / build）。
 
 ## 目录
 
