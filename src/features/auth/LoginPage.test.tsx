@@ -24,19 +24,18 @@ beforeEach(async () => {
 })
 
 describe('LoginPage', () => {
-  it('shows validation errors for empty fields', async () => {
+  it('asks only for email and password (no tenant field by default)', async () => {
     const user = userEvent.setup()
     renderLogin()
+    expect(screen.queryByLabelText('租户')).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: '登录' }))
-    expect(await screen.findByText('请输入租户')).toBeInTheDocument()
-    expect(screen.getByText('请输入邮箱')).toBeInTheDocument()
+    expect(await screen.findByText('请输入邮箱')).toBeInTheDocument()
     expect(screen.getByText('请输入密码')).toBeInTheDocument()
   })
 
   it('signs in and navigates home on valid credentials', async () => {
     const user = userEvent.setup()
     renderLogin()
-    await user.type(screen.getByLabelText('租户'), 'acme')
     await user.type(screen.getByLabelText('邮箱'), 'admin@acme.test')
     await user.type(screen.getByLabelText('密码'), 'good')
     await user.click(screen.getByRole('button', { name: '登录' }))
@@ -46,12 +45,18 @@ describe('LoginPage', () => {
   it('shows an error message on invalid credentials', async () => {
     const user = userEvent.setup()
     renderLogin()
-    await user.type(screen.getByLabelText('租户'), 'acme')
     await user.type(screen.getByLabelText('邮箱'), 'admin@acme.test')
     await user.type(screen.getByLabelText('密码'), 'wrong')
     await user.click(screen.getByRole('button', { name: '登录' }))
     expect(
       await screen.findByText('租户、邮箱或密码不正确'),
     ).toBeInTheDocument()
+  })
+
+  it('reveals the tenant field via the switch link', async () => {
+    const user = userEvent.setup()
+    renderLogin()
+    await user.click(screen.getByRole('button', { name: '切换租户' }))
+    expect(screen.getByLabelText('租户')).toBeInTheDocument()
   })
 })

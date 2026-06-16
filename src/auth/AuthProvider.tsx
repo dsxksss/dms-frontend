@@ -33,7 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (req: LoginRequest) => {
     const tokens = await authApi.login(req)
     useSession.getState().setSession({
-      tenant: req.tenant,
+      // 留空时由后端按 Host 推断；刷新时同样省略 tenant 走 Host。
+      tenant: req.tenant ?? '',
       accessToken: tokens.access_token,
       refreshToken: tokens.refresh_token,
     })

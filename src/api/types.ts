@@ -32,7 +32,8 @@ export interface SessionTokens {
 }
 
 export interface LoginRequest {
-  tenant: string
+  /** 可选：留空时后端按 Host 子域名推断租户。 */
+  tenant?: string
   email: string
   password: string
 }

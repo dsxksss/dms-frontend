@@ -37,20 +37,18 @@ export function LoginPage() {
   const [searchParams] = useSearchParams()
   const from = (location.state as { from?: string } | null)?.from ?? '/'
 
-  // 租户解析优先级：子域名 Host → 邀请链接 ?tenant= → 上次登录 → 部署默认(env) → 空。
-  const hostTenant = readHostTenant()
-  const urlTenant = searchParams.get('tenant')?.trim() || undefined
-  const lastTenant = localStorage.getItem(LAST_TENANT_KEY) || undefined
-  const defaultTenant = readDefaultTenant()
-  const initialTenant =
-    hostTenant ?? urlTenant ?? lastTenant ?? defaultTenant ?? ''
-  // 租户已由子域名/链接/部署默认确定时，默认隐藏输入（普通用户无需关心）。
-  const [showTenant, setShowTenant] = useState(
-    !(hostTenant || urlTenant || defaultTenant),
-  )
+  // 租户解析优先级：子域名 Host → ?tenant= → 上次登录 → 部署默认。解析不到则交给后端按 Host 推断。
+  const resolvedTenant =
+    readHostTenant() ??
+    (searchParams.get('tenant')?.trim() || undefined) ??
+    (localStorage.getItem(LAST_TENANT_KEY) || undefined) ??
+    readDefaultTenant() ??
+    ''
+  // 默认不显示租户输入；仅当后端报“需要租户”或用户手动展开时出现。
+  const [showTenant, setShowTenant] = useState(false)
 
   const schema = z.object({
-    tenant: z.string().min(1, t('login.required.tenant')),
+    tenant: z.string().optional(),
     email: z
       .string()
       .min(1, t('login.required.email'))
@@ -62,22 +60,26 @@ export function LoginPage() {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { tenant: initialTenant, email: '', password: '' },
+    defaultValues: { tenant: resolvedTenant, email: '', password: '' },
   })
   const [formError, setFormError] = useState<string | null>(null)
 
   const onSubmit = async (values: Values) => {
     setFormError(null)
+    const tenant = values.tenant?.trim() || undefined
     try {
-      await login(values)
-      localStorage.setItem(LAST_TENANT_KEY, values.tenant)
+      await login({ tenant, email: values.email, password: values.password })
+      if (tenant) localStorage.setItem(LAST_TENANT_KEY, tenant)
       navigate(from, { replace: true })
     } catch (e) {
-      if (isAppError(e) && e.kind === 'unauthorized') {
+      if (isAppError(e) && e.kind === 'validation') {
+        // 后端无法确定租户 → 展开输入框让用户补一次。
+        setShowTenant(true)
+        setFormError(t('login.tenantNeeded'))
+      } else if (isAppError(e) && e.kind === 'unauthorized') {
         setFormError(t('login.invalid'))
       } else {
         setFormError(tc(errorI18nKey(e)))
@@ -104,41 +106,12 @@ export function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-          {/* 租户：已知时折叠为一行说明，可点“切换”展开。注册的 input 始终存在以保留值。 */}
-          <div className={showTenant ? 'space-y-2' : 'hidden'}>
-            <Label htmlFor="tenant">{t('login.tenant')}</Label>
-            <Input
-              id="tenant"
-              autoFocus={showTenant}
-              autoComplete="organization"
-              placeholder={t('login.tenantPlaceholder')}
-              aria-invalid={!!errors.tenant}
-              {...register('tenant')}
-            />
-            {errors.tenant && (
-              <p className="text-destructive text-sm">{errors.tenant.message}</p>
-            )}
-          </div>
-          {!showTenant && (
-            <p className="text-muted-foreground text-sm">
-              {t('login.tenant')}:{' '}
-              <span className="text-foreground font-medium">{watch('tenant')}</span>
-              <button
-                type="button"
-                className="text-brand ml-2 hover:underline"
-                onClick={() => setShowTenant(true)}
-              >
-                {t('login.switchTenant')}
-              </button>
-            </p>
-          )}
-
           <div className="space-y-2">
             <Label htmlFor="email">{t('login.email')}</Label>
             <Input
               id="email"
               type="email"
-              autoFocus={!showTenant}
+              autoFocus
               autoComplete="username"
               aria-invalid={!!errors.email}
               {...register('email')}
@@ -158,9 +131,24 @@ export function LoginPage() {
               {...register('password')}
             />
             {errors.password && (
-              <p className="text-destructive text-sm">{errors.password.message}</p>
+              <p className="text-destructive text-sm">
+                {errors.password.message}
+              </p>
             )}
           </div>
+
+          {/* 租户：默认不渲染；解析到的值由 defaultValues 保留，提交时仍带上。 */}
+          {showTenant && (
+            <div className="space-y-2">
+              <Label htmlFor="tenant">{t('login.tenant')}</Label>
+              <Input
+                id="tenant"
+                autoComplete="organization"
+                placeholder={t('login.tenantPlaceholder')}
+                {...register('tenant')}
+              />
+            </div>
+          )}
 
           {formError && (
             <div
@@ -175,6 +163,16 @@ export function LoginPage() {
             {isSubmitting && <Loader2 className="size-4 animate-spin" />}
             {isSubmitting ? t('login.submitting') : t('login.submit')}
           </Button>
+
+          {!showTenant && (
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-foreground mx-auto block text-xs"
+              onClick={() => setShowTenant(true)}
+            >
+              {t('login.switchTenant')}
+            </button>
+          )}
         </form>
       </div>
     </main>

@@ -50,13 +50,17 @@ function ensureRefreshed(): Promise<boolean> {
 
 async function rawRefresh(): Promise<boolean> {
   const { tenant, refreshToken } = useSession.getState()
-  if (!tenant || !refreshToken) return false
+  if (!refreshToken) return false
   let res: Response
   try {
     res = await fetch(buildUrl('/v1/auth/refresh'), {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ tenant, refresh_token: refreshToken }),
+      // tenant 为空时省略，由后端按 Host 子域名推断。
+      body: JSON.stringify({
+        refresh_token: refreshToken,
+        ...(tenant ? { tenant } : {}),
+      }),
     })
   } catch {
     return false
