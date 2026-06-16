@@ -4,13 +4,15 @@ import LanguageDetector from 'i18next-browser-languagedetector'
 
 import zhCommon from './locales/zh-CN/common.json'
 import enCommon from './locales/en/common.json'
+import zhAuth from './locales/zh-CN/auth.json'
+import enAuth from './locales/en/auth.json'
 
 export const SUPPORTED_LANGS = ['zh-CN', 'en'] as const
 export type Lang = (typeof SUPPORTED_LANGS)[number]
 
 export const resources = {
-  'zh-CN': { common: zhCommon },
-  en: { common: enCommon },
+  'zh-CN': { common: zhCommon, auth: zhAuth },
+  en: { common: enCommon, auth: enAuth },
 } as const
 
 void i18n
@@ -21,7 +23,7 @@ void i18n
     fallbackLng: 'zh-CN',
     supportedLngs: SUPPORTED_LANGS as unknown as string[],
     defaultNS: 'common',
-    ns: ['common'],
+    ns: ['common', 'auth'],
     interpolation: { escapeValue: false },
     detection: {
       order: ['localStorage', 'navigator'],
