@@ -11,6 +11,7 @@ import { EmptyState, ErrorState } from '@/components/states'
 import { Can } from '@/auth/Can'
 import { useProject } from '@/hooks/use-projects'
 import { shortId } from '@/lib/format'
+import { RegistryTab } from '@/features/registry/RegistryTab'
 import { MembersPanel } from './MembersPanel'
 import { CreateProjectDialog } from './CreateProjectDialog'
 
@@ -80,7 +81,6 @@ export function ProjectDetailPage() {
           <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
           <TabsTrigger value="members">{t('tabs.members')}</TabsTrigger>
           <TabsTrigger value="registry">{t('tabs.registry')}</TabsTrigger>
-          <TabsTrigger value="datasets">{t('tabs.datasets')}</TabsTrigger>
           <TabsTrigger value="files">{t('tabs.files')}</TabsTrigger>
         </TabsList>
 
@@ -105,10 +105,7 @@ export function ProjectDetailPage() {
           <MembersPanel projectId={id} />
         </TabsContent>
         <TabsContent value="registry" className="pt-4">
-          <ComingSoon />
-        </TabsContent>
-        <TabsContent value="datasets" className="pt-4">
-          <ComingSoon />
+          <RegistryTab projectId={id} />
         </TabsContent>
         <TabsContent value="files" className="pt-4">
           <ComingSoon />

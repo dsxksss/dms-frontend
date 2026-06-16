@@ -10,6 +10,8 @@ import {
   type Member,
   type UpdateProjectInput,
 } from '@/api/projects'
+import { useAuth } from '@/auth/auth-context'
+import type { ProjectRole } from '@/lib/roles'
 
 export const projectKeys = {
   all: ['projects'] as const,
@@ -87,4 +89,12 @@ export function useRemoveMember(id: string) {
     mutationFn: (userId: string) => projectsApi.removeMember(id, userId),
     onSuccess: () => qc.invalidateQueries({ queryKey: projectKeys.members(id) }),
   })
+}
+
+/** 当前用户在该项目的成员角色（用于资源级 UI 门禁）。加载中或非成员返回 null。 */
+export function useProjectRole(projectId: string): ProjectRole | null {
+  const { me } = useAuth()
+  const { data } = useMembers(projectId)
+  if (!me?.user_id || !data) return null
+  return data.find((m) => m.user_id === me.user_id)?.role ?? null
 }

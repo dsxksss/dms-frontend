@@ -8,13 +8,20 @@ import zhAuth from './locales/zh-CN/auth.json'
 import enAuth from './locales/en/auth.json'
 import zhProjects from './locales/zh-CN/projects.json'
 import enProjects from './locales/en/projects.json'
+import zhRegistry from './locales/zh-CN/registry.json'
+import enRegistry from './locales/en/registry.json'
 
 export const SUPPORTED_LANGS = ['zh-CN', 'en'] as const
 export type Lang = (typeof SUPPORTED_LANGS)[number]
 
 export const resources = {
-  'zh-CN': { common: zhCommon, auth: zhAuth, projects: zhProjects },
-  en: { common: enCommon, auth: enAuth, projects: enProjects },
+  'zh-CN': {
+    common: zhCommon,
+    auth: zhAuth,
+    projects: zhProjects,
+    registry: zhRegistry,
+  },
+  en: { common: enCommon, auth: enAuth, projects: enProjects, registry: enRegistry },
 } as const
 
 void i18n
@@ -25,7 +32,7 @@ void i18n
     fallbackLng: 'zh-CN',
     supportedLngs: SUPPORTED_LANGS as unknown as string[],
     defaultNS: 'common',
-    ns: ['common', 'auth', 'projects'],
+    ns: ['common', 'auth', 'projects', 'registry'],
     interpolation: { escapeValue: false },
     detection: {
       order: ['localStorage', 'navigator'],
