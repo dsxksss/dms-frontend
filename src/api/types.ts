@@ -27,6 +27,8 @@ export interface SessionTokens {
   access_token: string
   refresh_token: string
   token_type: string
+  /** access token 有效秒数（后端返回，当前前端用 401 刷新策略，未强依赖）。 */
+  expires_in?: number
 }
 
 export interface LoginRequest {
