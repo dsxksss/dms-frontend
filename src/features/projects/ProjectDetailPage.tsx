@@ -14,6 +14,7 @@ import { shortId } from '@/lib/format'
 import { RegistryTab } from '@/features/registry/RegistryTab'
 import { ProtocolsTab } from '@/features/protocols/ProtocolsTab'
 import { FilesPanel } from '@/features/files/FilesPanel'
+import { SignaturesPanel } from '@/features/signatures/SignaturesPanel'
 import { MembersPanel } from './MembersPanel'
 import { CreateProjectDialog } from './CreateProjectDialog'
 
@@ -80,6 +81,7 @@ export function ProjectDetailPage() {
           <TabsTrigger value="registry">{t('tabs.registry')}</TabsTrigger>
           <TabsTrigger value="protocols">{t('tabs.protocols')}</TabsTrigger>
           <TabsTrigger value="files">{t('tabs.files')}</TabsTrigger>
+          <TabsTrigger value="signatures">{t('tabs.signatures')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="pt-4">
@@ -110,6 +112,9 @@ export function ProjectDetailPage() {
         </TabsContent>
         <TabsContent value="files" className="pt-4">
           <FilesPanel projectId={id} />
+        </TabsContent>
+        <TabsContent value="signatures" className="pt-4">
+          <SignaturesPanel projectId={id} />
         </TabsContent>
       </Tabs>
 

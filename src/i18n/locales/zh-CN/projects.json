@@ -56,7 +56,8 @@
     "registry": "Registry",
     "datasets": "数据集",
     "files": "文件",
-    "protocols": "实验方案"
+    "protocols": "实验方案",
+    "signatures": "签名"
   },
   "overview": {
     "id": "ID",

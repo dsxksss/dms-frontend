@@ -56,7 +56,8 @@
     "registry": "Registry",
     "datasets": "Datasets",
     "files": "Files",
-    "protocols": "Protocols"
+    "protocols": "Protocols",
+    "signatures": "Signatures"
   },
   "overview": {
     "id": "ID",

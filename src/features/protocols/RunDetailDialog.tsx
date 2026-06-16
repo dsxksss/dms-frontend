@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Loader2, Plus, Trash2 } from 'lucide-react'
+import { Loader2, PenLine, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -23,6 +23,8 @@ import { EmptyState, ErrorState } from '@/components/states'
 import { UserName } from '@/components/user-name'
 import { SchemaForm } from '@/features/registry/SchemaForm'
 import { EntityPicker } from '@/features/registry/EntityPicker'
+import { SignDialog } from '@/features/signatures/SignDialog'
+import { SignaturesList } from '@/features/signatures/SignaturesList'
 import { useProjectRole } from '@/hooks/use-projects'
 import { useDatasets } from '@/hooks/use-datasets'
 import {
@@ -175,6 +177,7 @@ export function RunDetailDialog({
   const toastError = useToastError()
 
   const [forms, setForms] = useState<Record<string, FormValues>>({})
+  const [signOpen, setSignOpen] = useState(false)
   useEffect(() => {
     if (run) {
       const next: Record<string, FormValues> = {}
@@ -321,6 +324,36 @@ export function RunDetailDialog({
             </div>
 
             <RunLinksSection projectId={projectId} runId={runId} canEdit={editable} />
+
+            {/* e-signatures (21 CFR Part 11) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium">
+                  {t('onTarget', { ns: 'signatures' })}
+                </h3>
+                {canContribute && (
+                  <Button size="sm" variant="outline" onClick={() => setSignOpen(true)}>
+                    <PenLine className="size-4" />
+                    {t('sign.button', { ns: 'signatures' })}
+                  </Button>
+                )}
+              </div>
+              <SignaturesList projectId={projectId} targetKind="run" targetId={runId} />
+            </div>
+
+            <SignDialog
+              projectId={projectId}
+              targetKind="run"
+              targetId={run.id}
+              content={JSON.stringify({
+                id: run.id,
+                protocol_version: run.protocol_version,
+                status: run.status,
+                results: run.results,
+              })}
+              open={signOpen}
+              onOpenChange={setSignOpen}
+            />
           </>
         )}
       </DialogContent>
