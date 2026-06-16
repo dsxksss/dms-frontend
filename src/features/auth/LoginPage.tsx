@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -14,13 +14,29 @@ import { LangToggle } from '@/components/lang-toggle'
 import { useAuth } from '@/auth/auth-context'
 import { errorI18nKey, isAppError } from '@/lib/errors'
 
+const LAST_TENANT_KEY = 'dms-last-tenant'
+
+function readDefaultTenant(): string | undefined {
+  const env = (import.meta.env.VITE_DEFAULT_TENANT as string | undefined)?.trim()
+  return env || undefined
+}
+
 export function LoginPage() {
   const { t } = useTranslation('auth')
   const { t: tc } = useTranslation('common')
   const { login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const from = (location.state as { from?: string } | null)?.from ?? '/'
+
+  // 租户解析优先级：邀请链接 ?tenant= → 上次登录 → 部署默认(env) → 空。
+  const urlTenant = searchParams.get('tenant')?.trim() || undefined
+  const lastTenant = localStorage.getItem(LAST_TENANT_KEY) || undefined
+  const defaultTenant = readDefaultTenant()
+  const initialTenant = urlTenant ?? lastTenant ?? defaultTenant ?? ''
+  // 租户已由链接/部署默认确定时，默认隐藏输入（普通用户无需关心）。
+  const [showTenant, setShowTenant] = useState(!(urlTenant || defaultTenant))
 
   const schema = z.object({
     tenant: z.string().min(1, t('login.required.tenant')),
@@ -35,10 +51,11 @@ export function LoginPage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { tenant: '', email: '', password: '' },
+    defaultValues: { tenant: initialTenant, email: '', password: '' },
   })
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -46,6 +63,7 @@ export function LoginPage() {
     setFormError(null)
     try {
       await login(values)
+      localStorage.setItem(LAST_TENANT_KEY, values.tenant)
       navigate(from, { replace: true })
     } catch (e) {
       if (isAppError(e) && e.kind === 'unauthorized') {
@@ -75,10 +93,12 @@ export function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-          <div className="space-y-2">
+          {/* 租户：已知时折叠为一行说明，可点“切换”展开。注册的 input 始终存在以保留值。 */}
+          <div className={showTenant ? 'space-y-2' : 'hidden'}>
             <Label htmlFor="tenant">{t('login.tenant')}</Label>
             <Input
               id="tenant"
+              autoFocus={showTenant}
               autoComplete="organization"
               placeholder={t('login.tenantPlaceholder')}
               aria-invalid={!!errors.tenant}
@@ -88,12 +108,26 @@ export function LoginPage() {
               <p className="text-destructive text-sm">{errors.tenant.message}</p>
             )}
           </div>
+          {!showTenant && (
+            <p className="text-muted-foreground text-sm">
+              {t('login.tenant')}:{' '}
+              <span className="text-foreground font-medium">{watch('tenant')}</span>
+              <button
+                type="button"
+                className="text-brand ml-2 hover:underline"
+                onClick={() => setShowTenant(true)}
+              >
+                {t('login.switchTenant')}
+              </button>
+            </p>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="email">{t('login.email')}</Label>
             <Input
               id="email"
               type="email"
+              autoFocus={!showTenant}
               autoComplete="username"
               aria-invalid={!!errors.email}
               {...register('email')}
@@ -113,9 +147,7 @@ export function LoginPage() {
               {...register('password')}
             />
             {errors.password && (
-              <p className="text-destructive text-sm">
-                {errors.password.message}
-              </p>
+              <p className="text-destructive text-sm">{errors.password.message}</p>
             )}
           </div>
 
