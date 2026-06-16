@@ -4,6 +4,8 @@
     "shortName": "DMS",
     "tagline": "Data asset management for drug R&D"
   },
+  "comingSoon": "Coming soon",
+  "settings": { "appearance": "Appearance", "appearanceDesc": "Theme and interface language" },
   "nav": {
     "projects": "Projects",
     "organizations": "Organizations",

@@ -1,0 +1,91 @@
+{
+  "title": "Projects",
+  "subtitle": "Boundary containers for data and access",
+  "columns": {
+    "name": "Name",
+    "organization": "Organization",
+    "status": "Status",
+    "version": "Version"
+  },
+  "status": { "active": "Active", "archived": "Archived" },
+  "filter": { "includeArchived": "Show archived" },
+  "create": {
+    "title": "New project",
+    "name": "Name",
+    "namePlaceholder": "Project name",
+    "description": "Description",
+    "descriptionPlaceholder": "Optional description",
+    "submit": "Create",
+    "nameRequired": "Project name is required"
+  },
+  "edit": { "title": "Edit project" },
+  "row": {
+    "open": "Open",
+    "edit": "Edit",
+    "archive": "Archive",
+    "unarchive": "Unarchive",
+    "delete": "Delete"
+  },
+  "empty": {
+    "title": "No projects yet",
+    "description": "Create your first project to organize files, registry and datasets."
+  },
+  "delete": {
+    "title": "Delete project?",
+    "description": "This soft-deletes \"{{name}}\". The action is recorded in the audit log.",
+    "confirm": "Delete"
+  },
+  "archive": {
+    "title": "Archive project?",
+    "description": "\"{{name}}\" will be hidden from the active list. You can unarchive anytime."
+  },
+  "unarchive": {
+    "title": "Unarchive?",
+    "description": "\"{{name}}\" will reappear in the active list."
+  },
+  "toast": {
+    "created": "Project created",
+    "updated": "Project updated",
+    "deleted": "Project deleted",
+    "archived": "Project archived",
+    "unarchived": "Project unarchived"
+  },
+  "tabs": {
+    "overview": "Overview",
+    "members": "Members",
+    "registry": "Registry",
+    "datasets": "Datasets",
+    "files": "Files"
+  },
+  "overview": {
+    "id": "ID",
+    "organization": "Organization",
+    "version": "Version",
+    "status": "Status",
+    "description": "Description",
+    "none": "(none)"
+  },
+  "members": {
+    "title": "Members",
+    "add": "Add member",
+    "userId": "User ID",
+    "userIdPlaceholder": "User UUID",
+    "role": "Role",
+    "remove": "Remove",
+    "removeTitle": "Remove member?",
+    "removeDescription": "This removes the member from the project.",
+    "empty": "No members",
+    "you": "(you)",
+    "added": "Member added",
+    "removed": "Member removed",
+    "userIdRequired": "User ID is required"
+  },
+  "roles": {
+    "owner": "Owner",
+    "manager": "Manager",
+    "contributor": "Contributor",
+    "viewer": "Viewer"
+  },
+  "notFound": "Project not found or not accessible",
+  "comingSoon": "Coming soon"
+}

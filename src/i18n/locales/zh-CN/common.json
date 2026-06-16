@@ -4,6 +4,8 @@
     "shortName": "DMS",
     "tagline": "药物研发的数据资产管理"
   },
+  "comingSoon": "即将上线",
+  "settings": { "appearance": "外观", "appearanceDesc": "主题与界面语言偏好" },
   "nav": {
     "projects": "项目",
     "organizations": "组织",

@@ -1,14 +1,29 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { ProtectedRoute } from '@/auth/ProtectedRoute'
+import { AppLayout } from '@/components/app-layout'
+import { ComingSoonPage } from '@/components/coming-soon'
 import { LoginPage } from '@/features/auth/LoginPage'
-import { HomePage } from '@/features/home/HomePage'
+import { ProjectsListPage } from '@/features/projects/ProjectsListPage'
+import { ProjectDetailPage } from '@/features/projects/ProjectDetailPage'
+import { SettingsPage } from '@/features/settings/SettingsPage'
 
-// M1：登录 + 受保护首页。后续里程碑在受保护子树下挂 AppLayout 与各模块路由。
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   {
     element: <ProtectedRoute />,
-    children: [{ path: '/', element: <HomePage /> }],
+    children: [
+      {
+        element: <AppLayout />,
+        children: [
+          { index: true, element: <Navigate to="/projects" replace /> },
+          { path: 'projects', element: <ProjectsListPage /> },
+          { path: 'projects/:id', element: <ProjectDetailPage /> },
+          { path: 'orgs', element: <ComingSoonPage titleKey="nav.organizations" /> },
+          { path: 'audit', element: <ComingSoonPage titleKey="nav.audit" /> },
+          { path: 'settings', element: <SettingsPage /> },
+        ],
+      },
+    ],
   },
   { path: '*', element: <Navigate to="/" replace /> },
 ])

@@ -1,0 +1,91 @@
+{
+  "title": "项目",
+  "subtitle": "数据与权限的边界容器",
+  "columns": {
+    "name": "名称",
+    "organization": "组织",
+    "status": "状态",
+    "version": "版本"
+  },
+  "status": { "active": "活跃", "archived": "已归档" },
+  "filter": { "includeArchived": "显示已归档" },
+  "create": {
+    "title": "新建项目",
+    "name": "名称",
+    "namePlaceholder": "项目名称",
+    "description": "描述",
+    "descriptionPlaceholder": "可选描述",
+    "submit": "创建",
+    "nameRequired": "请输入项目名称"
+  },
+  "edit": { "title": "编辑项目" },
+  "row": {
+    "open": "打开",
+    "edit": "编辑",
+    "archive": "归档",
+    "unarchive": "取消归档",
+    "delete": "删除"
+  },
+  "empty": {
+    "title": "还没有项目",
+    "description": "创建第一个项目来组织文件、Registry 与数据集。"
+  },
+  "delete": {
+    "title": "删除项目？",
+    "description": "将软删除「{{name}}」。此操作会被审计记录。",
+    "confirm": "删除"
+  },
+  "archive": {
+    "title": "归档项目？",
+    "description": "「{{name}}」将从活跃列表隐藏，可随时取消归档。"
+  },
+  "unarchive": {
+    "title": "取消归档？",
+    "description": "「{{name}}」将重新出现在活跃列表。"
+  },
+  "toast": {
+    "created": "项目已创建",
+    "updated": "项目已更新",
+    "deleted": "项目已删除",
+    "archived": "项目已归档",
+    "unarchived": "已取消归档"
+  },
+  "tabs": {
+    "overview": "概览",
+    "members": "成员",
+    "registry": "Registry",
+    "datasets": "数据集",
+    "files": "文件"
+  },
+  "overview": {
+    "id": "ID",
+    "organization": "组织",
+    "version": "版本",
+    "status": "状态",
+    "description": "描述",
+    "none": "（无）"
+  },
+  "members": {
+    "title": "成员",
+    "add": "添加成员",
+    "userId": "用户 ID",
+    "userIdPlaceholder": "用户 UUID",
+    "role": "角色",
+    "remove": "移除",
+    "removeTitle": "移除成员？",
+    "removeDescription": "将从本项目移除该成员。",
+    "empty": "暂无成员",
+    "you": "（你）",
+    "added": "成员已添加",
+    "removed": "成员已移除",
+    "userIdRequired": "请输入用户 ID"
+  },
+  "roles": {
+    "owner": "Owner",
+    "manager": "Manager",
+    "contributor": "Contributor",
+    "viewer": "Viewer"
+  },
+  "notFound": "项目不存在或无权访问",
+  "comingSoon": "即将上线"
+}
