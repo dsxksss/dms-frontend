@@ -106,6 +106,14 @@ export function useEntities(
   })
 }
 
+export function useEntity(projectId: string, entityId: string, enabled = true) {
+  return useQuery({
+    queryKey: registryKeys.entity(projectId, entityId),
+    queryFn: () => registryApi.getEntity(projectId, entityId),
+    enabled: enabled && !!entityId,
+  })
+}
+
 export function useCreateEntity(projectId: string) {
   const invalidate = useInvalidateRegistry(projectId)
   return useMutation({

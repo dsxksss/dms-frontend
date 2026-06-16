@@ -89,11 +89,18 @@ export function CreateDatasetDialog({
         <DialogHeader>
           <DialogTitle>{isEdit ? t('edit.title') : t('create.title')}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault()
+            void submit()
+          }}
+        >
           <div className="space-y-2">
             <Label htmlFor="dsname">{t('create.name')}</Label>
             <Input
               id="dsname"
+              autoFocus
               placeholder={t('create.namePlaceholder')}
               value={name}
               aria-invalid={nameErr}
@@ -130,13 +137,13 @@ export function CreateDatasetDialog({
               </SelectContent>
             </Select>
           </div>
-        </div>
-        <DialogFooter>
-          <Button onClick={submit} disabled={submitting}>
-            {submitting && <Loader2 className="size-4 animate-spin" />}
-            {isEdit ? t('actions.save', { ns: 'common' }) : t('create.submit')}
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button type="submit" disabled={submitting}>
+              {submitting && <Loader2 className="size-4 animate-spin" />}
+              {isEdit ? t('actions.save', { ns: 'common' }) : t('create.submit')}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

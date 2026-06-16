@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { Loader2, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -31,6 +30,7 @@ export function DatasetLinksPanel({
   canManage: boolean
 }) {
   const { t } = useTranslation('datasets')
+  const { t: tr } = useTranslation('registry')
   const links = useDatasetLinks(datasetId)
   const add = useAddLink(datasetId)
   const del = useDeleteLink(datasetId)
@@ -88,11 +88,19 @@ export function DatasetLinksPanel({
             </div>
             <div className="space-y-1.5">
               <Label>{t('links.kind')}</Label>
-              <Input
-                placeholder={t('links.kindPlaceholder')}
-                value={kind}
-                onChange={(e) => setKind(e.target.value)}
-              />
+              <Select value={kind} onValueChange={setKind}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={RELATION_KINDS.derivedFrom}>
+                    {tr('relations.derived_from')}
+                  </SelectItem>
+                  <SelectItem value={RELATION_KINDS.hasComponent}>
+                    {tr('relations.has_component')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           {projectId && (
@@ -126,7 +134,7 @@ export function DatasetLinksPanel({
               className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
             >
               <span className="flex items-center gap-2">
-                <Badge variant="secondary">{l.kind}</Badge>
+                <Badge variant="secondary">{tr(`relations.${l.kind}`, l.kind)}</Badge>
                 <span className="font-mono text-xs">{shortId(l.entity_id)}</span>
               </span>
               {canManage && (

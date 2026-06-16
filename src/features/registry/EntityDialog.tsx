@@ -83,22 +83,29 @@ export function EntityDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <SchemaForm
-          projectId={projectId}
-          fields={type.fields}
-          values={values}
-          errors={errors}
-          onChange={(name, value) =>
-            setValues((prev) => ({ ...prev, [name]: value }))
-          }
-        />
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            void submit()
+          }}
+        >
+          <SchemaForm
+            projectId={projectId}
+            fields={type.fields}
+            values={values}
+            errors={errors}
+            onChange={(name, value) =>
+              setValues((prev) => ({ ...prev, [name]: value }))
+            }
+          />
 
-        <DialogFooter>
-          <Button onClick={submit} disabled={submitting}>
-            {submitting && <Loader2 className="size-4 animate-spin" />}
-            {isEdit ? t('actions.save', { ns: 'common' }) : t('entities.create')}
-          </Button>
-        </DialogFooter>
+          <DialogFooter className="mt-4">
+            <Button type="submit" disabled={submitting}>
+              {submitting && <Loader2 className="size-4 animate-spin" />}
+              {isEdit ? t('actions.save', { ns: 'common' }) : t('entities.create')}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

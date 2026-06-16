@@ -86,6 +86,7 @@ export function CreateProjectDialog({
             <Label htmlFor="name">{t('create.name')}</Label>
             <Input
               id="name"
+              autoFocus
               placeholder={t('create.namePlaceholder')}
               aria-invalid={!!errors.name}
               {...register('name')}

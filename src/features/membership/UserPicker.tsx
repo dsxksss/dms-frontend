@@ -11,9 +11,12 @@ import type { UserCard } from '@/api/membership'
 export function UserPicker({
   value,
   onChange,
+  max,
 }: {
   value: UserCard[]
   onChange: (users: UserCard[]) => void
+  /** 最多可选人数；max=1 时点选即替换（单选）。 */
+  max?: number
 }) {
   const { t } = useTranslation('membership')
   const [q, setQ] = useState('')
@@ -24,7 +27,7 @@ export function UserPicker({
   )
 
   const add = (u: UserCard) => {
-    onChange([...value, u])
+    onChange(max === 1 ? [u] : [...value, u])
     setQ('')
   }
   const remove = (id: string) => onChange(value.filter((u) => u.id !== id))

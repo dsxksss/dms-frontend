@@ -56,11 +56,18 @@ export function CreateOrgDialog({
         <DialogHeader>
           <DialogTitle>{t('create.title')}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault()
+            void submit()
+          }}
+        >
           <div className="space-y-2">
             <Label htmlFor="oslug">{t('create.slug')}</Label>
             <Input
               id="oslug"
+              autoFocus
               placeholder={t('create.slugPlaceholder')}
               value={slug}
               aria-invalid={err.slug}
@@ -83,13 +90,13 @@ export function CreateOrgDialog({
               <p className="text-destructive text-sm">{t('create.nameRequired')}</p>
             )}
           </div>
-        </div>
-        <DialogFooter>
-          <Button onClick={submit} disabled={create.isPending}>
-            {create.isPending && <Loader2 className="size-4 animate-spin" />}
-            {t('create.submit')}
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button type="submit" disabled={create.isPending}>
+              {create.isPending && <Loader2 className="size-4 animate-spin" />}
+              {t('create.submit')}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

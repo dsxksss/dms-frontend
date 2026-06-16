@@ -9,7 +9,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -28,6 +27,8 @@ import {
 import { useToastError } from '@/hooks/use-toast-error'
 import { shortId } from '@/lib/format'
 import type { EntityType } from '@/api/registry'
+import type { UserCard } from '@/api/membership'
+import { UserPicker } from '@/features/membership/UserPicker'
 
 export function FieldGrantsDialog({
   projectId,
@@ -48,19 +49,20 @@ export function FieldGrantsDialog({
   const toastError = useToastError()
 
   const [field, setField] = useState('')
-  const [userId, setUserId] = useState('')
+  const [users, setUsers] = useState<UserCard[]>([])
   const [err, setErr] = useState<{ field?: string; user?: string }>({})
 
   const onGrant = async () => {
+    const uid = users[0]?.id
     const e: typeof err = {}
     if (!field) e.field = t('grants.fieldRequired')
-    if (!userId.trim()) e.user = t('grants.userRequired')
+    if (!uid) e.user = t('grants.userRequired')
     setErr(e)
     if (Object.keys(e).length) return
     try {
-      await grant.mutateAsync({ user_id: userId.trim(), field })
+      await grant.mutateAsync({ user_id: uid!, field })
       toast.success(t('grants.granted'))
-      setUserId('')
+      setUsers([])
       setField('')
     } catch (ex) {
       toastError(ex)
@@ -89,11 +91,11 @@ export function FieldGrantsDialog({
           <div className="space-y-4">
             <p className="text-muted-foreground text-sm">{t('grants.desc')}</p>
 
-            <div className="grid grid-cols-[1fr_1fr_auto] items-end gap-2">
+            <div className="space-y-3 rounded-lg border p-3">
               <div className="space-y-1.5">
                 <Label>{t('grants.field')}</Label>
                 <Select value={field} onValueChange={setField}>
-                  <SelectTrigger aria-invalid={!!err.field}>
+                  <SelectTrigger aria-invalid={!!err.field} className="w-full">
                     <SelectValue placeholder={t('grants.field')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -104,16 +106,14 @@ export function FieldGrantsDialog({
                     ))}
                   </SelectContent>
                 </Select>
+                {err.field && (
+                  <p className="text-destructive text-sm">{err.field}</p>
+                )}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="guser">{t('grants.user')}</Label>
-                <Input
-                  id="guser"
-                  placeholder={t('grants.userPlaceholder')}
-                  value={userId}
-                  aria-invalid={!!err.user}
-                  onChange={(e) => setUserId(e.target.value)}
-                />
+                <Label>{t('grants.user')}</Label>
+                <UserPicker value={users} onChange={setUsers} max={1} />
+                {err.user && <p className="text-destructive text-sm">{err.user}</p>}
               </div>
               <Button onClick={onGrant} disabled={grant.isPending}>
                 {grant.isPending ? (

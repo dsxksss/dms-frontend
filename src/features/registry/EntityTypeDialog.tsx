@@ -96,6 +96,7 @@ export function EntityTypeDialog({
                 <Label htmlFor="key">{t('types.key')}</Label>
                 <Input
                   id="key"
+                  autoFocus
                   placeholder={t('types.keyPlaceholder')}
                   value={key}
                   aria-invalid={!!errors.key}
@@ -129,6 +130,7 @@ export function EntityTypeDialog({
             <Label htmlFor="tname">{t('types.name')}</Label>
             <Input
               id="tname"
+              autoFocus={isEdit}
               placeholder={t('types.namePlaceholder')}
               value={name}
               aria-invalid={!!errors.name}

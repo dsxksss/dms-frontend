@@ -64,11 +64,18 @@ export function AddMemberDialog({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault()
+            void submit()
+          }}
+        >
           <div className="space-y-2">
             <Label htmlFor="muser">{t('addMember.userId')}</Label>
             <Input
               id="muser"
+              autoFocus
               placeholder={t('addMember.userIdPlaceholder')}
               value={userId}
               aria-invalid={err}
@@ -90,13 +97,13 @@ export function AddMemberDialog({
               </SelectContent>
             </Select>
           </div>
-        </div>
-        <DialogFooter>
-          <Button onClick={submit} disabled={submitting}>
-            {submitting && <Loader2 className="size-4 animate-spin" />}
-            {t('addMember.submit')}
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button type="submit" disabled={submitting}>
+              {submitting && <Loader2 className="size-4 animate-spin" />}
+              {t('addMember.submit')}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )
