@@ -11,7 +11,14 @@ import type { Me } from '@/api/types'
 export const TEST_ME: Me = {
   user_id: 'u-1',
   tenant_id: 'acme',
-  permissions: ['project:read', 'project:write', 'org:read', 'audit:read'],
+  permissions: [
+    'project:read',
+    'project:write',
+    'dataset:read',
+    'dataset:write',
+    'org:read',
+    'audit:read',
+  ],
 }
 
 export function makeQueryClient() {

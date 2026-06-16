@@ -3,6 +3,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Building2,
+  Database,
   FolderKanban,
   LogOut,
   Menu,
@@ -33,6 +34,7 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { to: '/projects', labelKey: 'nav.projects', icon: FolderKanban },
+  { to: '/datasets', labelKey: 'nav.datasets', icon: Database, perm: 'dataset:read' },
   { to: '/orgs', labelKey: 'nav.organizations', icon: Building2, perm: 'org:read' },
   { to: '/audit', labelKey: 'nav.audit', icon: ScrollText, perm: 'audit:read' },
   { to: '/settings', labelKey: 'nav.settings', icon: Settings },

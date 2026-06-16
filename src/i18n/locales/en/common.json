@@ -8,6 +8,7 @@
   "settings": { "appearance": "Appearance", "appearanceDesc": "Theme and interface language" },
   "nav": {
     "projects": "Projects",
+    "datasets": "Datasets",
     "organizations": "Organizations",
     "audit": "Audit log",
     "settings": "Settings"

@@ -1,0 +1,98 @@
+{
+  "title": "Datasets",
+  "subtitle": "Enterprise data assets (independent of projects, shared by visibility)",
+  "columns": {
+    "name": "Name",
+    "visibility": "Visibility",
+    "owner": "Owner",
+    "version": "Version"
+  },
+  "visibility": { "private": "Private", "org": "Organization", "public": "Public" },
+  "create": {
+    "title": "New dataset",
+    "name": "Name",
+    "namePlaceholder": "Dataset name",
+    "description": "Description",
+    "descriptionPlaceholder": "Optional description",
+    "visibility": "Visibility",
+    "submit": "Create",
+    "nameRequired": "Name is required"
+  },
+  "edit": { "title": "Edit dataset" },
+  "row": { "open": "Open", "edit": "Edit", "delete": "Delete" },
+  "empty": {
+    "title": "No datasets yet",
+    "description": "Create a dataset, upload a CSV/Excel version, then preview, export and link to registry entities."
+  },
+  "delete": {
+    "title": "Delete dataset?",
+    "description": "This soft-deletes \"{{name}}\".",
+    "confirm": "Delete"
+  },
+  "toast": {
+    "created": "Dataset created",
+    "updated": "Dataset updated",
+    "deleted": "Dataset deleted",
+    "uploaded": "New version uploaded",
+    "rolesSaved": "Column roles saved",
+    "linkAdded": "Entity linked",
+    "linkRemoved": "Link removed"
+  },
+  "you": "(you)",
+  "tabs": {
+    "overview": "Overview",
+    "versions": "Versions",
+    "preview": "Preview",
+    "links": "Links"
+  },
+  "overview": {
+    "id": "ID",
+    "owner": "Owner",
+    "visibility": "Visibility",
+    "version": "Version",
+    "description": "Description",
+    "none": "(none)"
+  },
+  "versions": {
+    "title": "Versions",
+    "upload": "Upload version",
+    "uploading": "Uploading…",
+    "empty": "No versions yet. Upload a CSV or Excel file.",
+    "versionNo": "Version",
+    "format": "Format",
+    "rows": "Rows",
+    "size": "Size",
+    "columns": "Columns",
+    "roles": "Column roles (AI-ready)",
+    "saveRoles": "Save column roles",
+    "pickFile": "Choose file (CSV/XLSX)"
+  },
+  "columnRole": {
+    "feature": "Feature",
+    "label": "Label",
+    "id": "ID",
+    "ignore": "Ignore"
+  },
+  "preview": {
+    "title": "Preview",
+    "version": "Version",
+    "search": "Search all columns…",
+    "sortBy": "Sort column",
+    "desc": "Descending",
+    "export": "Export",
+    "exportCsv": "Export CSV",
+    "exportParquet": "Export Parquet",
+    "empty": "No data. Upload a version first.",
+    "noVersion": "Upload a version first"
+  },
+  "links": {
+    "title": "Linked registry entities",
+    "add": "Add link",
+    "project": "Project",
+    "kind": "Kind",
+    "entity": "Entity",
+    "empty": "No links",
+    "removeTitle": "Remove link?",
+    "kindPlaceholder": "e.g. derived_from"
+  }
+}

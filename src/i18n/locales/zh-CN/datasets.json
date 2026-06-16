@@ -1,0 +1,98 @@
+{
+  "title": "数据集",
+  "subtitle": "企业级数据资产（独立于项目，按可见性共享）",
+  "columns": {
+    "name": "名称",
+    "visibility": "可见性",
+    "owner": "所有者",
+    "version": "版本"
+  },
+  "visibility": { "private": "私有", "org": "组织可见", "public": "企业公开" },
+  "create": {
+    "title": "新建数据集",
+    "name": "名称",
+    "namePlaceholder": "数据集名称",
+    "description": "描述",
+    "descriptionPlaceholder": "可选描述",
+    "visibility": "可见性",
+    "submit": "创建",
+    "nameRequired": "请输入名称"
+  },
+  "edit": { "title": "编辑数据集" },
+  "row": { "open": "打开", "edit": "编辑", "delete": "删除" },
+  "empty": {
+    "title": "还没有数据集",
+    "description": "创建数据集并上传 CSV/Excel 版本，预览、导出、关联 Registry 实体。"
+  },
+  "delete": {
+    "title": "删除数据集？",
+    "description": "将软删除「{{name}}」。",
+    "confirm": "删除"
+  },
+  "toast": {
+    "created": "数据集已创建",
+    "updated": "数据集已更新",
+    "deleted": "数据集已删除",
+    "uploaded": "新版本已上传",
+    "rolesSaved": "列角色已保存",
+    "linkAdded": "已关联实体",
+    "linkRemoved": "已取消关联"
+  },
+  "you": "（你）",
+  "tabs": {
+    "overview": "概览",
+    "versions": "版本",
+    "preview": "预览",
+    "links": "关联"
+  },
+  "overview": {
+    "id": "ID",
+    "owner": "所有者",
+    "visibility": "可见性",
+    "version": "版本",
+    "description": "描述",
+    "none": "（无）"
+  },
+  "versions": {
+    "title": "版本",
+    "upload": "上传新版本",
+    "uploading": "上传中…",
+    "empty": "还没有版本，上传 CSV 或 Excel 文件。",
+    "versionNo": "版本号",
+    "format": "格式",
+    "rows": "行数",
+    "size": "大小",
+    "columns": "列",
+    "roles": "列角色（AI-ready）",
+    "saveRoles": "保存列角色",
+    "pickFile": "选择文件（CSV/XLSX）"
+  },
+  "columnRole": {
+    "feature": "特征",
+    "label": "标签",
+    "id": "标识",
+    "ignore": "忽略"
+  },
+  "preview": {
+    "title": "预览",
+    "version": "版本",
+    "search": "全列搜索…",
+    "sortBy": "排序列",
+    "desc": "降序",
+    "export": "导出",
+    "exportCsv": "导出 CSV",
+    "exportParquet": "导出 Parquet",
+    "empty": "暂无数据，请先上传版本。",
+    "noVersion": "请先上传一个版本"
+  },
+  "links": {
+    "title": "关联的 Registry 实体",
+    "add": "新增关联",
+    "project": "项目",
+    "kind": "关系",
+    "entity": "实体",
+    "empty": "暂无关联",
+    "removeTitle": "取消关联？",
+    "kindPlaceholder": "如 derived_from"
+  }
+}
