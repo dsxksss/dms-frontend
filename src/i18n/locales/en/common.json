@@ -1,0 +1,66 @@
+{
+  "app": {
+    "name": "DMS Data Platform",
+    "shortName": "DMS",
+    "tagline": "Data asset management for drug R&D"
+  },
+  "nav": {
+    "projects": "Projects",
+    "organizations": "Organizations",
+    "audit": "Audit log",
+    "settings": "Settings"
+  },
+  "actions": {
+    "getStarted": "Get started",
+    "create": "Create",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "close": "Close",
+    "search": "Search",
+    "filter": "Filter",
+    "refresh": "Refresh",
+    "export": "Export",
+    "upload": "Upload",
+    "download": "Download",
+    "back": "Back",
+    "more": "More"
+  },
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "lang": {
+    "label": "Language",
+    "zh-CN": "简体中文",
+    "en": "English"
+  },
+  "table": {
+    "empty": "No data",
+    "loading": "Loading",
+    "rowsPerPage": "Rows per page",
+    "of": "of",
+    "page": "Page {{page}}",
+    "total": "{{total}} total"
+  },
+  "state": {
+    "empty": "Nothing here yet",
+    "error": "Something went wrong",
+    "retry": "Retry",
+    "loading": "Loading…"
+  },
+  "error": {
+    "network": "Network error, please try again",
+    "unauthorized": "Session expired, please sign in again",
+    "forbidden": "You do not have permission for this action",
+    "notFound": "Resource not found",
+    "conflict": "This record was changed by someone else, please refresh",
+    "validation": "Some fields are invalid, please check",
+    "server": "Server error",
+    "unknown": "Unknown error"
+  }
+}
