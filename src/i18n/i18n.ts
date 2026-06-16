@@ -18,6 +18,8 @@ import zhAudit from './locales/zh-CN/audit.json'
 import enAudit from './locales/en/audit.json'
 import zhOrgs from './locales/zh-CN/orgs.json'
 import enOrgs from './locales/en/orgs.json'
+import zhProtocols from './locales/zh-CN/protocols.json'
+import enProtocols from './locales/en/protocols.json'
 import zhMembership from './locales/zh-CN/membership.json'
 import enMembership from './locales/en/membership.json'
 
@@ -35,6 +37,7 @@ export const resources = {
     audit: zhAudit,
     orgs: zhOrgs,
     membership: zhMembership,
+    protocols: zhProtocols,
   },
   en: {
     common: enCommon,
@@ -46,6 +49,7 @@ export const resources = {
     audit: enAudit,
     orgs: enOrgs,
     membership: enMembership,
+    protocols: enProtocols,
   },
 } as const
 
@@ -67,6 +71,7 @@ void i18n
       'audit',
       'orgs',
       'membership',
+      'protocols',
     ],
     interpolation: { escapeValue: false },
     detection: {

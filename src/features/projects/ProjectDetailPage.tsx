@@ -12,6 +12,7 @@ import { Can } from '@/auth/Can'
 import { useProject } from '@/hooks/use-projects'
 import { shortId } from '@/lib/format'
 import { RegistryTab } from '@/features/registry/RegistryTab'
+import { ProtocolsTab } from '@/features/protocols/ProtocolsTab'
 import { FilesPanel } from '@/features/files/FilesPanel'
 import { MembersPanel } from './MembersPanel'
 import { CreateProjectDialog } from './CreateProjectDialog'
@@ -77,6 +78,7 @@ export function ProjectDetailPage() {
           <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
           <TabsTrigger value="members">{t('tabs.members')}</TabsTrigger>
           <TabsTrigger value="registry">{t('tabs.registry')}</TabsTrigger>
+          <TabsTrigger value="protocols">{t('tabs.protocols')}</TabsTrigger>
           <TabsTrigger value="files">{t('tabs.files')}</TabsTrigger>
         </TabsList>
 
@@ -102,6 +104,9 @@ export function ProjectDetailPage() {
         </TabsContent>
         <TabsContent value="registry" className="pt-4">
           <RegistryTab projectId={id} />
+        </TabsContent>
+        <TabsContent value="protocols" className="pt-4">
+          <ProtocolsTab projectId={id} />
         </TabsContent>
         <TabsContent value="files" className="pt-4">
           <FilesPanel projectId={id} />

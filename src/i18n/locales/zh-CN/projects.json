@@ -55,7 +55,8 @@
     "members": "成员",
     "registry": "Registry",
     "datasets": "数据集",
-    "files": "文件"
+    "files": "文件",
+    "protocols": "实验方案"
   },
   "overview": {
     "id": "ID",
