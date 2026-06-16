@@ -14,6 +14,8 @@ export interface AuditEntry {
   entity_id: string
   changes: unknown
   request_id: string | null
+  parent_type: string | null
+  parent_id: string | null
 }
 
 export interface AuditParams {

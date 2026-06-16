@@ -89,6 +89,11 @@ export function AuditPage() {
             <span className="text-muted-foreground font-mono text-xs">
               {shortId(row.original.entity_id)}
             </span>
+            {row.original.parent_type && (
+              <span className="text-muted-foreground text-xs">
+                ↳ {row.original.parent_type} {shortId(row.original.parent_id)}
+              </span>
+            )}
           </div>
         ),
       },
