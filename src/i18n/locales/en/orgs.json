@@ -1,0 +1,66 @@
+{
+  "title": "Organizations",
+  "subtitle": "Organizations, teams and scoped role grants",
+  "create": {
+    "title": "New organization",
+    "slug": "Slug",
+    "slugPlaceholder": "e.g. research",
+    "name": "Name",
+    "namePlaceholder": "e.g. R&D Center",
+    "submit": "Create",
+    "slugRequired": "Slug is required",
+    "nameRequired": "Name is required"
+  },
+  "columns": { "name": "Name", "slug": "Slug" },
+  "empty": "No organizations yet",
+  "emptyDesc": "Create an organization to hold teams and projects.",
+  "created": "Organization created",
+  "addMember": {
+    "title": "Add organization member",
+    "userId": "User ID",
+    "userIdPlaceholder": "User UUID",
+    "role": "Role",
+    "submit": "Add",
+    "added": "Member added",
+    "userRequired": "User ID is required"
+  },
+  "orgRole": { "admin": "Admin", "member": "Member" },
+  "teams": {
+    "title": "Teams",
+    "create": "New team",
+    "slug": "Slug",
+    "name": "Name",
+    "empty": "No teams",
+    "created": "Team created",
+    "addMember": "Add team member"
+  },
+  "grants": {
+    "title": "Role grants",
+    "desc": "Grant a role to a user or team, scoped to tenant/org/team/resource.",
+    "principalType": "Principal type",
+    "principalId": "Principal ID",
+    "roleKey": "Role key",
+    "scopeType": "Scope type",
+    "scopeId": "Scope ID",
+    "resourceType": "Resource type",
+    "grant": "Grant",
+    "revoke": "Revoke",
+    "granted": "Granted",
+    "revoked": "Revoked",
+    "principal": { "user": "User", "team": "Team" },
+    "scope": {
+      "tenant": "Tenant",
+      "organization": "Organization",
+      "team": "Team",
+      "resource": "Resource"
+    }
+  },
+  "permissions": {
+    "title": "My effective permissions",
+    "desc": "Cumulative permissions on the tenant plus an optional extra scope.",
+    "organization": "Organization ID (optional)",
+    "check": "Check",
+    "empty": "None"
+  },
+  "tabs": { "teams": "Teams", "members": "Members", "grants": "Role grants" }
+}

@@ -17,6 +17,7 @@ export const TEST_ME: Me = {
     'dataset:read',
     'dataset:write',
     'org:read',
+    'org:write',
     'audit:read',
   ],
 }

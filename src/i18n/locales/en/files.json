@@ -1,0 +1,30 @@
+{
+  "title": "Files",
+  "category": {
+    "all": "All categories",
+    "raw_data": "Raw data",
+    "structures": "Structures",
+    "sequences": "Sequences",
+    "reports": "Reports",
+    "datasets": "Dataset files",
+    "misc": "Misc"
+  },
+  "columns": {
+    "name": "Name",
+    "category": "Category",
+    "folder": "Folder",
+    "size": "Size",
+    "type": "Type"
+  },
+  "upload": "Upload file",
+  "uploading": "Uploading…",
+  "pickCategory": "Select category",
+  "allowedExt": "Allowed extensions: {{exts}}",
+  "invalidExt": "\"{{ext}}\" is not allowed for category {{category}}",
+  "empty": "No files yet",
+  "emptyDesc": "Pick a category, then upload (each category has an extension allowlist).",
+  "uploaded": "File uploaded",
+  "deleted": "File deleted",
+  "deleteTitle": "Delete file?",
+  "deleteDesc": "This deletes \"{{name}}\"."
+}

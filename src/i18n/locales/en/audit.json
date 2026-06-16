@@ -1,0 +1,25 @@
+{
+  "title": "Audit log",
+  "subtitle": "Who did what, when, to which item (with IP, actor, before/after)",
+  "columns": {
+    "time": "Time",
+    "user": "Actor",
+    "ip": "IP",
+    "action": "Action",
+    "event": "Event",
+    "entity": "Item",
+    "changes": "Changes"
+  },
+  "filters": {
+    "entityType": "Item type",
+    "entityTypePlaceholder": "e.g. project / entity / dataset",
+    "actor": "Actor ID",
+    "actorPlaceholder": "User UUID",
+    "apply": "Apply",
+    "clear": "Clear"
+  },
+  "empty": "No audit entries",
+  "none": "—",
+  "viewChanges": "View changes",
+  "changesTitle": "Before / after"
+}

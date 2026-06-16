@@ -12,13 +12,9 @@ import { Can } from '@/auth/Can'
 import { useProject } from '@/hooks/use-projects'
 import { shortId } from '@/lib/format'
 import { RegistryTab } from '@/features/registry/RegistryTab'
+import { FilesPanel } from '@/features/files/FilesPanel'
 import { MembersPanel } from './MembersPanel'
 import { CreateProjectDialog } from './CreateProjectDialog'
-
-function ComingSoon() {
-  const { t } = useTranslation('projects')
-  return <EmptyState title={t('comingSoon')} />
-}
 
 export function ProjectDetailPage() {
   const { id = '' } = useParams()
@@ -108,7 +104,7 @@ export function ProjectDetailPage() {
           <RegistryTab projectId={id} />
         </TabsContent>
         <TabsContent value="files" className="pt-4">
-          <ComingSoon />
+          <FilesPanel projectId={id} />
         </TabsContent>
       </Tabs>
 

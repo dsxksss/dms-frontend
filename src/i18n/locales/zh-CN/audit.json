@@ -1,0 +1,25 @@
+{
+  "title": "审计日志",
+  "subtitle": "谁、何时、对什么做了什么（含 IP、操作者、前后变更）",
+  "columns": {
+    "time": "时间",
+    "user": "操作者",
+    "ip": "IP",
+    "action": "动作",
+    "event": "事件",
+    "entity": "对象",
+    "changes": "变更"
+  },
+  "filters": {
+    "entityType": "对象类型",
+    "entityTypePlaceholder": "如 project / entity / dataset",
+    "actor": "操作者 ID",
+    "actorPlaceholder": "用户 UUID",
+    "apply": "筛选",
+    "clear": "清除"
+  },
+  "empty": "暂无审计记录",
+  "none": "—",
+  "viewChanges": "查看变更",
+  "changesTitle": "前后变更"
+}

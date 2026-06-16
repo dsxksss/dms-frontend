@@ -1,12 +1,14 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { ProtectedRoute } from '@/auth/ProtectedRoute'
 import { AppLayout } from '@/components/app-layout'
-import { ComingSoonPage } from '@/components/coming-soon'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { ProjectsListPage } from '@/features/projects/ProjectsListPage'
 import { ProjectDetailPage } from '@/features/projects/ProjectDetailPage'
 import { DatasetsListPage } from '@/features/datasets/DatasetsListPage'
 import { DatasetDetailPage } from '@/features/datasets/DatasetDetailPage'
+import { OrgsListPage } from '@/features/orgs/OrgsListPage'
+import { OrgDetailPage } from '@/features/orgs/OrgDetailPage'
+import { AuditPage } from '@/features/audit/AuditPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 
 export const router = createBrowserRouter([
@@ -22,8 +24,9 @@ export const router = createBrowserRouter([
           { path: 'projects/:id', element: <ProjectDetailPage /> },
           { path: 'datasets', element: <DatasetsListPage /> },
           { path: 'datasets/:id', element: <DatasetDetailPage /> },
-          { path: 'orgs', element: <ComingSoonPage titleKey="nav.organizations" /> },
-          { path: 'audit', element: <ComingSoonPage titleKey="nav.audit" /> },
+          { path: 'orgs', element: <OrgsListPage /> },
+          { path: 'orgs/:id', element: <OrgDetailPage /> },
+          { path: 'audit', element: <AuditPage /> },
           { path: 'settings', element: <SettingsPage /> },
         ],
       },

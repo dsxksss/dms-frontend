@@ -1,0 +1,66 @@
+{
+  "title": "组织",
+  "subtitle": "企业内的组织与团队、作用域角色授予",
+  "create": {
+    "title": "新建组织",
+    "slug": "标识 slug",
+    "slugPlaceholder": "如 research",
+    "name": "名称",
+    "namePlaceholder": "如 研发中心",
+    "submit": "创建",
+    "slugRequired": "请输入 slug",
+    "nameRequired": "请输入名称"
+  },
+  "columns": { "name": "名称", "slug": "标识" },
+  "empty": "还没有组织",
+  "emptyDesc": "创建组织来承载团队与项目。",
+  "created": "组织已创建",
+  "addMember": {
+    "title": "添加组织成员",
+    "userId": "用户 ID",
+    "userIdPlaceholder": "用户 UUID",
+    "role": "角色",
+    "submit": "添加",
+    "added": "成员已添加",
+    "userRequired": "请输入用户 ID"
+  },
+  "orgRole": { "admin": "管理员", "member": "成员" },
+  "teams": {
+    "title": "团队",
+    "create": "新建团队",
+    "slug": "标识 slug",
+    "name": "名称",
+    "empty": "暂无团队",
+    "created": "团队已创建",
+    "addMember": "添加团队成员"
+  },
+  "grants": {
+    "title": "角色授予",
+    "desc": "把角色按作用域（租户/组织/团队/资源）授予用户或团队。",
+    "principalType": "主体类型",
+    "principalId": "主体 ID",
+    "roleKey": "角色 key",
+    "scopeType": "作用域类型",
+    "scopeId": "作用域 ID",
+    "resourceType": "资源类型",
+    "grant": "授予",
+    "revoke": "撤销",
+    "granted": "已授予",
+    "revoked": "已撤销",
+    "principal": { "user": "用户", "team": "团队" },
+    "scope": {
+      "tenant": "租户",
+      "organization": "组织",
+      "team": "团队",
+      "resource": "资源"
+    }
+  },
+  "permissions": {
+    "title": "我的有效权限",
+    "desc": "当前用户在「租户 + 可选附加作用域」上的累积权限。",
+    "organization": "组织 ID（可选）",
+    "check": "查询",
+    "empty": "无"
+  },
+  "tabs": { "teams": "团队", "members": "成员", "grants": "角色授予" }
+}

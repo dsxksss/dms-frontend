@@ -12,6 +12,12 @@ import zhRegistry from './locales/zh-CN/registry.json'
 import enRegistry from './locales/en/registry.json'
 import zhDatasets from './locales/zh-CN/datasets.json'
 import enDatasets from './locales/en/datasets.json'
+import zhFiles from './locales/zh-CN/files.json'
+import enFiles from './locales/en/files.json'
+import zhAudit from './locales/zh-CN/audit.json'
+import enAudit from './locales/en/audit.json'
+import zhOrgs from './locales/zh-CN/orgs.json'
+import enOrgs from './locales/en/orgs.json'
 
 export const SUPPORTED_LANGS = ['zh-CN', 'en'] as const
 export type Lang = (typeof SUPPORTED_LANGS)[number]
@@ -23,6 +29,9 @@ export const resources = {
     projects: zhProjects,
     registry: zhRegistry,
     datasets: zhDatasets,
+    files: zhFiles,
+    audit: zhAudit,
+    orgs: zhOrgs,
   },
   en: {
     common: enCommon,
@@ -30,6 +39,9 @@ export const resources = {
     projects: enProjects,
     registry: enRegistry,
     datasets: enDatasets,
+    files: enFiles,
+    audit: enAudit,
+    orgs: enOrgs,
   },
 } as const
 
@@ -41,7 +53,16 @@ void i18n
     fallbackLng: 'zh-CN',
     supportedLngs: SUPPORTED_LANGS as unknown as string[],
     defaultNS: 'common',
-    ns: ['common', 'auth', 'projects', 'registry', 'datasets'],
+    ns: [
+      'common',
+      'auth',
+      'projects',
+      'registry',
+      'datasets',
+      'files',
+      'audit',
+      'orgs',
+    ],
     interpolation: { escapeValue: false },
     detection: {
       order: ['localStorage', 'navigator'],
