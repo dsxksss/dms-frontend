@@ -13,12 +13,19 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { LangToggle } from '@/components/lang-toggle'
 import { useAuth } from '@/auth/auth-context'
 import { errorI18nKey, isAppError } from '@/lib/errors'
+import { tenantFromHost } from '@/lib/tenant'
 
 const LAST_TENANT_KEY = 'dms-last-tenant'
 
 function readDefaultTenant(): string | undefined {
   const env = (import.meta.env.VITE_DEFAULT_TENANT as string | undefined)?.trim()
   return env || undefined
+}
+
+/** 部署在租户子域名(如 acme.dms.app)时由 Host 推断租户，与后端规则一致。 */
+function readHostTenant(): string | undefined {
+  const suffix = (import.meta.env.VITE_TENANT_HOST_SUFFIX as string | undefined)?.trim()
+  return tenantFromHost(window.location.hostname, suffix) ?? undefined
 }
 
 export function LoginPage() {
@@ -30,13 +37,17 @@ export function LoginPage() {
   const [searchParams] = useSearchParams()
   const from = (location.state as { from?: string } | null)?.from ?? '/'
 
-  // 租户解析优先级：邀请链接 ?tenant= → 上次登录 → 部署默认(env) → 空。
+  // 租户解析优先级：子域名 Host → 邀请链接 ?tenant= → 上次登录 → 部署默认(env) → 空。
+  const hostTenant = readHostTenant()
   const urlTenant = searchParams.get('tenant')?.trim() || undefined
   const lastTenant = localStorage.getItem(LAST_TENANT_KEY) || undefined
   const defaultTenant = readDefaultTenant()
-  const initialTenant = urlTenant ?? lastTenant ?? defaultTenant ?? ''
-  // 租户已由链接/部署默认确定时，默认隐藏输入（普通用户无需关心）。
-  const [showTenant, setShowTenant] = useState(!(urlTenant || defaultTenant))
+  const initialTenant =
+    hostTenant ?? urlTenant ?? lastTenant ?? defaultTenant ?? ''
+  // 租户已由子域名/链接/部署默认确定时，默认隐藏输入（普通用户无需关心）。
+  const [showTenant, setShowTenant] = useState(
+    !(hostTenant || urlTenant || defaultTenant),
+  )
 
   const schema = z.object({
     tenant: z.string().min(1, t('login.required.tenant')),
