@@ -23,6 +23,7 @@ import {
 import { Pagination } from '@/components/pagination'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
 import { useDatasetPreview } from '@/hooks/use-datasets'
+import { useDebounce } from '@/hooks/use-debounce'
 import { useToastError } from '@/hooks/use-toast-error'
 import { datasetsApi } from '@/api/datasets'
 
@@ -34,9 +35,10 @@ export function DatasetPreviewPanel({ datasetId }: { datasetId: string }) {
   const [desc, setDesc] = useState(false)
   const [page, setPage] = useState({ limit: 20, offset: 0 })
 
+  const debouncedSearch = useDebounce(search, 300)
   const params = {
     ...page,
-    search: search || undefined,
+    search: debouncedSearch || undefined,
     sort: sort || undefined,
     desc,
   }
