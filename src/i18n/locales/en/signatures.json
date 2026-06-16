@@ -40,5 +40,7 @@
   "filterTarget": "Target type",
   "allTargets": "All targets",
   "onTarget": "Signatures on this item",
-  "none": "No signatures"
+  "none": "No signatures",
+  "export": "Export CSV",
+  "needApprovedToComplete": "An approved e-signature on this run is required before completion"
 }

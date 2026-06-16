@@ -40,5 +40,7 @@
   "filterTarget": "对象类型",
   "allTargets": "全部对象",
   "onTarget": "本对象的签名",
-  "none": "暂无签名"
+  "none": "暂无签名",
+  "export": "导出 CSV",
+  "needApprovedToComplete": "完成前需对本 Run 做 approved 电子签名"
 }

@@ -1,11 +1,15 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ColumnDef } from '@tanstack/react-table'
+import { Download } from 'lucide-react'
 
 import { DataTable } from '@/components/data-table'
 import { EmptyState } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { useToastError } from '@/hooks/use-toast-error'
+import { signaturesApi } from '@/api/signatures'
 import {
   Select,
   SelectContent,
@@ -21,6 +25,7 @@ const TARGET_KINDS = ['run', 'dataset', 'entity', 'file', 'protocol']
 
 export function SignaturesPanel({ projectId }: { projectId: string }) {
   const { t } = useTranslation('signatures')
+  const toastError = useToastError()
   const [kind, setKind] = useState('')
   const [page, setPage] = useState({ limit: 20, offset: 0 })
   const query = useSignatures(projectId, {
@@ -89,27 +94,40 @@ export function SignaturesPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="space-y-1.5">
-        <Label>{t('filterTarget')}</Label>
-        <Select
-          value={kind || 'all'}
-          onValueChange={(v) => {
-            setKind(v === 'all' ? '' : v)
-            setPage((p) => ({ ...p, offset: 0 }))
-          }}
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="space-y-1.5">
+          <Label>{t('filterTarget')}</Label>
+          <Select
+            value={kind || 'all'}
+            onValueChange={(v) => {
+              setKind(v === 'all' ? '' : v)
+              setPage((p) => ({ ...p, offset: 0 }))
+            }}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('allTargets')}</SelectItem>
+              {TARGET_KINDS.map((k) => (
+                <SelectItem key={k} value={k}>
+                  {t(`targetKind.${k}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button
+          variant="outline"
+          onClick={() =>
+            signaturesApi
+              .exportCsv(projectId, { target_kind: kind || undefined })
+              .catch(toastError)
+          }
         >
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('allTargets')}</SelectItem>
-            {TARGET_KINDS.map((k) => (
-              <SelectItem key={k} value={k}>
-                {t(`targetKind.${k}`)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <Download className="size-4" />
+          {t('export')}
+        </Button>
       </div>
 
       <DataTable

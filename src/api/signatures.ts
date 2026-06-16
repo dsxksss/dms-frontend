@@ -1,4 +1,4 @@
-import { request } from '@/api/client'
+import { download, request } from '@/api/client'
 import type { Paginated } from '@/api/types'
 
 export type SignatureMeaning =
@@ -47,4 +47,11 @@ export const signaturesApi = {
     request<Signature>(`${base(projectId)}/${sid}`),
   sign: (projectId: string, body: SignBody) =>
     request<Signature>(base(projectId), { method: 'POST', body }),
+  exportCsv: (
+    projectId: string,
+    params: { target_kind?: string; target_id?: string } = {},
+  ) =>
+    download(`${base(projectId)}/export`, 'signatures.csv', {
+      query: { ...params },
+    }),
 }

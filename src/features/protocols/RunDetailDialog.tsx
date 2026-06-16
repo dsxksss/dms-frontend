@@ -25,6 +25,7 @@ import { SchemaForm } from '@/features/registry/SchemaForm'
 import { EntityPicker } from '@/features/registry/EntityPicker'
 import { SignDialog } from '@/features/signatures/SignDialog'
 import { SignaturesList } from '@/features/signatures/SignaturesList'
+import { useSignatures } from '@/hooks/use-signatures'
 import { useProjectRole } from '@/hooks/use-projects'
 import { useDatasets } from '@/hooks/use-datasets'
 import {
@@ -178,6 +179,15 @@ export function RunDetailDialog({
 
   const [forms, setForms] = useState<Record<string, FormValues>>({})
   const [signOpen, setSignOpen] = useState(false)
+
+  // 强制签名：Run 须有 approved 签名才能标记完成（与后端校验一致，避免 422）。
+  const runSigs = useSignatures(
+    projectId,
+    { target_kind: 'run', target_id: runId },
+    open,
+  )
+  const hasApproved =
+    runSigs.data?.items.some((s) => s.meaning === 'approved') ?? false
   useEffect(() => {
     if (run) {
       const next: Record<string, FormValues> = {}
@@ -259,24 +269,35 @@ export function RunDetailDialog({
 
             {/* status transitions */}
             {canContribute && run.status !== 'completed' && run.status !== 'aborted' && (
-              <div className="flex flex-wrap gap-2">
-                {run.status === 'draft' && (
-                  <Button size="sm" onClick={() => changeStatus('in_progress')}>
-                    {t('status.toInProgress')}
+              <div className="space-y-1.5">
+                <div className="flex flex-wrap gap-2">
+                  {run.status === 'draft' && (
+                    <Button size="sm" onClick={() => changeStatus('in_progress')}>
+                      {t('status.toInProgress')}
+                    </Button>
+                  )}
+                  {run.status === 'in_progress' && (
+                    <Button
+                      size="sm"
+                      onClick={() => changeStatus('completed')}
+                      disabled={!hasApproved}
+                    >
+                      {t('status.toCompleted')}
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => changeStatus('aborted')}
+                  >
+                    {t('status.toAborted')}
                   </Button>
+                </div>
+                {run.status === 'in_progress' && !hasApproved && (
+                  <p className="text-muted-foreground text-xs">
+                    {t('needApprovedToComplete', { ns: 'signatures' })}
+                  </p>
                 )}
-                {run.status === 'in_progress' && (
-                  <Button size="sm" onClick={() => changeStatus('completed')}>
-                    {t('status.toCompleted')}
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => changeStatus('aborted')}
-                >
-                  {t('status.toAborted')}
-                </Button>
               </div>
             )}
 
