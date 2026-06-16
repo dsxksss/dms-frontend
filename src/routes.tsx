@@ -32,6 +32,10 @@ const OrgDetailPage = lazyPage(
   'OrgDetailPage',
 )
 const AuditPage = lazyPage(() => import('@/features/audit/AuditPage'), 'AuditPage')
+const InboxPage = lazyPage(
+  () => import('@/features/membership/InboxPage'),
+  'InboxPage',
+)
 const SettingsPage = lazyPage(
   () => import('@/features/settings/SettingsPage'),
   'SettingsPage',
@@ -52,6 +56,7 @@ export const router = createBrowserRouter([
           { path: 'datasets/:id', element: <DatasetDetailPage /> },
           { path: 'orgs', element: <OrgsListPage /> },
           { path: 'orgs/:id', element: <OrgDetailPage /> },
+          { path: 'inbox', element: <InboxPage /> },
           { path: 'audit', element: <AuditPage /> },
           { path: 'settings', element: <SettingsPage /> },
         ],

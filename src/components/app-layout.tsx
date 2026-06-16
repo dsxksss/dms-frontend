@@ -7,6 +7,7 @@ import {
   FolderKanban,
   Loader2,
   LogOut,
+  Mail,
   Menu,
   ScrollText,
   Settings,
@@ -37,6 +38,7 @@ const NAV: NavItem[] = [
   { to: '/projects', labelKey: 'nav.projects', icon: FolderKanban },
   { to: '/datasets', labelKey: 'nav.datasets', icon: Database, perm: 'dataset:read' },
   { to: '/orgs', labelKey: 'nav.organizations', icon: Building2, perm: 'org:read' },
+  { to: '/inbox', labelKey: 'nav.inbox', icon: Mail },
   { to: '/audit', labelKey: 'nav.audit', icon: ScrollText, perm: 'audit:read' },
   { to: '/settings', labelKey: 'nav.settings', icon: Settings },
 ]

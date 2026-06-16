@@ -1,0 +1,78 @@
+{
+  "userPicker": {
+    "search": "搜索用户（姓名/邮箱）",
+    "placeholder": "输入姓名或邮箱搜索…",
+    "empty": "无匹配用户",
+    "hint": "按姓名或邮箱搜索并选择",
+    "selected": "已选 {{count}} 人"
+  },
+  "invite": {
+    "title": "邀请成员",
+    "role": "角色",
+    "message": "附言",
+    "messagePlaceholder": "可选，给被邀人的说明",
+    "send": "发送邀请",
+    "sent": "邀请已发送",
+    "result": "已邀请 {{created}} 人，跳过 {{skipped}} 人",
+    "pending": "待处理邀请",
+    "noPending": "暂无待处理邀请",
+    "revoke": "撤销",
+    "revokeTitle": "撤销邀请？",
+    "noUsers": "请先选择用户",
+    "reason": {
+      "already_member": "已是成员",
+      "already_invited": "已邀请",
+      "not_in_org": "不在所属组织",
+      "user_not_found": "用户不存在"
+    }
+  },
+  "members": {
+    "title": "成员",
+    "invite": "邀请成员",
+    "role": "角色",
+    "remove": "移除",
+    "removeTitle": "移除成员？",
+    "removeDesc": "将从中移除该成员。",
+    "empty": "暂无成员",
+    "you": "（你）",
+    "removed": "成员已移除",
+    "roleUpdated": "角色已更新"
+  },
+  "inbox": {
+    "title": "邀请与申请",
+    "subtitle": "你收到的邀请、提交的加入申请",
+    "tabInvitations": "我的邀请",
+    "tabJoinRequests": "我的申请",
+    "tabDiscover": "发现组织",
+    "accept": "接受",
+    "decline": "拒绝",
+    "accepted": "已接受",
+    "declined": "已拒绝",
+    "noInvitations": "暂无邀请",
+    "noJoinRequests": "暂无申请",
+    "from": "来自",
+    "cancel": "撤回",
+    "cancelled": "已撤回",
+    "kind": { "org": "组织", "project": "项目" }
+  },
+  "discover": {
+    "title": "可加入的组织",
+    "search": "搜索组织…",
+    "request": "申请加入",
+    "requested": "申请已提交",
+    "empty": "暂无可发现的组织",
+    "message": "附言（可选）"
+  },
+  "joinAdmin": {
+    "title": "加入申请",
+    "approve": "通过",
+    "reject": "拒绝",
+    "approved": "已通过",
+    "rejected": "已拒绝",
+    "empty": "暂无申请"
+  },
+  "org": {
+    "discoverable": "允许被发现/申请加入",
+    "updated": "组织已更新"
+  }
+}

@@ -62,5 +62,5 @@
     "check": "Check",
     "empty": "None"
   },
-  "tabs": { "teams": "Teams", "members": "Members", "grants": "Role grants" }
+  "tabs": { "teams": "Teams", "members": "Members", "grants": "Role grants", "join": "Join requests" }
 }

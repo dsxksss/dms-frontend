@@ -1,0 +1,78 @@
+{
+  "userPicker": {
+    "search": "Search users (name/email)",
+    "placeholder": "Type a name or email…",
+    "empty": "No matching users",
+    "hint": "Search by name or email and select",
+    "selected": "{{count}} selected"
+  },
+  "invite": {
+    "title": "Invite members",
+    "role": "Role",
+    "message": "Message",
+    "messagePlaceholder": "Optional note to the invitee",
+    "send": "Send invitations",
+    "sent": "Invitations sent",
+    "result": "Invited {{created}}, skipped {{skipped}}",
+    "pending": "Pending invitations",
+    "noPending": "No pending invitations",
+    "revoke": "Revoke",
+    "revokeTitle": "Revoke invitation?",
+    "noUsers": "Select users first",
+    "reason": {
+      "already_member": "already a member",
+      "already_invited": "already invited",
+      "not_in_org": "not in the organization",
+      "user_not_found": "user not found"
+    }
+  },
+  "members": {
+    "title": "Members",
+    "invite": "Invite members",
+    "role": "Role",
+    "remove": "Remove",
+    "removeTitle": "Remove member?",
+    "removeDesc": "This removes the member.",
+    "empty": "No members",
+    "you": "(you)",
+    "removed": "Member removed",
+    "roleUpdated": "Role updated"
+  },
+  "inbox": {
+    "title": "Invitations & requests",
+    "subtitle": "Invitations you received and join requests you submitted",
+    "tabInvitations": "My invitations",
+    "tabJoinRequests": "My requests",
+    "tabDiscover": "Discover",
+    "accept": "Accept",
+    "decline": "Decline",
+    "accepted": "Accepted",
+    "declined": "Declined",
+    "noInvitations": "No invitations",
+    "noJoinRequests": "No requests",
+    "from": "from",
+    "cancel": "Withdraw",
+    "cancelled": "Withdrawn",
+    "kind": { "org": "Organization", "project": "Project" }
+  },
+  "discover": {
+    "title": "Organizations you can join",
+    "search": "Search organizations…",
+    "request": "Request to join",
+    "requested": "Request submitted",
+    "empty": "No discoverable organizations",
+    "message": "Message (optional)"
+  },
+  "joinAdmin": {
+    "title": "Join requests",
+    "approve": "Approve",
+    "reject": "Reject",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "empty": "No requests"
+  },
+  "org": {
+    "discoverable": "Discoverable / accept join requests",
+    "updated": "Organization updated"
+  }
+}

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Loader2, Plus, UserPlus } from 'lucide-react'
+import { ArrowLeft, Check, Loader2, Plus, Trash2, UserPlus, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -18,19 +18,239 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { EmptyState, TableSkeleton } from '@/components/states'
+import { ConfirmDialog } from '@/components/confirm-dialog'
+import { useCan } from '@/auth/auth-context'
 import { useToastError } from '@/hooks/use-toast-error'
+import { useCreateTeam, useGrantRole, useOrgs, useTeams } from '@/hooks/use-orgs'
 import {
-  useAddOrgMember,
-  useCreateTeam,
-  useGrantRole,
-  useOrgs,
-  useTeams,
-} from '@/hooks/use-orgs'
+  useApproveJoinRequest,
+  useInviteToOrg,
+  useOrgInvitations,
+  useOrgJoinRequests,
+  useOrgMembers,
+  useRejectJoinRequest,
+  useRemoveOrgMember,
+  useRevokeInvitation,
+  useSetOrgMemberRole,
+} from '@/hooks/use-membership'
+import { membershipApi } from '@/api/membership'
 import { orgsApi, type GrantRequest } from '@/api/orgs'
+import { shortId } from '@/lib/format'
+import { InvitePanel } from '@/features/membership/InvitePanel'
 import { AddMemberDialog } from './AddMemberDialog'
+
+const ORG_ROLES = ['admin', 'member']
+
+function MembersTab({ orgId }: { orgId: string }) {
+  const { t } = useTranslation('membership')
+  const { t: to } = useTranslation('orgs')
+  const canManage = useCan('org:write')
+  const members = useOrgMembers(orgId)
+  const setRole = useSetOrgMemberRole(orgId)
+  const removeM = useRemoveOrgMember(orgId)
+  const invitations = useOrgInvitations(orgId)
+  const invite = useInviteToOrg(orgId)
+  const revoke = useRevokeInvitation()
+  const toastError = useToastError()
+  const [removeId, setRemoveId] = useState<string | null>(null)
+
+  return (
+    <div className="grid gap-8 lg:grid-cols-2">
+      <div className="space-y-3">
+        <h2 className="font-medium">{t('members.title')}</h2>
+        {members.isLoading ? (
+          <TableSkeleton rows={3} cols={2} />
+        ) : members.data && members.data.length > 0 ? (
+          <ul className="divide-y rounded-md border">
+            {members.data.map((m) => (
+              <li
+                key={m.user_id}
+                className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
+              >
+                <span className="flex flex-col">
+                  <span>{m.display_name || m.email}</span>
+                  <span className="text-muted-foreground text-xs">{m.email}</span>
+                </span>
+                <span className="flex items-center gap-2">
+                  {canManage ? (
+                    <Select
+                      value={m.role}
+                      onValueChange={async (role) => {
+                        try {
+                          await setRole.mutateAsync({ userId: m.user_id, role })
+                          toast.success(t('members.roleUpdated'))
+                        } catch (e) {
+                          toastError(e)
+                        }
+                      }}
+                    >
+                      <SelectTrigger size="sm" className="w-28">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ORG_ROLES.map((r) => (
+                          <SelectItem key={r} value={r}>
+                            {to(`orgRole.${r}`)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Badge variant="secondary">{to(`orgRole.${m.role}`)}</Badge>
+                  )}
+                  {canManage && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8"
+                      onClick={() => setRemoveId(m.user_id)}
+                    >
+                      <Trash2 className="text-destructive size-4" />
+                    </Button>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <EmptyState title={t('members.empty')} />
+        )}
+      </div>
+
+      <InvitePanel
+        canInvite={canManage}
+        invite={invite}
+        invitations={invitations.data ?? []}
+        isLoading={invitations.isLoading}
+        onRevoke={async (id) => {
+          try {
+            await revoke.mutateAsync(id)
+            toast.success(t('inbox.cancelled'))
+          } catch (e) {
+            toastError(e)
+          }
+        }}
+        revoking={revoke.isPending}
+        roleOptions={ORG_ROLES}
+        defaultRole="member"
+        roleLabel={(r) => to(`orgRole.${r}`)}
+      />
+
+      <ConfirmDialog
+        open={!!removeId}
+        onOpenChange={(o) => !o && setRemoveId(null)}
+        title={t('members.removeTitle')}
+        description={t('members.removeDesc')}
+        destructive
+        loading={removeM.isPending}
+        onConfirm={async () => {
+          if (removeId) {
+            try {
+              await removeM.mutateAsync(removeId)
+              toast.success(t('members.removed'))
+            } catch (e) {
+              toastError(e)
+            }
+          }
+          setRemoveId(null)
+        }}
+      />
+    </div>
+  )
+}
+
+function JoinRequestsTab({ orgId }: { orgId: string }) {
+  const { t } = useTranslation('membership')
+  const canManage = useCan('org:write')
+  const jr = useOrgJoinRequests(orgId)
+  const approve = useApproveJoinRequest()
+  const reject = useRejectJoinRequest()
+  const toastError = useToastError()
+
+  const setDiscoverable = async (discoverable: boolean) => {
+    try {
+      await membershipApi.updateOrg(orgId, { discoverable })
+      toast.success(t('org.updated'))
+    } catch (e) {
+      toastError(e)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {canManage && (
+        <div className="flex items-center gap-2 rounded-lg border p-3">
+          <span className="text-sm">{t('org.discoverable')}</span>
+          <Button variant="outline" size="sm" onClick={() => setDiscoverable(true)}>
+            <Check className="size-4" /> On
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setDiscoverable(false)}>
+            <X className="size-4" /> Off
+          </Button>
+        </div>
+      )}
+
+      <h2 className="font-medium">{t('joinAdmin.title')}</h2>
+      {jr.isLoading ? (
+        <TableSkeleton rows={2} cols={2} />
+      ) : jr.data && jr.data.length > 0 ? (
+        <ul className="divide-y rounded-md border">
+          {jr.data.map((r) => (
+            <li
+              key={r.id}
+              className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
+            >
+              <span className="flex flex-col">
+                <span className="font-mono text-xs">{shortId(r.user_id)}</span>
+                {r.message && (
+                  <span className="text-muted-foreground text-xs">{r.message}</span>
+                )}
+              </span>
+              {canManage && (
+                <span className="flex gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        await approve.mutateAsync({ id: r.id })
+                        toast.success(t('joinAdmin.approved'))
+                      } catch (e) {
+                        toastError(e)
+                      }
+                    }}
+                  >
+                    {t('joinAdmin.approve')}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        await reject.mutateAsync(r.id)
+                        toast.success(t('joinAdmin.rejected'))
+                      } catch (e) {
+                        toastError(e)
+                      }
+                    }}
+                  >
+                    {t('joinAdmin.reject')}
+                  </Button>
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <EmptyState title={t('joinAdmin.empty')} />
+      )}
+    </div>
+  )
+}
 
 function TeamsTab({ orgId }: { orgId: string }) {
   const { t } = useTranslation('orgs')
+  const { t: tm } = useTranslation('membership')
   const teams = useTeams(orgId)
   const createTeam = useCreateTeam(orgId)
   const toastError = useToastError()
@@ -75,18 +295,18 @@ function TeamsTab({ orgId }: { orgId: string }) {
         <TableSkeleton rows={2} cols={2} />
       ) : teams.data && teams.data.length > 0 ? (
         <ul className="divide-y rounded-md border">
-          {teams.data.map((tm) => (
+          {teams.data.map((tm2) => (
             <li
-              key={tm.id}
+              key={tm2.id}
               className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
             >
               <span className="flex items-center gap-2">
-                <span className="font-medium">{tm.name}</span>
+                <span className="font-medium">{tm2.name}</span>
                 <span className="text-muted-foreground font-mono text-xs">
-                  {tm.slug}
+                  {tm2.slug}
                 </span>
               </span>
-              <Button variant="ghost" size="sm" onClick={() => setMemberTeam(tm.id)}>
+              <Button variant="ghost" size="sm" onClick={() => setMemberTeam(tm2.id)}>
                 <UserPlus className="size-4" />
                 {t('teams.addMember')}
               </Button>
@@ -104,36 +324,7 @@ function TeamsTab({ orgId }: { orgId: string }) {
         onSubmit={async (userId, role) => {
           try {
             await orgsApi.addTeamMember(memberTeam!, { user_id: userId, role })
-            toast.success(t('addMember.added'))
-          } catch (e) {
-            toastError(e)
-          }
-        }}
-      />
-    </div>
-  )
-}
-
-function MembersTab({ orgId }: { orgId: string }) {
-  const { t } = useTranslation('orgs')
-  const addMember = useAddOrgMember(orgId)
-  const toastError = useToastError()
-  const [open, setOpen] = useState(false)
-
-  return (
-    <div className="space-y-3">
-      <Button onClick={() => setOpen(true)}>
-        <UserPlus className="size-4" />
-        {t('addMember.title')}
-      </Button>
-      <AddMemberDialog
-        open={open}
-        onOpenChange={setOpen}
-        title={t('addMember.title')}
-        onSubmit={async (userId, role) => {
-          try {
-            await addMember.mutateAsync({ user_id: userId, role })
-            toast.success(t('addMember.added'))
+            toast.success(tm('members.roleUpdated'))
           } catch (e) {
             toastError(e)
           }
@@ -155,9 +346,7 @@ function GrantsTab({ orgId }: { orgId: string }) {
     scope_id: orgId,
     resource_type: '',
   })
-  const set = (k: keyof typeof form, v: string) =>
-    setForm((f) => ({ ...f, [k]: v }))
-
+  const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }))
   const body = (): GrantRequest => ({
     principal_type: form.principal_type,
     principal_id: form.principal_id,
@@ -166,23 +355,6 @@ function GrantsTab({ orgId }: { orgId: string }) {
     scope_id: form.scope_id || undefined,
     resource_type: form.resource_type || undefined,
   })
-
-  const doGrant = async () => {
-    try {
-      await grant.mutateAsync(body())
-      toast.success(t('grants.granted'))
-    } catch (e) {
-      toastError(e)
-    }
-  }
-  const doRevoke = async () => {
-    try {
-      await orgsApi.revokeRole(body())
-      toast.success(t('grants.revoked'))
-    } catch (e) {
-      toastError(e)
-    }
-  }
 
   return (
     <Card className="max-w-2xl">
@@ -247,11 +419,31 @@ function GrantsTab({ orgId }: { orgId: string }) {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button onClick={doGrant} disabled={grant.isPending}>
+          <Button
+            onClick={async () => {
+              try {
+                await grant.mutateAsync(body())
+                toast.success(t('grants.granted'))
+              } catch (e) {
+                toastError(e)
+              }
+            }}
+            disabled={grant.isPending}
+          >
             {grant.isPending && <Loader2 className="size-4 animate-spin" />}
             {t('grants.grant')}
           </Button>
-          <Button variant="outline" onClick={doRevoke}>
+          <Button
+            variant="outline"
+            onClick={async () => {
+              try {
+                await orgsApi.revokeRole(body())
+                toast.success(t('grants.revoked'))
+              } catch (e) {
+                toastError(e)
+              }
+            }}
+          >
             {t('grants.revoke')}
           </Button>
         </div>
@@ -274,9 +466,7 @@ export function OrgDetailPage() {
           <ArrowLeft className="size-4" />
         </Button>
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">
-            {org?.name ?? id}
-          </h1>
+          <h1 className="text-xl font-semibold tracking-tight">{org?.name ?? id}</h1>
           {org && (
             <Badge variant="secondary" className="font-mono text-xs">
               {org.slug}
@@ -285,17 +475,21 @@ export function OrgDetailPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="teams">
+      <Tabs defaultValue="members">
         <TabsList>
-          <TabsTrigger value="teams">{t('tabs.teams')}</TabsTrigger>
           <TabsTrigger value="members">{t('tabs.members')}</TabsTrigger>
+          <TabsTrigger value="teams">{t('tabs.teams')}</TabsTrigger>
+          <TabsTrigger value="join">{t('tabs.join')}</TabsTrigger>
           <TabsTrigger value="grants">{t('tabs.grants')}</TabsTrigger>
         </TabsList>
+        <TabsContent value="members" className="pt-4">
+          <MembersTab orgId={id} />
+        </TabsContent>
         <TabsContent value="teams" className="pt-4">
           <TeamsTab orgId={id} />
         </TabsContent>
-        <TabsContent value="members" className="pt-4">
-          <MembersTab orgId={id} />
+        <TabsContent value="join" className="pt-4">
+          <JoinRequestsTab orgId={id} />
         </TabsContent>
         <TabsContent value="grants" className="pt-4">
           <GrantsTab orgId={id} />

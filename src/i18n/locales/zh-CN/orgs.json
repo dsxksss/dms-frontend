@@ -62,5 +62,5 @@
     "check": "查询",
     "empty": "无"
   },
-  "tabs": { "teams": "团队", "members": "成员", "grants": "角色授予" }
+  "tabs": { "teams": "团队", "members": "成员", "grants": "角色授予", "join": "加入申请" }
 }

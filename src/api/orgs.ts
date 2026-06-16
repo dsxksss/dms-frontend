@@ -26,12 +26,6 @@ export const orgsApi = {
   listOrgs: () => request<Organization[]>('/v1/orgs'),
   createOrg: (body: { slug: string; name: string }) =>
     request<Organization>('/v1/orgs', { method: 'POST', body }),
-  addOrgMember: (orgId: string, body: { user_id: string; role?: string }) =>
-    request<void>(`/v1/orgs/${orgId}/members`, {
-      method: 'POST',
-      body,
-      responseType: 'void',
-    }),
   listTeams: (orgId: string) => request<Team[]>(`/v1/orgs/${orgId}/teams`),
   createTeam: (body: { organization_id: string; slug: string; name: string }) =>
     request<Team>('/v1/teams', { method: 'POST', body }),

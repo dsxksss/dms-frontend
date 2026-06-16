@@ -18,6 +18,8 @@ import zhAudit from './locales/zh-CN/audit.json'
 import enAudit from './locales/en/audit.json'
 import zhOrgs from './locales/zh-CN/orgs.json'
 import enOrgs from './locales/en/orgs.json'
+import zhMembership from './locales/zh-CN/membership.json'
+import enMembership from './locales/en/membership.json'
 
 export const SUPPORTED_LANGS = ['zh-CN', 'en'] as const
 export type Lang = (typeof SUPPORTED_LANGS)[number]
@@ -32,6 +34,7 @@ export const resources = {
     files: zhFiles,
     audit: zhAudit,
     orgs: zhOrgs,
+    membership: zhMembership,
   },
   en: {
     common: enCommon,
@@ -42,6 +45,7 @@ export const resources = {
     files: enFiles,
     audit: enAudit,
     orgs: enOrgs,
+    membership: enMembership,
   },
 } as const
 
@@ -62,6 +66,7 @@ void i18n
       'files',
       'audit',
       'orgs',
+      'membership',
     ],
     interpolation: { escapeValue: false },
     detection: {

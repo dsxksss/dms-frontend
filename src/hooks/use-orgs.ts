@@ -37,13 +37,6 @@ export function useCreateTeam(orgId: string) {
   })
 }
 
-export function useAddOrgMember(orgId: string) {
-  return useMutation({
-    mutationFn: (body: { user_id: string; role?: string }) =>
-      orgsApi.addOrgMember(orgId, body),
-  })
-}
-
 export function useGrantRole() {
   return useMutation({ mutationFn: (body: GrantRequest) => orgsApi.grantRole(body) })
 }
