@@ -51,10 +51,11 @@ describe('LoginPage', () => {
     expect(await screen.findByText('邮箱或密码不正确')).toBeInTheDocument()
   })
 
-  it('reveals the company field via the switch link', async () => {
-    const user = userEvent.setup()
+  it('never asks for a company (resolved from email/subdomain server-side)', async () => {
     renderLogin()
-    await user.click(screen.getByRole('button', { name: '指定企业' }))
-    expect(screen.getByLabelText('企业')).toBeInTheDocument()
+    expect(screen.queryByLabelText('企业')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: '指定企业' }),
+    ).not.toBeInTheDocument()
   })
 })

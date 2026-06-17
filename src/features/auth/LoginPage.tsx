@@ -27,13 +27,10 @@ export function LoginPage({ adminMode = false }: { adminMode?: boolean }) {
     (location.state as { from?: string } | null)?.from ??
     (adminMode ? '/admin' : '/')
 
-  // 租户解析：子域名 Host → ?tenant= → 上次登录 → 部署默认。解析不到交给后端按 Host/邮箱推断。
-  const resolvedTenant = resolveTenant(searchParams.get('tenant'))
-  // 默认不显示租户输入；仅当后端报“需要租户”或用户手动展开时出现。
-  const [showTenant, setShowTenant] = useState(false)
+  // 企业由后端按邮箱反查 / 子域名 / ?tenant= / 默认 自动解析，用户无需在登录时指定。
+  const resolvedTenant = resolveTenant(searchParams.get('tenant')) || undefined
 
   const schema = z.object({
-    tenant: z.string().optional(),
     email: z
       .string()
       .min(1, t('login.required.email'))
@@ -48,24 +45,22 @@ export function LoginPage({ adminMode = false }: { adminMode?: boolean }) {
     formState: { errors, isSubmitting },
   } = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { tenant: resolvedTenant, email: '', password: '' },
+    defaultValues: { email: '', password: '' },
   })
   const [formError, setFormError] = useState<string | null>(null)
 
   const onSubmit = async (values: Values) => {
     setFormError(null)
-    const tenant = values.tenant?.trim() || undefined
     try {
-      await login({ tenant, email: values.email, password: values.password })
-      if (tenant) localStorage.setItem(LAST_TENANT_KEY, tenant)
+      await login({ tenant: resolvedTenant, email: values.email, password: values.password })
+      if (resolvedTenant) localStorage.setItem(LAST_TENANT_KEY, resolvedTenant)
       navigate(from, { replace: true })
     } catch (e) {
-      if (isAppError(e) && e.kind === 'validation') {
-        // 后端无法确定租户 → 展开输入框让用户补一次。
-        setShowTenant(true)
-        setFormError(t('login.tenantNeeded'))
-      } else if (isAppError(e) && e.kind === 'unauthorized') {
+      if (isAppError(e) && e.kind === 'unauthorized') {
         setFormError(t('login.invalid'))
+      } else if (isAppError(e) && e.kind === 'validation') {
+        // 极少数：后端无法识别企业（云端邮箱反查通常已覆盖）。给出指引而非要求手填。
+        setFormError(t('login.tenantNeeded'))
       } else {
         setFormError(tc(errorI18nKey(e)))
       }
@@ -124,19 +119,6 @@ export function LoginPage({ adminMode = false }: { adminMode?: boolean }) {
             )}
           </div>
 
-          {/* 租户：默认不渲染；解析到的值由 defaultValues 保留，提交时仍带上。 */}
-          {showTenant && (
-            <div className="space-y-2">
-              <Label htmlFor="tenant">{t('login.tenant')}</Label>
-              <Input
-                id="tenant"
-                autoComplete="organization"
-                placeholder={t('login.tenantPlaceholder')}
-                {...register('tenant')}
-              />
-            </div>
-          )}
-
           {formError && (
             <div
               role="alert"
@@ -150,16 +132,6 @@ export function LoginPage({ adminMode = false }: { adminMode?: boolean }) {
             {isSubmitting && <Loader2 className="size-4 animate-spin" />}
             {isSubmitting ? t('login.submitting') : t('login.submit')}
           </Button>
-
-          {!showTenant && (
-            <button
-              type="button"
-              className="text-muted-foreground hover:text-foreground mx-auto block text-xs"
-              onClick={() => setShowTenant(true)}
-            >
-              {t('login.switchTenant')}
-            </button>
-          )}
         </form>
 
         {/* 企业开通改由平台管理员在后台进行，前台不再提供自助开通入口；这里只留普通用户注册。 */}
