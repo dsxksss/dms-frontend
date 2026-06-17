@@ -61,7 +61,7 @@ export function Pagination({
             className="size-8"
             disabled={!canPrev}
             onClick={() => onChange({ limit, offset: Math.max(0, offset - limit) })}
-            aria-label="prev"
+            aria-label={t('table.prev')}
           >
             <ChevronLeft className="size-4" />
           </Button>
@@ -71,7 +71,7 @@ export function Pagination({
             className="size-8"
             disabled={!canNext}
             onClick={() => onChange({ limit, offset: offset + limit })}
-            aria-label="next"
+            aria-label={t('table.next')}
           >
             <ChevronRight className="size-4" />
           </Button>

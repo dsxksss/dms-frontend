@@ -78,7 +78,9 @@
     "rowsPerPage": "Rows per page",
     "of": "of",
     "page": "Page {{page}}",
-    "total": "{{total}} total"
+    "total": "{{total}} total",
+    "prev": "Previous page",
+    "next": "Next page"
   },
   "state": {
     "empty": "Nothing here yet",
