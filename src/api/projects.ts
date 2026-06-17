@@ -64,8 +64,7 @@ export const projectsApi = {
   unarchive: (id: string) =>
     request<Project>(`/v1/projects/${id}/unarchive`, { method: 'POST' }),
   members: (id: string) => request<Member[]>(`/v1/projects/${id}/members`),
-  addMember: (id: string, body: Member) =>
-    request<Member>(`/v1/projects/${id}/members`, { method: 'POST', body }),
+  // 注：后端已移除「直接加项目成员」(POST .../members)，新成员一律走邀请/申请。
   removeMember: (id: string, userId: string) =>
     request<void>(`/v1/projects/${id}/members/${userId}`, {
       method: 'DELETE',

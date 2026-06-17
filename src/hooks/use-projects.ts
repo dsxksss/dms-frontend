@@ -7,7 +7,6 @@ import {
   projectsApi,
   type CreateProjectInput,
   type ListProjectsParams,
-  type Member,
   type UpdateProjectInput,
 } from '@/api/projects'
 import { useAuth } from '@/auth/auth-context'
@@ -72,14 +71,6 @@ export function useMembers(id: string) {
   return useQuery({
     queryKey: projectKeys.members(id),
     queryFn: () => projectsApi.members(id),
-  })
-}
-
-export function useAddMember(id: string) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (body: Member) => projectsApi.addMember(id, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: projectKeys.members(id) }),
   })
 }
 
