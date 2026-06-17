@@ -1,12 +1,9 @@
 import { lazy } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { ProtectedRoute } from '@/auth/ProtectedRoute'
-import { AdminProtectedRoute } from '@/auth/AdminProtectedRoute'
 import { AppLayout } from '@/components/app-layout'
-import { AdminLayout } from '@/components/admin-layout'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { SignupPage } from '@/features/auth/SignupPage'
-import { AdminLoginPage } from '@/features/admin/AdminLoginPage'
 import { PlatformRoot } from '@/platform/PlatformRoot'
 import { PlatformProtectedRoute } from '@/platform/PlatformProtectedRoute'
 import { PlatformLayout } from '@/platform/PlatformLayout'
@@ -48,14 +45,6 @@ const SettingsPage = lazyPage(
   () => import('@/features/settings/SettingsPage'),
   'SettingsPage',
 )
-const AdminOverviewPage = lazyPage(
-  () => import('@/features/admin/AdminOverviewPage'),
-  'AdminOverviewPage',
-)
-const AdminUsersPage = lazyPage(
-  () => import('@/features/admin/AdminUsersPage'),
-  'AdminUsersPage',
-)
 const PlatformOverviewPage = lazyPage(
   () => import('@/features/platform/PlatformOverviewPage'),
   'PlatformOverviewPage',
@@ -76,22 +65,6 @@ const PlatformSettingsPage = lazyPage(
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/signup', element: <SignupPage /> },
-  { path: '/system/login', element: <AdminLoginPage /> },
-  {
-    element: <AdminProtectedRoute />,
-    children: [
-      {
-        element: <AdminLayout />,
-        children: [
-          { path: 'system', element: <AdminOverviewPage /> },
-          { path: 'system/orgs', element: <OrgsListPage /> },
-          { path: 'system/orgs/:id', element: <OrgDetailPage /> },
-          { path: 'system/users', element: <AdminUsersPage /> },
-          { path: 'system/audit', element: <AuditPage /> },
-        ],
-      },
-    ],
-  },
   {
     element: <PlatformRoot />,
     children: [

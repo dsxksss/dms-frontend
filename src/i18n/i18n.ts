@@ -24,8 +24,6 @@ import zhMembership from './locales/zh-CN/membership.json'
 import enMembership from './locales/en/membership.json'
 import zhSignatures from './locales/zh-CN/signatures.json'
 import enSignatures from './locales/en/signatures.json'
-import zhAdmin from './locales/zh-CN/admin.json'
-import enAdmin from './locales/en/admin.json'
 import zhPlatform from './locales/zh-CN/platform.json'
 import enPlatform from './locales/en/platform.json'
 
@@ -45,7 +43,6 @@ export const resources = {
     membership: zhMembership,
     protocols: zhProtocols,
     signatures: zhSignatures,
-    admin: zhAdmin,
     platform: zhPlatform,
   },
   en: {
@@ -60,7 +57,6 @@ export const resources = {
     membership: enMembership,
     protocols: enProtocols,
     signatures: enSignatures,
-    admin: enAdmin,
     platform: enPlatform,
   },
 } as const
@@ -85,7 +81,6 @@ void i18n
       'membership',
       'protocols',
       'signatures',
-      'admin',
       'platform',
     ],
     interpolation: { escapeValue: false },

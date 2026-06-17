@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { orgsApi, type GrantRequest } from '@/api/orgs'
-import { useAuth, isAdmin } from '@/auth/auth-context'
+import { useAuth, hasPerm } from '@/auth/auth-context'
 
 const root = ['orgs'] as const
 
@@ -14,24 +14,19 @@ export function useOrgs() {
 }
 
 /**
- * 能否进入企业管理后台：需有管理权限 **且** 至少有一个组织。
- * 个人自助注册用户是自己工作区的 owner（含 org:write 等），但没有任何组织，
- * 对他们「后台管理」无意义，故一并以"有无组织"把关——建了组织后自动开放。
+ * 当前用户是否拥有至少一个组织。前台据此**动态显示**组织/审计等管理入口：
+ * 普通个人用户（无组织）只看到项目/数据集等基础功能；被邀请进组织或拥有组织后，
+ * 组织相关入口自动出现。无需单独的「企业管理后台」。
  */
-export function useAdminAccess() {
+export function useHasOrgs(): boolean {
   const { me } = useAuth()
-  const admin = isAdmin(me)
+  const canRead = hasPerm(me, 'org:read')
   const orgs = useQuery({
     queryKey: orgKeys.list(),
     queryFn: () => orgsApi.listOrgs(),
-    enabled: admin,
+    enabled: canRead,
   })
-  return {
-    isAdmin: admin,
-    loading: admin && orgs.isLoading,
-    hasOrgs: (orgs.data?.length ?? 0) > 0,
-    canAccess: admin && (orgs.data?.length ?? 0) > 0,
-  }
+  return canRead && (orgs.data?.length ?? 0) > 0
 }
 
 export function useCreateOrg() {

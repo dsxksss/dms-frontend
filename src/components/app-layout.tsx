@@ -1,5 +1,5 @@
 import { Suspense, useState, type ComponentType } from 'react'
-import { Link, NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Building2,
@@ -11,7 +11,6 @@ import {
   Menu,
   ScrollText,
   Settings,
-  ShieldCheck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -26,7 +25,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { LangToggle } from '@/components/lang-toggle'
 import { useAuth, hasPerm } from '@/auth/auth-context'
-import { useAdminAccess } from '@/hooks/use-orgs'
+import { useHasOrgs } from '@/hooks/use-orgs'
 import { cn } from '@/lib/utils'
 
 interface NavItem {
@@ -34,21 +33,38 @@ interface NavItem {
   labelKey: string
   icon: ComponentType<{ className?: string }>
   perm?: string
+  /** 仅在用户拥有组织时显示（组织/审计等管理类入口）。 */
+  requiresOrg?: boolean
 }
 
 const NAV: NavItem[] = [
   { to: '/projects', labelKey: 'nav.projects', icon: FolderKanban },
   { to: '/datasets', labelKey: 'nav.datasets', icon: Database, perm: 'dataset:read' },
-  { to: '/orgs', labelKey: 'nav.organizations', icon: Building2, perm: 'org:read' },
   { to: '/inbox', labelKey: 'nav.inbox', icon: Mail },
-  { to: '/audit', labelKey: 'nav.audit', icon: ScrollText, perm: 'audit:read' },
+  {
+    to: '/orgs',
+    labelKey: 'nav.organizations',
+    icon: Building2,
+    perm: 'org:read',
+    requiresOrg: true,
+  },
+  {
+    to: '/audit',
+    labelKey: 'nav.audit',
+    icon: ScrollText,
+    perm: 'audit:read',
+    requiresOrg: true,
+  },
   { to: '/settings', labelKey: 'nav.settings', icon: Settings },
 ]
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const { t } = useTranslation()
   const { me } = useAuth()
-  const items = NAV.filter((i) => !i.perm || hasPerm(me, i.perm))
+  const hasOrgs = useHasOrgs()
+  const items = NAV.filter(
+    (i) => (!i.perm || hasPerm(me, i.perm)) && (!i.requiresOrg || hasOrgs),
+  )
 
   return (
     <nav className="flex flex-col gap-1 p-3">
@@ -82,9 +98,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 
 function UserMenu() {
   const { t } = useTranslation('auth')
-  const { t: ta } = useTranslation('admin')
   const { me, logout } = useAuth()
-  const { canAccess: admin } = useAdminAccess()
   const initial = (me?.user_id ?? '?').slice(0, 1).toUpperCase()
 
   return (
@@ -106,14 +120,6 @@ function UserMenu() {
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {admin && (
-          <DropdownMenuItem asChild>
-            <Link to="/system">
-              <ShieldCheck className="size-4" />
-              {ta('toAdmin')}
-            </Link>
-          </DropdownMenuItem>
-        )}
         <DropdownMenuItem onClick={() => void logout()}>
           <LogOut className="size-4" />
           {t('logout')}

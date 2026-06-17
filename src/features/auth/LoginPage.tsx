@@ -15,17 +15,14 @@ import { useAuth } from '@/auth/auth-context'
 import { errorI18nKey, isAppError } from '@/lib/errors'
 import { resolveTenant } from '@/lib/tenant'
 
-export function LoginPage({ adminMode = false }: { adminMode?: boolean }) {
+export function LoginPage() {
   const { t } = useTranslation('auth')
   const { t: tc } = useTranslation('common')
-  const { t: ta } = useTranslation('admin')
   const { login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
-  const from =
-    (location.state as { from?: string } | null)?.from ??
-    (adminMode ? '/system' : '/')
+  const from = (location.state as { from?: string } | null)?.from ?? '/'
 
   // 企业由后端按邮箱反查 / 子域名 / ?tenant= / 默认 自动解析，用户无需在登录时指定。
   const resolvedTenant = resolveTenant(searchParams.get('tenant')) || undefined
@@ -76,14 +73,12 @@ export function LoginPage({ adminMode = false }: { adminMode?: boolean }) {
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-2 text-center">
           <div className="bg-brand text-brand-foreground flex size-10 items-center justify-center rounded-lg font-semibold">
-            {adminMode ? 'A' : 'D'}
+            D
           </div>
           <h1 className="text-xl font-semibold tracking-tight">
-            {adminMode ? ta('login.title') : t('login.title')}
+            {t('login.title')}
           </h1>
-          <p className="text-muted-foreground text-sm">
-            {adminMode ? ta('login.subtitle') : t('login.subtitle')}
-          </p>
+          <p className="text-muted-foreground text-sm">{t('login.subtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
@@ -133,8 +128,7 @@ export function LoginPage({ adminMode = false }: { adminMode?: boolean }) {
           </Button>
         </form>
 
-        {/* 企业开通改由平台管理员在后台进行，前台不再提供自助开通入口；这里只留普通用户注册。 */}
-        {!adminMode && import.meta.env.VITE_SIGNUP_ENABLED !== 'false' && (
+        {import.meta.env.VITE_SIGNUP_ENABLED !== 'false' && (
           <div className="text-muted-foreground mt-4 flex justify-center gap-4 text-sm">
             <Link to="/signup" className="text-brand hover:underline">
               {t('signup.createAccount')}
