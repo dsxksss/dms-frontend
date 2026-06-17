@@ -26,7 +26,6 @@ export function SignupPage() {
   const resolvedTenant = resolveTenant(searchParams.get('tenant')) || undefined
 
   const schema = z.object({
-    name: z.string(),
     email: z
       .string()
       .min(1, t('signup.required.email'))
@@ -41,7 +40,7 @@ export function SignupPage() {
     formState: { errors, isSubmitting },
   } = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { name: '', email: '', password: '' },
+    defaultValues: { email: '', password: '' },
   })
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -50,7 +49,6 @@ export function SignupPage() {
     try {
       await signupUser({
         tenant: resolvedTenant,
-        name: v.name || undefined,
         email: v.email,
         password: v.password,
       })
@@ -80,12 +78,8 @@ export function SignupPage() {
         </div>
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">{t('signup.name')}</Label>
-            <Input id="name" autoFocus placeholder={t('signup.namePlaceholder')} {...register('name')} />
-          </div>
-          <div className="space-y-2">
             <Label htmlFor="email">{t('login.email')}</Label>
-            <Input id="email" type="email" autoComplete="username" aria-invalid={!!errors.email} {...register('email')} />
+            <Input id="email" type="email" autoFocus autoComplete="username" aria-invalid={!!errors.email} {...register('email')} />
             {errors.email && <p className="text-destructive text-sm">{errors.email.message}</p>}
           </div>
           <div className="space-y-2">
