@@ -74,6 +74,12 @@
     "forbidden": "You do not have permission for this action",
     "notFound": "Resource not found",
     "conflict": "This record was changed by someone else, please refresh",
+    "quota": {
+      "orgs": "Plan organization limit reached — upgrade your plan",
+      "users": "Plan per-organization member limit reached — upgrade your plan",
+      "storage": "Plan storage limit reached — upgrade your plan",
+      "generic": "Plan limit reached — upgrade your plan"
+    },
     "validation": "Some fields are invalid, please check",
     "server": "Server error",
     "unknown": "Unknown error"
