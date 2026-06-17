@@ -13,20 +13,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { LangToggle } from '@/components/lang-toggle'
 import { useAuth } from '@/auth/auth-context'
 import { errorI18nKey, isAppError } from '@/lib/errors'
-import { tenantFromHost } from '@/lib/tenant'
-
-const LAST_TENANT_KEY = 'dms-last-tenant'
-
-function readDefaultTenant(): string | undefined {
-  const env = (import.meta.env.VITE_DEFAULT_TENANT as string | undefined)?.trim()
-  return env || undefined
-}
-
-/** 部署在租户子域名(如 acme.dms.app)时由 Host 推断租户，与后端规则一致。 */
-function readHostTenant(): string | undefined {
-  const suffix = (import.meta.env.VITE_TENANT_HOST_SUFFIX as string | undefined)?.trim()
-  return tenantFromHost(window.location.hostname, suffix) ?? undefined
-}
+import { LAST_TENANT_KEY, resolveTenant } from '@/lib/tenant'
 
 export function LoginPage({ adminMode = false }: { adminMode?: boolean }) {
   const { t } = useTranslation('auth')
@@ -40,13 +27,8 @@ export function LoginPage({ adminMode = false }: { adminMode?: boolean }) {
     (location.state as { from?: string } | null)?.from ??
     (adminMode ? '/admin' : '/')
 
-  // 租户解析优先级：子域名 Host → ?tenant= → 上次登录 → 部署默认。解析不到则交给后端按 Host 推断。
-  const resolvedTenant =
-    readHostTenant() ??
-    (searchParams.get('tenant')?.trim() || undefined) ??
-    (localStorage.getItem(LAST_TENANT_KEY) || undefined) ??
-    readDefaultTenant() ??
-    ''
+  // 租户解析：子域名 Host → ?tenant= → 上次登录 → 部署默认。解析不到交给后端按 Host/邮箱推断。
+  const resolvedTenant = resolveTenant(searchParams.get('tenant'))
   // 默认不显示租户输入；仅当后端报“需要租户”或用户手动展开时出现。
   const [showTenant, setShowTenant] = useState(false)
 

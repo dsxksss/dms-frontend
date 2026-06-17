@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -13,12 +13,18 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { LangToggle } from '@/components/lang-toggle'
 import { useAuth } from '@/auth/auth-context'
 import { errorI18nKey, isAppError } from '@/lib/errors'
+import { LAST_TENANT_KEY, resolveTenant } from '@/lib/tenant'
 
 export function SignupPage() {
   const { t } = useTranslation('auth')
   const { t: tc } = useTranslation('common')
   const { signupUser } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  // 同登录：租户由子域名/?tenant/上次/默认自动解析；默认不显示输入框。
+  const resolvedTenant = resolveTenant(searchParams.get('tenant'))
+  const [showTenant, setShowTenant] = useState(false)
 
   const schema = z.object({
     tenant: z.string(),
@@ -37,22 +43,30 @@ export function SignupPage() {
     formState: { errors, isSubmitting },
   } = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { tenant: '', name: '', email: '', password: '' },
+    defaultValues: { tenant: resolvedTenant, name: '', email: '', password: '' },
   })
   const [formError, setFormError] = useState<string | null>(null)
 
   const onSubmit = async (v: Values) => {
     setFormError(null)
+    const tenant = v.tenant?.trim() || undefined
     try {
       await signupUser({
-        tenant: v.tenant || undefined,
+        tenant,
         name: v.name || undefined,
         email: v.email,
         password: v.password,
       })
+      if (tenant) localStorage.setItem(LAST_TENANT_KEY, tenant)
       navigate('/', { replace: true })
     } catch (e) {
-      setFormError(isAppError(e) && e.detail ? e.detail : tc(errorI18nKey(e)))
+      if (isAppError(e) && e.kind === 'validation') {
+        // 后端无法确定租户 → 展开输入框让用户补一次。
+        setShowTenant(true)
+        setFormError(t('login.tenantNeeded'))
+      } else {
+        setFormError(isAppError(e) && e.detail ? e.detail : tc(errorI18nKey(e)))
+      }
     }
   }
 
@@ -84,10 +98,15 @@ export function SignupPage() {
             <Input id="password" type="password" autoComplete="new-password" aria-invalid={!!errors.password} {...register('password')} />
             {errors.password && <p className="text-destructive text-sm">{errors.password.message}</p>}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="tenant">{t('login.tenant')}</Label>
-            <Input id="tenant" placeholder={t('login.tenantPlaceholder')} {...register('tenant')} />
-          </div>
+
+          {/* 租户：默认不渲染；解析到的值由 defaultValues 保留，提交时仍带上。 */}
+          {showTenant && (
+            <div className="space-y-2">
+              <Label htmlFor="tenant">{t('login.tenant')}</Label>
+              <Input id="tenant" placeholder={t('login.tenantPlaceholder')} {...register('tenant')} />
+            </div>
+          )}
+
           {formError && (
             <div role="alert" className="border-destructive/30 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm">
               {formError}
@@ -97,6 +116,16 @@ export function SignupPage() {
             {isSubmitting && <Loader2 className="size-4 animate-spin" />}
             {t('signup.submitUser')}
           </Button>
+
+          {!showTenant && (
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-foreground mx-auto block text-xs"
+              onClick={() => setShowTenant(true)}
+            >
+              {t('login.switchTenant')}
+            </button>
+          )}
         </form>
         <p className="text-muted-foreground mt-4 text-center text-sm">
           <Link to="/login" className="text-brand hover:underline">

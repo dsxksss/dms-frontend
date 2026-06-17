@@ -18,3 +18,31 @@ export function tenantFromHost(
   if (RESERVED.has(label)) return null
   return label
 }
+
+/** 记住上次登录/注册的租户（refresh 需要；登录回传后会被覆盖为权威值）。 */
+export const LAST_TENANT_KEY = 'dms-last-tenant'
+
+function readDefaultTenant(): string | undefined {
+  const env = (import.meta.env.VITE_DEFAULT_TENANT as string | undefined)?.trim()
+  return env || undefined
+}
+
+/** 部署在租户子域名(如 acme.dms.app)时由 Host 推断，与后端规则一致。 */
+function readHostTenant(): string | undefined {
+  const suffix = (import.meta.env.VITE_TENANT_HOST_SUFFIX as string | undefined)?.trim()
+  return tenantFromHost(window.location.hostname, suffix) ?? undefined
+}
+
+/**
+ * 解析当前应使用的租户：子域名 Host → ?tenant= → 上次登录 → 部署默认。
+ * 解析不到则返回空串，交给后端按 Host/邮箱/default_tenant 推断（用户无需手填）。
+ */
+export function resolveTenant(searchTenant?: string | null): string {
+  return (
+    readHostTenant() ??
+    (searchTenant?.trim() || undefined) ??
+    (localStorage.getItem(LAST_TENANT_KEY) || undefined) ??
+    readDefaultTenant() ??
+    ''
+  )
+}
