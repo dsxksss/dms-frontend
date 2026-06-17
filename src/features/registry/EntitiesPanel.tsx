@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Check, GitBranch, Lock, MoreHorizontal, Pencil, Plus, Trash2, Upload, X } from 'lucide-react'
@@ -24,12 +24,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useProjectRole } from '@/hooks/use-projects'
-import { useDeleteEntity, useEntities, useEntityTypes } from '@/hooks/use-registry'
+import { useDeleteRecord, useRecords, useEntityTypes } from '@/hooks/use-registry'
 import { useToastError } from '@/hooks/use-toast-error'
 import { roleAtLeast } from '@/lib/roles'
 import { shortId } from '@/lib/format'
 import { isHiddenSensitive } from '@/lib/field-types'
-import type { Entity, EntityType, FieldDef } from '@/api/registry'
+import type { Entity, EntityType, FieldDef, TypeKind } from '@/api/registry'
 import { EntityDialog } from './EntityDialog'
 import { EntityRelationsDialog } from './EntityRelationsDialog'
 import { ImportEntitiesDialog } from './ImportEntitiesDialog'
@@ -63,90 +63,115 @@ function Cell({ field, data }: { field: FieldDef; data: Record<string, unknown> 
   )
 }
 
-export function EntitiesPanel({ projectId }: { projectId: string }) {
+/** 记录列表：药物资产(kind=asset) 或 药物数据(kind=template)。 */
+export function RecordsPanel({
+  projectId,
+  kind,
+}: {
+  projectId: string
+  kind: TypeKind
+}) {
   const { t } = useTranslation('registry')
   const role = useProjectRole(projectId)
   const canEdit = roleAtLeast(role, 'contributor')
-  const types = useEntityTypes(projectId)
+  const allTypes = useEntityTypes(projectId)
+  const types = (allTypes.data ?? []).filter((ty) => ty.kind === kind)
   const toastError = useToastError()
 
   const [typeId, setTypeId] = useState('')
   const [page, setPage] = useState({ limit: 20, offset: 0 })
   useEffect(() => {
-    if (!typeId && types.data && types.data.length > 0) setTypeId(types.data[0].id)
-  }, [types.data, typeId])
+    if (!typeId && types.length > 0) setTypeId(types[0].id)
+  }, [types, typeId])
 
-  const selectedType: EntityType | undefined = types.data?.find(
-    (ty) => ty.id === typeId,
-  )
-  const entities = useEntities(projectId, { type: typeId, ...page }, !!typeId)
+  const selectedType: EntityType | undefined = types.find((ty) => ty.id === typeId)
+  const records = useRecords(projectId, kind, { type: typeId, ...page }, !!typeId)
 
   const [createOpen, setCreateOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Entity | null>(null)
   const [relTarget, setRelTarget] = useState<Entity | null>(null)
   const [delTarget, setDelTarget] = useState<Entity | null>(null)
-  const del = useDeleteEntity(projectId)
+  const del = useDeleteRecord(projectId, kind)
 
-  const columns = useMemo<ColumnDef<Entity, unknown>[]>(() => {
-    if (!selectedType) return []
-    const fieldCols: ColumnDef<Entity, unknown>[] = selectedType.fields.map(
-      (f) => ({
-        id: f.name,
-        header: f.name,
-        cell: ({ row }) => <Cell field={f} data={row.original.data} />,
-      }),
-    )
-    return [
-      {
-        id: 'id',
-        header: 'ID',
-        cell: ({ row }) => (
-          <span className="font-mono text-xs">{shortId(row.original.id)}</span>
-        ),
-      },
-      ...fieldCols,
-      {
-        id: 'actions',
-        header: '',
-        cell: ({ row }) => {
-          const e = row.original
-          return (
-            <div className="flex justify-end">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="size-8">
-                    <MoreHorizontal className="size-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setRelTarget(e)}>
-                    <GitBranch className="size-4" />
-                    {t('entities.relations')}
-                  </DropdownMenuItem>
-                  {canEdit && (
-                    <>
-                      <DropdownMenuItem onClick={() => setEditTarget(e)}>
-                        <Pencil className="size-4" />
-                        {t('entities.edit')}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={() => setDelTarget(e)}
-                      >
-                        <Trash2 className="size-4" />
-                        {t('actions.delete', { ns: 'common' })}
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )
+  const isAsset = kind === 'asset'
+
+  // 不手动 useMemo：交由 React Compiler 自动记忆（cell 用到 setState，手动 deps 反而冲突）。
+  const fieldCols: ColumnDef<Entity, unknown>[] = (selectedType?.fields ?? []).map(
+    (f) => ({
+      id: f.name,
+      header: f.name,
+      cell: ({ row }) => <Cell field={f} data={row.original.data} />,
+    }),
+  )
+  const columns: ColumnDef<Entity, unknown>[] = !selectedType
+    ? []
+    : [
+        {
+          id: 'id',
+          header: 'ID',
+          cell: ({ row }) => (
+            <span className="font-mono text-xs">{shortId(row.original.id)}</span>
+          ),
         },
-      },
-    ]
-  }, [selectedType, canEdit, t])
+        ...fieldCols,
+        ...(isAsset
+          ? []
+          : [
+              {
+                id: 'asset_record',
+                header: t('entities.assetRecord'),
+                cell: ({ row }) => (
+                  <span className="text-muted-foreground font-mono text-xs">
+                    {row.original.asset_record_id
+                      ? shortId(row.original.asset_record_id)
+                      : '—'}
+                  </span>
+                ),
+              } as ColumnDef<Entity, unknown>,
+            ]),
+        {
+          id: 'actions',
+          header: '',
+          cell: ({ row }) => {
+            const e = row.original
+            return (
+              <div className="flex justify-end">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="size-8">
+                      <MoreHorizontal className="size-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {isAsset && (
+                      <DropdownMenuItem onClick={() => setRelTarget(e)}>
+                        <GitBranch className="size-4" />
+                        {t('entities.relations')}
+                      </DropdownMenuItem>
+                    )}
+                    {canEdit && (
+                      <>
+                        <DropdownMenuItem onClick={() => setEditTarget(e)}>
+                          <Pencil className="size-4" />
+                          {t('entities.edit')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => setDelTarget(e)}
+                        >
+                          <Trash2 className="size-4" />
+                          {t('actions.delete', { ns: 'common' })}
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )
+          },
+        },
+      ]
 
   const onDelete = async () => {
     if (!delTarget) return
@@ -159,8 +184,12 @@ export function EntitiesPanel({ projectId }: { projectId: string }) {
     }
   }
 
-  if (types.data && types.data.length === 0) {
-    return <EmptyState title={t('entities.selectTypeFirst')} />
+  if (allTypes.data && types.length === 0) {
+    return (
+      <EmptyState
+        title={t(isAsset ? 'entities.noAssetTypes' : 'entities.noTemplates')}
+      />
+    )
   }
 
   return (
@@ -179,7 +208,7 @@ export function EntitiesPanel({ projectId }: { projectId: string }) {
               <SelectValue placeholder={t('entities.selectType')} />
             </SelectTrigger>
             <SelectContent>
-              {(types.data ?? []).map((ty) => (
+              {types.map((ty) => (
                 <SelectItem key={ty.id} value={ty.id}>
                   {ty.name}
                 </SelectItem>
@@ -189,10 +218,12 @@ export function EntitiesPanel({ projectId }: { projectId: string }) {
         </div>
         {canEdit && selectedType && (
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setImportOpen(true)}>
-              <Upload className="size-4" />
-              {t('import.button')}
-            </Button>
+            {isAsset && (
+              <Button variant="outline" onClick={() => setImportOpen(true)}>
+                <Upload className="size-4" />
+                {t('import.button')}
+              </Button>
+            )}
             <Button onClick={() => setCreateOpen(true)}>
               <Plus className="size-4" />
               {t('entities.create')}
@@ -203,15 +234,15 @@ export function EntitiesPanel({ projectId }: { projectId: string }) {
 
       <DataTable
         columns={columns}
-        data={entities.data?.items ?? []}
-        loading={entities.isLoading || (!!typeId && !selectedType)}
-        error={entities.isError ? entities.error : undefined}
-        onRetry={() => entities.refetch()}
+        data={records.data?.items ?? []}
+        loading={records.isLoading || (!!typeId && !selectedType)}
+        error={records.isError ? records.error : undefined}
+        onRetry={() => records.refetch()}
         empty={<EmptyState title={t('entities.empty')} />}
         pagination={{
           limit: page.limit,
           offset: page.offset,
-          total: entities.data?.total ?? 0,
+          total: records.data?.total ?? 0,
           onChange: setPage,
         }}
       />
@@ -231,12 +262,14 @@ export function EntitiesPanel({ projectId }: { projectId: string }) {
             open={!!editTarget}
             onOpenChange={(o) => !o && setEditTarget(null)}
           />
-          <ImportEntitiesDialog
-            projectId={projectId}
-            type={selectedType}
-            open={importOpen}
-            onOpenChange={setImportOpen}
-          />
+          {isAsset && (
+            <ImportEntitiesDialog
+              projectId={projectId}
+              type={selectedType}
+              open={importOpen}
+              onOpenChange={setImportOpen}
+            />
+          )}
         </>
       )}
       {relTarget && (

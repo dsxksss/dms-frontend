@@ -43,9 +43,9 @@ export function FieldGrantsDialog({
 }) {
   const { t } = useTranslation('registry')
   const sensitive = type.fields.filter((f) => f.sensitive)
-  const grants = useFieldGrants(projectId, type.id)
-  const grant = useGrantField(projectId, type.id)
-  const revoke = useRevokeField(projectId, type.id)
+  const grants = useFieldGrants(projectId, type.kind, type.id)
+  const grant = useGrantField(projectId, type.kind, type.id)
+  const revoke = useRevokeField(projectId, type.kind, type.id)
   const toastError = useToastError()
 
   const [field, setField] = useState('')

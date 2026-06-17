@@ -1,21 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   registryApi,
-  type EntityScope,
+  type CreateTypeBody,
   type FieldDefInput,
+  type TypeKind,
 } from '@/api/registry'
 
 const root = (projectId: string) => ['registry', projectId] as const
 
 export const registryKeys = {
   types: (pid: string) => [...root(pid), 'types'] as const,
-  entities: (pid: string, params: unknown) =>
-    [...root(pid), 'entities', params] as const,
-  entity: (pid: string, eid: string) => [...root(pid), 'entity', eid] as const,
-  relations: (pid: string, eid: string, params: unknown) =>
-    [...root(pid), 'relations', eid, params] as const,
-  componentTree: (pid: string, eid: string) =>
-    [...root(pid), 'component-tree', eid] as const,
+  records: (pid: string, params: unknown) =>
+    [...root(pid), 'records', params] as const,
+  record: (pid: string, rid: string) => [...root(pid), 'record', rid] as const,
+  relations: (pid: string, rid: string, params: unknown) =>
+    [...root(pid), 'relations', rid, params] as const,
+  componentTree: (pid: string, rid: string) =>
+    [...root(pid), 'component-tree', rid] as const,
   fieldGrants: (pid: string, tid: string) =>
     [...root(pid), 'field-grants', tid] as const,
 }
@@ -25,7 +26,8 @@ function useInvalidateRegistry(projectId: string) {
   return () => qc.invalidateQueries({ queryKey: root(projectId) })
 }
 
-// ---- entity types ----
+// ---- 类型 ----
+/** 合并的类型列表（资产类型 + 数据模版，各带 kind）。 */
 export function useEntityTypes(projectId: string) {
   return useQuery({
     queryKey: registryKeys.types(projectId),
@@ -33,28 +35,27 @@ export function useEntityTypes(projectId: string) {
   })
 }
 
-export function useCreateType(projectId: string) {
+export function useCreateType(projectId: string, kind: TypeKind) {
   const invalidate = useInvalidateRegistry(projectId)
   return useMutation({
-    mutationFn: ({
-      body,
-      scope,
-    }: {
-      body: { key: string; name: string; fields: FieldDefInput[] }
-      scope: EntityScope
-    }) => registryApi.createType(projectId, body, scope),
+    mutationFn: (body: CreateTypeBody) =>
+      registryApi.createType(projectId, kind, body),
     onSuccess: invalidate,
   })
 }
 
-export function useUpdateType(projectId: string, typeId: string) {
+export function useUpdateType(
+  projectId: string,
+  kind: TypeKind,
+  typeId: string,
+) {
   const invalidate = useInvalidateRegistry(projectId)
   return useMutation({
     mutationFn: (body: {
       name?: string
       fields?: FieldDefInput[]
       version: number
-    }) => registryApi.updateType(projectId, typeId, body),
+    }) => registryApi.updateType(projectId, kind, typeId, body),
     onSuccess: invalidate,
   })
 }
@@ -67,7 +68,7 @@ export function useSeedDrugRd(projectId: string) {
   })
 }
 
-export function useImportEntities(projectId: string, typeId: string) {
+export function useImportEntities(projectId: string, assetTypeId: string) {
   const invalidate = useInvalidateRegistry(projectId)
   return useMutation({
     mutationFn: ({
@@ -81,7 +82,7 @@ export function useImportEntities(projectId: string, typeId: string) {
       name_field?: string
       seq_field?: string
     }) =>
-      registryApi.importEntities(projectId, typeId, body, {
+      registryApi.importEntities(projectId, assetTypeId, body, {
         format,
         name_field,
         seq_field,
@@ -90,134 +91,157 @@ export function useImportEntities(projectId: string, typeId: string) {
   })
 }
 
-// ---- field grants ----
-export function useFieldGrants(projectId: string, typeId: string) {
+// ---- 字段授权 ----
+export function useFieldGrants(
+  projectId: string,
+  kind: TypeKind,
+  typeId: string,
+) {
   return useQuery({
     queryKey: registryKeys.fieldGrants(projectId, typeId),
-    queryFn: () => registryApi.listFieldGrants(projectId, typeId),
+    queryFn: () => registryApi.listFieldGrants(projectId, kind, typeId),
   })
 }
 
-export function useGrantField(projectId: string, typeId: string) {
+export function useGrantField(
+  projectId: string,
+  kind: TypeKind,
+  typeId: string,
+) {
   const invalidate = useInvalidateRegistry(projectId)
   return useMutation({
     mutationFn: (body: { user_id: string; field: string }) =>
-      registryApi.grantField(projectId, typeId, body),
+      registryApi.grantField(projectId, kind, typeId, body),
     onSuccess: invalidate,
   })
 }
 
-export function useRevokeField(projectId: string, typeId: string) {
+export function useRevokeField(
+  projectId: string,
+  kind: TypeKind,
+  typeId: string,
+) {
   const invalidate = useInvalidateRegistry(projectId)
   return useMutation({
     mutationFn: ({ userId, field }: { userId: string; field: string }) =>
-      registryApi.revokeField(projectId, typeId, userId, field),
+      registryApi.revokeField(projectId, kind, typeId, userId, field),
     onSuccess: invalidate,
   })
 }
 
-// ---- entities ----
-export function useEntities(
+// ---- 记录（assets / data）----
+export function useRecords(
   projectId: string,
+  kind: TypeKind,
   params: { type: string; contains?: string; limit?: number; offset?: number },
   enabled = true,
 ) {
   return useQuery({
-    queryKey: registryKeys.entities(projectId, params),
-    queryFn: () => registryApi.listEntities(projectId, params),
+    queryKey: registryKeys.records(projectId, { kind, ...params }),
+    queryFn: () => registryApi.listRecords(projectId, kind, params),
     enabled: enabled && !!params.type,
   })
 }
 
-export function useEntity(projectId: string, entityId: string, enabled = true) {
+export function useRecord(
+  projectId: string,
+  kind: TypeKind,
+  rid: string,
+  enabled = true,
+) {
   return useQuery({
-    queryKey: registryKeys.entity(projectId, entityId),
-    queryFn: () => registryApi.getEntity(projectId, entityId),
-    enabled: enabled && !!entityId,
+    queryKey: registryKeys.record(projectId, rid),
+    queryFn: () => registryApi.getRecord(projectId, kind, rid),
+    enabled: enabled && !!rid,
   })
 }
 
-export function useCreateEntity(projectId: string) {
+export function useCreateRecord(projectId: string, kind: TypeKind) {
   const invalidate = useInvalidateRegistry(projectId)
   return useMutation({
-    mutationFn: (body: { type_id: string; data: Record<string, unknown> }) =>
-      registryApi.createEntity(projectId, body),
+    mutationFn: (body: {
+      type_id: string
+      data: Record<string, unknown>
+      asset_record_id?: string
+    }) => registryApi.createRecord(projectId, kind, body),
     onSuccess: invalidate,
   })
 }
 
-export function useUpdateEntity(projectId: string, entityId: string) {
+export function useUpdateRecord(
+  projectId: string,
+  kind: TypeKind,
+  rid: string,
+) {
   const invalidate = useInvalidateRegistry(projectId)
   return useMutation({
     mutationFn: (body: { data: Record<string, unknown>; version: number }) =>
-      registryApi.updateEntity(projectId, entityId, body),
+      registryApi.updateRecord(projectId, kind, rid, body),
     onSuccess: invalidate,
   })
 }
 
-export function useDeleteEntity(projectId: string) {
+export function useDeleteRecord(projectId: string, kind: TypeKind) {
   const invalidate = useInvalidateRegistry(projectId)
   return useMutation({
     mutationFn: ({ id, version }: { id: string; version: number }) =>
-      registryApi.deleteEntity(projectId, id, version),
+      registryApi.deleteRecord(projectId, kind, id, version),
     onSuccess: invalidate,
   })
 }
 
-// ---- relations / component tree ----
+// ---- 关系 / 组合树（仅药物资产）----
 export function useRelations(
   projectId: string,
-  entityId: string,
+  assetId: string,
   params: { direction?: 'out' | 'in'; kind?: string } = {},
 ) {
   return useQuery({
-    queryKey: registryKeys.relations(projectId, entityId, params),
-    queryFn: () => registryApi.listRelations(projectId, entityId, params),
-    enabled: !!entityId,
+    queryKey: registryKeys.relations(projectId, assetId, params),
+    queryFn: () => registryApi.listRelations(projectId, assetId, params),
+    enabled: !!assetId,
   })
 }
 
-export function useAddRelation(projectId: string, entityId: string) {
+export function useAddRelation(projectId: string, assetId: string) {
   const invalidate = useInvalidateRegistry(projectId)
   return useMutation({
     mutationFn: (body: { to_entity: string; kind: string }) =>
-      registryApi.addRelation(projectId, entityId, body),
+      registryApi.addRelation(projectId, assetId, body),
     onSuccess: invalidate,
   })
 }
 
-export function useDeleteRelation(projectId: string) {
+export function useDeleteRelation(projectId: string, assetId: string) {
   const invalidate = useInvalidateRegistry(projectId)
   return useMutation({
     mutationFn: (relationId: string) =>
-      registryApi.deleteRelation(projectId, relationId),
+      registryApi.deleteRelation(projectId, assetId, relationId),
     onSuccess: invalidate,
   })
 }
 
 export function useComponentTree(
   projectId: string,
-  entityId: string,
+  assetId: string,
   enabled = true,
 ) {
   return useQuery({
-    queryKey: registryKeys.componentTree(projectId, entityId),
-    queryFn: () =>
-      registryApi.componentTree(projectId, entityId, { depth: 10 }),
-    enabled: enabled && !!entityId,
+    queryKey: registryKeys.componentTree(projectId, assetId),
+    queryFn: () => registryApi.componentTree(projectId, assetId, { depth: 10 }),
+    enabled: enabled && !!assetId,
   })
 }
 
-/** 谱系（Lineage）：按 derived_from 递归遍历，返回扁平节点。 */
-export function useLineage(projectId: string, entityId: string, enabled = true) {
+export function useLineage(projectId: string, assetId: string, enabled = true) {
   return useQuery({
-    queryKey: [...root(projectId), 'lineage', entityId],
+    queryKey: [...root(projectId), 'lineage', assetId],
     queryFn: () =>
-      registryApi.graph(projectId, entityId, {
+      registryApi.graph(projectId, assetId, {
         kind: 'derived_from',
         direction: 'out',
         depth: 10,
       }),
-    enabled: enabled && !!entityId,
+    enabled: enabled && !!assetId,
   })
 }

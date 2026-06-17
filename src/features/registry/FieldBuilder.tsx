@@ -25,9 +25,12 @@ const emptyField = (): FieldDefInput => ({
 export function FieldBuilder({
   value,
   onChange,
+  allowedTypes = FIELD_TYPES,
 }: {
   value: FieldDefInput[]
   onChange: (fields: FieldDefInput[]) => void
+  /** 限制可选字段类型（数据模版仅标量，禁 reference/structure）。 */
+  allowedTypes?: readonly FieldType[]
 }) {
   const { t } = useTranslation('registry')
 
@@ -69,7 +72,7 @@ export function FieldBuilder({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {FIELD_TYPES.map((ft) => (
+                    {allowedTypes.map((ft) => (
                       <SelectItem key={ft} value={ft}>
                         {t(`fieldType.${ft}`)}
                       </SelectItem>

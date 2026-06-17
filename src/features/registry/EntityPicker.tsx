@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useEntities, useEntity, useEntityTypes } from '@/hooks/use-registry'
+import { useRecords, useRecord, useEntityTypes } from '@/hooks/use-registry'
 import { shortId } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { Entity } from '@/api/registry'
@@ -41,17 +41,24 @@ export function EntityPicker({
   excludeId?: string
 }) {
   const { t } = useTranslation('registry')
-  const types = useEntityTypes(projectId)
+  // 引用只指向药物资产记录，故仅列资产类型。
+  const allTypes = useEntityTypes(projectId)
+  const assetTypes = (allTypes.data ?? []).filter((ty) => ty.kind === 'asset')
   const [typeId, setTypeId] = useState<string>('')
   const [open, setOpen] = useState(false)
 
-  // 回显：有值但未选类型时，拉取该实体以推断类型并显示名称。
-  const valueEntity = useEntity(projectId, value ?? '', !!value && !typeId)
+  // 回显：有值但未选类型时，拉取该资产记录以推断类型并显示名称。
+  const valueEntity = useRecord(projectId, 'asset', value ?? '', !!value && !typeId)
   useEffect(() => {
     if (value && !typeId && valueEntity.data) setTypeId(valueEntity.data.type_id)
   }, [value, typeId, valueEntity.data])
 
-  const entities = useEntities(projectId, { type: typeId, limit: 100 }, !!typeId)
+  const entities = useRecords(
+    projectId,
+    'asset',
+    { type: typeId, limit: 100 },
+    !!typeId,
+  )
 
   const merged = [...(entities.data?.items ?? [])]
   if (valueEntity.data && !merged.some((e) => e.id === valueEntity.data!.id)) {
@@ -72,7 +79,7 @@ export function EntityPicker({
           <SelectValue placeholder={t('picker.type')} />
         </SelectTrigger>
         <SelectContent>
-          {(types.data ?? []).map((ty) => (
+          {assetTypes.map((ty) => (
             <SelectItem key={ty.id} value={ty.id}>
               {ty.name}
             </SelectItem>

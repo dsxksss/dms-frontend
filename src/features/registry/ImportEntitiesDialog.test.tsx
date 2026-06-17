@@ -10,6 +10,7 @@ const type: EntityType = {
   id: 't1',
   scope: 'project',
   scope_id: 'p1',
+  kind: 'asset',
   key: 'compound',
   name: 'Compound',
   fields: [],

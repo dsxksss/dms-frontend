@@ -10,7 +10,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { useCreateEntity, useUpdateEntity } from '@/hooks/use-registry'
+import { Label } from '@/components/ui/label'
+import { useCreateRecord, useUpdateRecord } from '@/hooks/use-registry'
 import { useToastError } from '@/hooks/use-toast-error'
 import {
   buildData,
@@ -20,6 +21,7 @@ import {
 } from '@/lib/field-types'
 import type { Entity, EntityType } from '@/api/registry'
 import { SchemaForm } from './SchemaForm'
+import { EntityPicker } from './EntityPicker'
 
 export function EntityDialog({
   projectId,
@@ -36,17 +38,22 @@ export function EntityDialog({
 }) {
   const { t } = useTranslation('registry')
   const isEdit = !!entity
-  const create = useCreateEntity(projectId)
-  const update = useUpdateEntity(projectId, entity?.id ?? '')
+  const create = useCreateRecord(projectId, type.kind)
+  const update = useUpdateRecord(projectId, type.kind, entity?.id ?? '')
   const toastError = useToastError()
 
   const [values, setValues] = useState<FormValues>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [assetRecordId, setAssetRecordId] = useState<string | undefined>()
   const [submitting, setSubmitting] = useState(false)
+
+  // 数据模版（template）的记录可关联一条药物资产记录。
+  const isData = type.kind === 'template'
 
   useEffect(() => {
     if (open) {
       setValues(initialValues(type.fields, entity?.data))
+      setAssetRecordId(entity?.asset_record_id ?? undefined)
       setErrors({})
     }
   }, [open, type, entity])
@@ -63,7 +70,11 @@ export function EntityDialog({
         await update.mutateAsync({ data, version: entity.version })
         toast.success(t('entities.updated'))
       } else {
-        await create.mutateAsync({ type_id: type.id, data })
+        await create.mutateAsync({
+          type_id: type.id,
+          data,
+          ...(isData && assetRecordId ? { asset_record_id: assetRecordId } : {}),
+        })
         toast.success(t('entities.created'))
       }
       onOpenChange(false)
@@ -88,7 +99,22 @@ export function EntityDialog({
             e.preventDefault()
             void submit()
           }}
+          className="space-y-4"
         >
+          {isData && !isEdit && (
+            <div className="space-y-2">
+              <Label>{t('entities.assetRecord')}</Label>
+              <EntityPicker
+                projectId={projectId}
+                value={assetRecordId}
+                onChange={setAssetRecordId}
+              />
+              <p className="text-muted-foreground text-xs">
+                {t('entities.assetRecordHint')}
+              </p>
+            </div>
+          )}
+
           <SchemaForm
             projectId={projectId}
             fields={type.fields}
@@ -99,7 +125,7 @@ export function EntityDialog({
             }
           />
 
-          <DialogFooter className="mt-4">
+          <DialogFooter>
             <Button type="submit" disabled={submitting}>
               {submitting && <Loader2 className="size-4 animate-spin" />}
               {isEdit ? t('actions.save', { ns: 'common' }) : t('entities.create')}
