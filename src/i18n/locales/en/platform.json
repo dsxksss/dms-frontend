@@ -33,7 +33,16 @@
     "save": "Save",
     "saved": "Saved",
     "restart": "Needs redeploy",
-    "readonly": "Read-only"
+    "readonly": "Read-only",
+    "fields": {
+      "signup.tenant_enabled": "When on, visitors can self-provision a new company from the front door; when off, only platform admins can provision.",
+      "signup.default_plan": "Default subscription tier applied to newly provisioned companies.",
+      "auth.default_tenant": "Company to fall back to at sign-in when it can't be inferred from email or subdomain.",
+      "auth.tenant_host_suffix": "Domain suffix used to map subdomains to companies, e.g. dms.app (acme.dms.app → acme).",
+      "branding.product_name": "Product name shown throughout the UI.",
+      "storage.backend": "File storage backend (e.g. local fs / object storage). Deployment-level; changing it needs a redeploy.",
+      "storage.root": "Root path / bucket for file storage. Deployment-level; changing it needs a redeploy."
+    }
   },
   "tenantSettings": {
     "title": "Company settings",

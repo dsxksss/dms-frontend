@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Loader2, Lock } from 'lucide-react'
+import { Info, Loader2, Lock } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { PageHeader } from '@/components/page-header'
@@ -23,6 +23,7 @@ import {
   useUpdatePlatformSettings,
 } from '@/hooks/use-platform'
 import { useToastError } from '@/hooks/use-toast-error'
+import { planSummary } from './plans'
 import type { PlatformSetting } from '@/platform/api'
 
 export function PlatformSettingsPage() {
@@ -91,6 +92,10 @@ function SettingRow({
   const { t } = useTranslation('platform')
   const dirty = draftValue !== undefined
   const current = dirty ? draftValue : setting.value
+  // 用人话说明替代原始 key；说明缺省时回退 key。原始 key 移到 ⓘ 悬浮提示里。
+  const desc = t(`settings.fields.${setting.key}`, { defaultValue: '' })
+  const isPlan = setting.key === 'signup.default_plan'
+  const enumLabel = (o: string) => (isPlan ? t(`plan.${o}`, { defaultValue: o }) : o)
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-3">
@@ -108,11 +113,18 @@ function SettingRow({
               {t('settings.readonly')}
             </Badge>
           )}
+          {/* 原始配置键：悬浮可见，平时不占视觉 */}
+          <span
+            title={setting.key}
+            className="text-muted-foreground/50 inline-flex cursor-help"
+          >
+            <Info className="size-3.5" />
+          </span>
         </div>
-        <p className="text-muted-foreground font-mono text-xs">{setting.key}</p>
+        {desc && <p className="text-muted-foreground text-xs">{desc}</p>}
       </div>
 
-      <div className="w-64 shrink-0">
+      <div className="w-72 shrink-0">
         {!setting.editable ? (
           <p className="text-muted-foreground truncate text-right text-sm">
             {setting.secret ? '***' : String(setting.value ?? '-')}
@@ -132,7 +144,12 @@ function SettingRow({
             <SelectContent>
               {(setting.options ?? []).map((o) => (
                 <SelectItem key={o} value={o}>
-                  {o}
+                  {enumLabel(o)}
+                  {isPlan && (
+                    <span className="text-muted-foreground ml-1">
+                      · {planSummary(o, t)}
+                    </span>
+                  )}
                 </SelectItem>
               ))}
             </SelectContent>
