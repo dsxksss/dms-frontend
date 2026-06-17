@@ -19,9 +19,6 @@ export function tenantFromHost(
   return label
 }
 
-/** 记住上次登录/注册的租户（refresh 需要；登录回传后会被覆盖为权威值）。 */
-export const LAST_TENANT_KEY = 'dms-last-tenant'
-
 function readDefaultTenant(): string | undefined {
   const env = (import.meta.env.VITE_DEFAULT_TENANT as string | undefined)?.trim()
   return env || undefined
@@ -34,14 +31,17 @@ function readHostTenant(): string | undefined {
 }
 
 /**
- * 解析当前应使用的租户：子域名 Host → ?tenant= → 上次登录 → 部署默认。
- * 解析不到则返回空串，交给后端按 Host/邮箱/default_tenant 推断（用户无需手填）。
+ * 解析登录/注册时应显式携带的企业：子域名 Host → 显式 ?tenant= → 部署默认。
+ * 解析不到返回空串，交给后端按邮箱(全局唯一)反查——这是云端常态，用户无需指定企业。
+ *
+ * 注意：**不再读取"上次登录"的残留**。否则换账号登录时会把上一个用户的企业强加给
+ * 新邮箱，盖过后端邮箱反查导致 401（典型坑）。刷新所需的权威 tenant 由会话 store
+ * （登录响应回传）持有，与此无关。
  */
 export function resolveTenant(searchTenant?: string | null): string {
   return (
     readHostTenant() ??
     (searchTenant?.trim() || undefined) ??
-    (localStorage.getItem(LAST_TENANT_KEY) || undefined) ??
     readDefaultTenant() ??
     ''
   )

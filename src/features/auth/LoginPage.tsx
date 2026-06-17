@@ -13,7 +13,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { LangToggle } from '@/components/lang-toggle'
 import { useAuth } from '@/auth/auth-context'
 import { errorI18nKey, isAppError } from '@/lib/errors'
-import { LAST_TENANT_KEY, resolveTenant } from '@/lib/tenant'
+import { resolveTenant } from '@/lib/tenant'
 
 export function LoginPage({ adminMode = false }: { adminMode?: boolean }) {
   const { t } = useTranslation('auth')
@@ -53,7 +53,6 @@ export function LoginPage({ adminMode = false }: { adminMode?: boolean }) {
     setFormError(null)
     try {
       await login({ tenant: resolvedTenant, email: values.email, password: values.password })
-      if (resolvedTenant) localStorage.setItem(LAST_TENANT_KEY, resolvedTenant)
       navigate(from, { replace: true })
     } catch (e) {
       if (isAppError(e) && e.kind === 'unauthorized') {

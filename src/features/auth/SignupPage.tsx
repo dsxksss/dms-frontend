@@ -13,7 +13,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { LangToggle } from '@/components/lang-toggle'
 import { useAuth } from '@/auth/auth-context'
 import { errorI18nKey, isAppError } from '@/lib/errors'
-import { LAST_TENANT_KEY, resolveTenant } from '@/lib/tenant'
+import { resolveTenant } from '@/lib/tenant'
 
 export function SignupPage() {
   const { t } = useTranslation('auth')
@@ -52,7 +52,6 @@ export function SignupPage() {
         email: v.email,
         password: v.password,
       })
-      if (resolvedTenant) localStorage.setItem(LAST_TENANT_KEY, resolvedTenant)
       navigate('/', { replace: true })
     } catch (e) {
       if (isAppError(e) && e.kind === 'validation') {
