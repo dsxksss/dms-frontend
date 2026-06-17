@@ -24,9 +24,9 @@ const TENANT = {
 function renderDetail() {
   return renderWithProviders(
     <Routes>
-      <Route path="/platform/tenants/:id" element={<TenantDetailPage />} />
+      <Route path="/system/tenants/:id" element={<TenantDetailPage />} />
     </Routes>,
-    { route: '/platform/tenants/t1' },
+    { route: '/system/tenants/t1' },
   )
 }
 

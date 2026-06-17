@@ -10,15 +10,15 @@ import {
 import { PlatformProtectedRoute } from '@/platform/PlatformProtectedRoute'
 import type { PlatformMe } from '@/platform/api'
 
-function renderGuard(value: PlatformAuthValue, route = '/platform') {
+function renderGuard(value: PlatformAuthValue, route = '/system') {
   return render(
     <I18nextProvider i18n={i18n}>
       <PlatformAuthContext.Provider value={value}>
         <MemoryRouter initialEntries={[route]}>
           <Routes>
-            <Route path="/platform/login" element={<div>LOGIN</div>} />
+            <Route path="/system/login" element={<div>LOGIN</div>} />
             <Route element={<PlatformProtectedRoute />}>
-              <Route path="/platform" element={<div>PLATFORM_OK</div>} />
+              <Route path="/system" element={<div>PLATFORM_OK</div>} />
             </Route>
           </Routes>
         </MemoryRouter>

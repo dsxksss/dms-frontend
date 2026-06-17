@@ -68,17 +68,17 @@ export const router = createBrowserRouter([
   {
     element: <PlatformRoot />,
     children: [
-      { path: 'platform/login', element: <PlatformLoginPage /> },
+      { path: 'system/login', element: <PlatformLoginPage /> },
       {
         element: <PlatformProtectedRoute />,
         children: [
           {
             element: <PlatformLayout />,
             children: [
-              { path: 'platform', element: <PlatformOverviewPage /> },
-              { path: 'platform/tenants', element: <TenantsListPage /> },
-              { path: 'platform/tenants/:id', element: <TenantDetailPage /> },
-              { path: 'platform/settings', element: <PlatformSettingsPage /> },
+              { path: 'system', element: <PlatformOverviewPage /> },
+              { path: 'system/tenants', element: <TenantsListPage /> },
+              { path: 'system/tenants/:id', element: <TenantDetailPage /> },
+              { path: 'system/settings', element: <PlatformSettingsPage /> },
             ],
           },
         ],

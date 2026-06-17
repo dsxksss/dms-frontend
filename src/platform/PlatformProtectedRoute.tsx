@@ -18,7 +18,7 @@ export function PlatformProtectedRoute() {
   }
   if (status === 'anon') {
     return (
-      <Navigate to="/platform/login" replace state={{ from: location.pathname }} />
+      <Navigate to="/system/login" replace state={{ from: location.pathname }} />
     )
   }
   if (!me?.platform_admin) {

@@ -24,9 +24,9 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { to: '/platform', labelKey: 'nav.overview', icon: Gauge, end: true },
-  { to: '/platform/tenants', labelKey: 'nav.tenants', icon: Building2 },
-  { to: '/platform/settings', labelKey: 'nav.settings', icon: Settings },
+  { to: '/system', labelKey: 'nav.overview', icon: Gauge, end: true },
+  { to: '/system/tenants', labelKey: 'nav.tenants', icon: Building2 },
+  { to: '/system/settings', labelKey: 'nav.settings', icon: Settings },
 ]
 
 function SidebarNav() {

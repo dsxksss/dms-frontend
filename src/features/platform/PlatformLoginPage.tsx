@@ -20,7 +20,7 @@ export function PlatformLoginPage() {
   const { login } = usePlatformAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: string } | null)?.from ?? '/platform'
+  const from = (location.state as { from?: string } | null)?.from ?? '/system'
 
   const schema = z.object({
     email: z
