@@ -24,6 +24,8 @@ import zhMembership from './locales/zh-CN/membership.json'
 import enMembership from './locales/en/membership.json'
 import zhSignatures from './locales/zh-CN/signatures.json'
 import enSignatures from './locales/en/signatures.json'
+import zhAdmin from './locales/zh-CN/admin.json'
+import enAdmin from './locales/en/admin.json'
 
 export const SUPPORTED_LANGS = ['zh-CN', 'en'] as const
 export type Lang = (typeof SUPPORTED_LANGS)[number]
@@ -41,6 +43,7 @@ export const resources = {
     membership: zhMembership,
     protocols: zhProtocols,
     signatures: zhSignatures,
+    admin: zhAdmin,
   },
   en: {
     common: enCommon,
@@ -54,6 +57,7 @@ export const resources = {
     membership: enMembership,
     protocols: enProtocols,
     signatures: enSignatures,
+    admin: enAdmin,
   },
 } as const
 
@@ -77,6 +81,7 @@ void i18n
       'membership',
       'protocols',
       'signatures',
+      'admin',
     ],
     interpolation: { escapeValue: false },
     detection: {

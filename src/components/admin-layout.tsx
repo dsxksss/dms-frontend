@@ -1,17 +1,15 @@
-import { Suspense, useState, type ComponentType } from 'react'
-import { Link, NavLink, Outlet } from 'react-router-dom'
+import { Suspense, type ComponentType } from 'react'
+import { NavLink, Outlet, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Building2,
-  Database,
-  FolderKanban,
+  Gauge,
+  Globe,
   Loader2,
   LogOut,
-  Mail,
-  Menu,
   ScrollText,
-  Settings,
-  ShieldCheck,
+  Users,
+  ArrowLeft,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -22,46 +20,41 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { LangToggle } from '@/components/lang-toggle'
-import { useAuth, hasPerm, useIsAdmin } from '@/auth/auth-context'
+import { useAuth } from '@/auth/auth-context'
 import { cn } from '@/lib/utils'
 
 interface NavItem {
   to: string
   labelKey: string
   icon: ComponentType<{ className?: string }>
-  perm?: string
+  end?: boolean
 }
 
 const NAV: NavItem[] = [
-  { to: '/projects', labelKey: 'nav.projects', icon: FolderKanban },
-  { to: '/datasets', labelKey: 'nav.datasets', icon: Database, perm: 'dataset:read' },
-  { to: '/orgs', labelKey: 'nav.organizations', icon: Building2, perm: 'org:read' },
-  { to: '/inbox', labelKey: 'nav.inbox', icon: Mail },
-  { to: '/audit', labelKey: 'nav.audit', icon: ScrollText, perm: 'audit:read' },
-  { to: '/settings', labelKey: 'nav.settings', icon: Settings },
+  { to: '/admin', labelKey: 'nav.overview', icon: Gauge, end: true },
+  { to: '/admin/orgs', labelKey: 'nav.orgs', icon: Building2 },
+  { to: '/admin/users', labelKey: 'nav.users', icon: Users },
+  { to: '/admin/audit', labelKey: 'nav.audit', icon: ScrollText },
+  { to: '/admin/platform', labelKey: 'nav.platform', icon: Globe },
 ]
 
-function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
-  const { t } = useTranslation()
-  const { me } = useAuth()
-  const items = NAV.filter((i) => !i.perm || hasPerm(me, i.perm))
-
+function SidebarNav() {
+  const { t } = useTranslation('admin')
   return (
     <nav className="flex flex-col gap-1 p-3">
       <div className="flex items-center gap-2 px-2 py-3">
-        <div className="bg-brand text-brand-foreground flex size-7 items-center justify-center rounded-md text-sm font-semibold">
-          D
+        <div className="bg-foreground text-background flex size-7 items-center justify-center rounded-md text-sm font-semibold">
+          A
         </div>
-        <span className="font-semibold tracking-tight">{t('app.shortName')}</span>
+        <span className="font-semibold tracking-tight">{t('title')}</span>
       </div>
-      {items.map((item) => (
+      {NAV.map((item) => (
         <NavLink
           key={item.to}
           to={item.to}
-          onClick={onNavigate}
+          end={item.end}
           className={({ isActive }) =>
             cn(
               'flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors',
@@ -81,11 +74,8 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 
 function UserMenu() {
   const { t } = useTranslation('auth')
-  const { t: ta } = useTranslation('admin')
   const { me, logout } = useAuth()
-  const admin = useIsAdmin()
   const initial = (me?.user_id ?? '?').slice(0, 1).toUpperCase()
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -105,14 +95,6 @@ function UserMenu() {
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {admin && (
-          <DropdownMenuItem asChild>
-            <Link to="/admin">
-              <ShieldCheck className="size-4" />
-              {ta('toAdmin')}
-            </Link>
-          </DropdownMenuItem>
-        )}
         <DropdownMenuItem onClick={() => void logout()}>
           <LogOut className="size-4" />
           {t('logout')}
@@ -122,34 +104,26 @@ function UserMenu() {
   )
 }
 
-export function AppLayout() {
-  const [mobileOpen, setMobileOpen] = useState(false)
-
+export function AdminLayout() {
+  const { t } = useTranslation('admin')
   return (
     <div className="flex min-h-[100dvh]">
       <aside className="bg-sidebar hidden w-60 shrink-0 border-r md:block">
         <SidebarNav />
       </aside>
-
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 items-center gap-2 border-b px-4">
-          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden">
-                <Menu className="size-4" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-60 p-0">
-              <SidebarNav onNavigate={() => setMobileOpen(false)} />
-            </SheetContent>
-          </Sheet>
-
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/">
+              <ArrowLeft className="size-4" />
+              {t('toApp')}
+            </Link>
+          </Button>
           <div className="flex-1" />
           <LangToggle />
           <ThemeToggle />
           <UserMenu />
         </header>
-
         <main className="flex-1 overflow-auto p-6">
           <Suspense
             fallback={

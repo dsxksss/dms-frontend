@@ -30,7 +30,7 @@ export function OrgsListPage() {
         cell: ({ row }) => (
           <button
             className="hover:text-brand text-left font-medium hover:underline"
-            onClick={() => navigate(`/orgs/${row.original.id}`)}
+            onClick={() => navigate(row.original.id)}
           >
             {row.original.name}
           </button>

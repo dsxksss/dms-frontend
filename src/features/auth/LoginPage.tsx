@@ -28,14 +28,17 @@ function readHostTenant(): string | undefined {
   return tenantFromHost(window.location.hostname, suffix) ?? undefined
 }
 
-export function LoginPage() {
+export function LoginPage({ adminMode = false }: { adminMode?: boolean }) {
   const { t } = useTranslation('auth')
   const { t: tc } = useTranslation('common')
+  const { t: ta } = useTranslation('admin')
   const { login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
-  const from = (location.state as { from?: string } | null)?.from ?? '/'
+  const from =
+    (location.state as { from?: string } | null)?.from ??
+    (adminMode ? '/admin' : '/')
 
   // 租户解析优先级：子域名 Host → ?tenant= → 上次登录 → 部署默认。解析不到则交给后端按 Host 推断。
   const resolvedTenant =
@@ -97,12 +100,14 @@ export function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-2 text-center">
           <div className="bg-brand text-brand-foreground flex size-10 items-center justify-center rounded-lg font-semibold">
-            D
+            {adminMode ? 'A' : 'D'}
           </div>
           <h1 className="text-xl font-semibold tracking-tight">
-            {t('login.title')}
+            {adminMode ? ta('login.title') : t('login.title')}
           </h1>
-          <p className="text-muted-foreground text-sm">{t('login.subtitle')}</p>
+          <p className="text-muted-foreground text-sm">
+            {adminMode ? ta('login.subtitle') : t('login.subtitle')}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
@@ -175,8 +180,9 @@ export function LoginPage() {
           )}
         </form>
 
-        {(import.meta.env.VITE_SIGNUP_ENABLED !== 'false' ||
-          import.meta.env.VITE_TENANT_SIGNUP_ENABLED !== 'false') && (
+        {!adminMode &&
+          (import.meta.env.VITE_SIGNUP_ENABLED !== 'false' ||
+            import.meta.env.VITE_TENANT_SIGNUP_ENABLED !== 'false') && (
           <div className="text-muted-foreground mt-4 flex justify-center gap-4 text-sm">
             {import.meta.env.VITE_SIGNUP_ENABLED !== 'false' && (
               <Link to="/signup" className="text-brand hover:underline">

@@ -1,0 +1,37 @@
+{
+  "title": "Admin",
+  "subtitle": "Enterprise admin console",
+  "login": { "title": "Admin", "subtitle": "Administrator sign in" },
+  "nav": {
+    "overview": "Overview",
+    "orgs": "Organizations",
+    "users": "User directory",
+    "audit": "Audit log",
+    "platform": "Platform admin"
+  },
+  "noAccess": {
+    "title": "No admin access",
+    "desc": "Your account has no admin permission (needs one of org:write / user:write / audit:read).",
+    "toApp": "Back to app"
+  },
+  "toAdmin": "Admin console",
+  "toApp": "Back to app",
+  "overview": {
+    "welcome": "Enterprise admin console",
+    "welcomeDesc": "Manage your company's organizations, members, audit and compliance.",
+    "orgs": "Organizations / teams / members / role grants",
+    "users": "User directory search",
+    "audit": "Audit log (IP / actor / changes / parent chain)",
+    "platform": "Cross-enterprise management (needs backend)"
+  },
+  "users": {
+    "title": "User directory",
+    "search": "Search name / email…",
+    "empty": "No matching users",
+    "hint": "Search users in this company (invisible users are excluded)"
+  },
+  "platform": {
+    "title": "Platform admin (cross-enterprise)",
+    "desc": "Manage all enterprises / licenses / plan usage. The backend is multi-tenant with RLS isolation and has no cross-tenant API yet; needs backend support first."
+  }
+}

@@ -462,7 +462,7 @@ export function OrgDetailPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/orgs')}>
+        <Button variant="ghost" size="icon" onClick={() => navigate('..', { relative: 'path' })}>
           <ArrowLeft className="size-4" />
         </Button>
         <div>
