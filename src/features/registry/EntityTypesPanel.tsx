@@ -41,7 +41,12 @@ export function EntityTypesPanel({ projectId }: { projectId: string }) {
         <h2 className="font-medium">{t('types.title')}</h2>
         {canManage && (
           <div className="flex gap-2">
-            <Button variant="outline" onClick={onSeed} disabled={seed.isPending}>
+            <Button
+              variant="outline"
+              title={t('types.seedHint')}
+              onClick={onSeed}
+              disabled={seed.isPending}
+            >
               <Sparkles className="size-4" />
               {t('types.seed')}
             </Button>
@@ -121,7 +126,12 @@ export function EntityTypesPanel({ projectId }: { projectId: string }) {
           action={
             canManage ? (
               <div className="flex gap-2">
-                <Button variant="outline" onClick={onSeed} disabled={seed.isPending}>
+                <Button
+                  variant="outline"
+                  title={t('types.seedHint')}
+                  onClick={onSeed}
+                  disabled={seed.isPending}
+                >
                   <Sparkles className="size-4" />
                   {t('types.seed')}
                 </Button>
