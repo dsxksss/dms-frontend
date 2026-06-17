@@ -20,6 +20,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { LangToggle } from '@/components/lang-toggle'
 import { useAuth } from '@/auth/auth-context'
 import { errorI18nKey, isAppError } from '@/lib/errors'
+import { autoSlug } from '@/lib/slug'
 
 const PLANS = ['demo', 'standard', 'enterprise'] as const
 
@@ -31,7 +32,7 @@ export function SignupTenantPage() {
 
   const schema = z.object({
     company_name: z.string().min(1, t('signup.required.company')),
-    slug: z.string().min(1, t('signup.required.slug')),
+    slug: z.string(),
     plan: z.enum(PLANS),
     admin_name: z.string(),
     admin_email: z
@@ -66,7 +67,8 @@ export function SignupTenantPage() {
     try {
       await signupTenant({
         company_name: v.company_name,
-        slug: v.slug,
+        // 留空时按企业名自动生成（中文名回退随机），用户无需手填。
+        slug: v.slug.trim() || autoSlug(v.company_name, 'org'),
         plan: v.plan,
         admin_name: v.admin_name || undefined,
         admin_email: v.admin_email,
@@ -100,8 +102,7 @@ export function SignupTenantPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="slug">{t('signup.slug')}</Label>
-              <Input id="slug" placeholder={t('signup.slugPlaceholder')} aria-invalid={!!errors.slug} {...register('slug')} />
-              {errors.slug && <p className="text-destructive text-sm">{errors.slug.message}</p>}
+              <Input id="slug" placeholder={t('signup.slugAuto')} {...register('slug')} />
             </div>
           </div>
           <div className="space-y-2">

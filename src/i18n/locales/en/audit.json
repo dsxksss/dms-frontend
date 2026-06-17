@@ -13,10 +13,23 @@
   "filters": {
     "entityType": "Item type",
     "entityTypePlaceholder": "e.g. project / entity / dataset",
-    "actor": "Actor ID",
-    "actorPlaceholder": "User UUID",
+    "entityTypeAll": "All types",
+    "actor": "Actor",
+    "actorPlaceholder": "Search name or email…",
     "apply": "Apply",
     "clear": "Clear"
+  },
+  "entityTypes": {
+    "project": "Project",
+    "dataset": "Dataset",
+    "entity": "Entity",
+    "entity_type": "Entity type",
+    "file": "File",
+    "protocol": "Protocol",
+    "run": "Run",
+    "signature": "Signature",
+    "organization": "Organization",
+    "team": "Team"
   },
   "empty": "No audit entries",
   "none": "—",

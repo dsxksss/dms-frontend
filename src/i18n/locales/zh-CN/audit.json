@@ -13,10 +13,23 @@
   "filters": {
     "entityType": "对象类型",
     "entityTypePlaceholder": "如 project / entity / dataset",
-    "actor": "操作者 ID",
-    "actorPlaceholder": "用户 UUID",
+    "entityTypeAll": "全部类型",
+    "actor": "操作者",
+    "actorPlaceholder": "搜索姓名或邮箱…",
     "apply": "筛选",
     "clear": "清除"
+  },
+  "entityTypes": {
+    "project": "项目",
+    "dataset": "数据集",
+    "entity": "实体",
+    "entity_type": "实体类型",
+    "file": "文件",
+    "protocol": "方案",
+    "run": "Run",
+    "signature": "签名",
+    "organization": "组织",
+    "team": "团队"
   },
   "empty": "暂无审计记录",
   "none": "—",

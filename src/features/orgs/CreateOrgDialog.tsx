@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useCreateOrg } from '@/hooks/use-orgs'
 import { useToastError } from '@/hooks/use-toast-error'
+import { autoSlug } from '@/lib/slug'
 
 export function CreateOrgDialog({
   open,
@@ -38,11 +39,12 @@ export function CreateOrgDialog({
   }, [open])
 
   const submit = async () => {
-    const e = { slug: !slug.trim(), name: !name.trim() }
+    const e = { slug: false, name: !name.trim() }
     setErr(e)
-    if (e.slug || e.name) return
+    if (e.name) return
     try {
-      await create.mutateAsync({ slug, name })
+      // slug 留空时由名称自动派生（中文名回退随机串），用户无需手填。
+      await create.mutateAsync({ slug: slug.trim() || autoSlug(name, 'org'), name })
       toast.success(t('created'))
       onOpenChange(false)
     } catch (ex) {
@@ -64,23 +66,10 @@ export function CreateOrgDialog({
           }}
         >
           <div className="space-y-2">
-            <Label htmlFor="oslug">{t('create.slug')}</Label>
-            <Input
-              id="oslug"
-              autoFocus
-              placeholder={t('create.slugPlaceholder')}
-              value={slug}
-              aria-invalid={err.slug}
-              onChange={(e) => setSlug(e.target.value)}
-            />
-            {err.slug && (
-              <p className="text-destructive text-sm">{t('create.slugRequired')}</p>
-            )}
-          </div>
-          <div className="space-y-2">
             <Label htmlFor="oname">{t('create.name')}</Label>
             <Input
               id="oname"
+              autoFocus
               placeholder={t('create.namePlaceholder')}
               value={name}
               aria-invalid={err.name}
@@ -89,6 +78,16 @@ export function CreateOrgDialog({
             {err.name && (
               <p className="text-destructive text-sm">{t('create.nameRequired')}</p>
             )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="oslug">{t('create.slug')}</Label>
+            <Input
+              id="oslug"
+              placeholder={t('create.slugAuto')}
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+            />
+            <p className="text-muted-foreground text-xs">{t('create.slugHint')}</p>
           </div>
           <DialogFooter>
             <Button type="submit" disabled={create.isPending}>

@@ -81,8 +81,9 @@
     "create": {
       "title": "开通企业",
       "company": "企业名称",
-      "slug": "标识（slug）",
+      "slug": "标识（slug，可选）",
       "slugPlaceholder": "如 acme",
+      "slugAuto": "留空将自动生成",
       "plan": "套餐",
       "planHint": "选择套餐将套用该档默认配额，开通后可在详情页调整。",
       "adminEmail": "管理员邮箱",

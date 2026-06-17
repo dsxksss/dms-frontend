@@ -81,8 +81,9 @@
     "create": {
       "title": "Provision tenant",
       "company": "Company name",
-      "slug": "Slug",
+      "slug": "Slug (optional)",
       "slugPlaceholder": "e.g. acme",
+      "slugAuto": "Leave blank to auto-generate",
       "plan": "Plan",
       "planHint": "Selecting a plan applies its default quotas; you can adjust them on the detail page afterward.",
       "adminEmail": "Admin email",

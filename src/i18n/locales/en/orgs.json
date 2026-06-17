@@ -3,8 +3,10 @@
   "subtitle": "Organizations, teams and scoped role grants",
   "create": {
     "title": "New organization",
-    "slug": "Slug",
+    "slug": "Slug (optional)",
     "slugPlaceholder": "e.g. research",
+    "slugAuto": "Leave blank to auto-generate",
+    "slugHint": "Used in URLs only; leave blank to auto-generate from the name",
     "name": "Name",
     "namePlaceholder": "e.g. R&D Center",
     "submit": "Create",
@@ -17,18 +19,20 @@
   "created": "Organization created",
   "addMember": {
     "title": "Add organization member",
-    "userId": "User ID",
-    "userIdPlaceholder": "User UUID",
+    "user": "User",
+    "userPlaceholder": "Search name or email…",
     "role": "Role",
     "submit": "Add",
     "added": "Member added",
-    "userRequired": "User ID is required"
+    "userRequired": "Select a user",
+    "empty": "No selectable members in this organization"
   },
   "orgRole": { "admin": "Admin", "member": "Member" },
   "teams": {
     "title": "Teams",
     "create": "New team",
-    "slug": "Slug",
+    "slug": "Slug (optional)",
+    "slugAuto": "Leave blank to auto-generate",
     "name": "Name",
     "empty": "No teams",
     "created": "Team created",
@@ -39,7 +43,9 @@
     "desc": "Grant a role to a user or team, scoped to tenant/org/team/resource.",
     "principalType": "Principal type",
     "principalId": "Principal ID",
-    "roleKey": "Role key",
+    "selectUser": "Select user",
+    "selectTeam": "Select team",
+    "roleKey": "Role",
     "scopeType": "Scope type",
     "scopeId": "Scope ID",
     "resourceType": "Resource type",
@@ -53,6 +59,14 @@
       "organization": "Organization",
       "team": "Team",
       "resource": "Resource"
+    },
+    "roles": {
+      "admin": "Admin",
+      "member": "Member",
+      "owner": "Owner",
+      "manager": "Manager",
+      "contributor": "Contributor",
+      "viewer": "Viewer"
     }
   },
   "permissions": {

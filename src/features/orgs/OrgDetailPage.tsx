@@ -35,7 +35,10 @@ import {
 } from '@/hooks/use-membership'
 import { membershipApi } from '@/api/membership'
 import { orgsApi, type GrantRequest } from '@/api/orgs'
+import { autoSlug } from '@/lib/slug'
 import { UserName } from '@/components/user-name'
+import { UserPicker } from '@/features/membership/UserPicker'
+import type { UserCard } from '@/api/membership'
 import { InvitePanel } from '@/features/membership/InvitePanel'
 import { AddMemberDialog } from './AddMemberDialog'
 
@@ -259,9 +262,10 @@ function TeamsTab({ orgId }: { orgId: string }) {
   const [memberTeam, setMemberTeam] = useState<string | null>(null)
 
   const create = async () => {
-    if (!slug.trim() || !name.trim()) return
+    if (!name.trim()) return
     try {
-      await createTeam.mutateAsync({ slug, name })
+      // slug 留空时按名称自动派生（中文名回退随机），无需手填。
+      await createTeam.mutateAsync({ slug: slug.trim() || autoSlug(name, 'team'), name })
       toast.success(t('teams.created'))
       setSlug('')
       setName('')
@@ -274,12 +278,17 @@ function TeamsTab({ orgId }: { orgId: string }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-2 rounded-lg border p-3">
         <div className="space-y-1.5">
-          <Label>{t('teams.slug')}</Label>
-          <Input className="w-40" value={slug} onChange={(e) => setSlug(e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
           <Label>{t('teams.name')}</Label>
           <Input className="w-48" value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>{t('teams.slug')}</Label>
+          <Input
+            className="w-40"
+            placeholder={t('teams.slugAuto')}
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+          />
         </div>
         <Button onClick={create} disabled={createTeam.isPending}>
           {createTeam.isPending ? (
@@ -318,6 +327,7 @@ function TeamsTab({ orgId }: { orgId: string }) {
       )}
 
       <AddMemberDialog
+        orgId={orgId}
         open={!!memberTeam}
         onOpenChange={(o) => !o && setMemberTeam(null)}
         title={t('teams.addMember')}
@@ -334,27 +344,51 @@ function TeamsTab({ orgId }: { orgId: string }) {
   )
 }
 
+const ROLE_KEYS = ['admin', 'member', 'owner', 'manager', 'contributor', 'viewer']
+
 function GrantsTab({ orgId }: { orgId: string }) {
   const { t } = useTranslation('orgs')
   const grant = useGrantRole()
+  const teams = useTeams(orgId)
   const toastError = useToastError()
-  const [form, setForm] = useState({
-    principal_type: 'user',
-    principal_id: '',
-    role_key: '',
-    scope_type: 'organization',
-    scope_id: orgId,
-    resource_type: '',
-  })
-  const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }))
+
+  const [principalType, setPrincipalType] = useState('user')
+  const [users, setUsers] = useState<UserCard[]>([])
+  const [principalTeam, setPrincipalTeam] = useState('')
+  const [roleKey, setRoleKey] = useState('member')
+  const [scopeType, setScopeType] = useState('organization')
+  const [scopeTeam, setScopeTeam] = useState('')
+
+  const principalId =
+    principalType === 'user' ? (users[0]?.id ?? '') : principalTeam
+  const scopeId =
+    scopeType === 'organization'
+      ? orgId
+      : scopeType === 'team'
+        ? scopeTeam
+        : undefined
+
   const body = (): GrantRequest => ({
-    principal_type: form.principal_type,
-    principal_id: form.principal_id,
-    role_key: form.role_key,
-    scope_type: form.scope_type,
-    scope_id: form.scope_id || undefined,
-    resource_type: form.resource_type || undefined,
+    principal_type: principalType,
+    principal_id: principalId,
+    role_key: roleKey,
+    scope_type: scopeType,
+    scope_id: scopeId || undefined,
+    resource_type: scopeType === 'resource' ? 'project' : undefined,
   })
+
+  const run = async (fn: (b: GrantRequest) => Promise<void>, okKey: string) => {
+    if (!principalId) {
+      toastError(new Error(t('grants.selectUser')))
+      return
+    }
+    try {
+      await fn(body())
+      toast.success(t(okKey))
+    } catch (e) {
+      toastError(e)
+    }
+  }
 
   return (
     <Card className="max-w-2xl">
@@ -366,10 +400,7 @@ function GrantsTab({ orgId }: { orgId: string }) {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label>{t('grants.principalType')}</Label>
-            <Select
-              value={form.principal_type}
-              onValueChange={(v) => set('principal_type', v)}
-            >
+            <Select value={principalType} onValueChange={setPrincipalType}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -380,19 +411,51 @@ function GrantsTab({ orgId }: { orgId: string }) {
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>{t('grants.principalId')}</Label>
-            <Input
-              value={form.principal_id}
-              onChange={(e) => set('principal_id', e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
             <Label>{t('grants.roleKey')}</Label>
-            <Input value={form.role_key} onChange={(e) => set('role_key', e.target.value)} />
+            <Select value={roleKey} onValueChange={setRoleKey}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ROLE_KEYS.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {t(`grants.roles.${r}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+        </div>
+
+        {/* 主体：用户→搜索选人；团队→下拉选团队（不再手填 UUID） */}
+        <div className="space-y-1.5">
+          <Label>
+            {principalType === 'user'
+              ? t('grants.selectUser')
+              : t('grants.selectTeam')}
+          </Label>
+          {principalType === 'user' ? (
+            <UserPicker value={users} onChange={setUsers} max={1} />
+          ) : (
+            <Select value={principalTeam} onValueChange={setPrincipalTeam}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={t('grants.selectTeam')} />
+              </SelectTrigger>
+              <SelectContent>
+                {(teams.data ?? []).map((tm) => (
+                  <SelectItem key={tm.id} value={tm.id}>
+                    {tm.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label>{t('grants.scopeType')}</Label>
-            <Select value={form.scope_type} onValueChange={(v) => set('scope_type', v)}>
+            <Select value={scopeType} onValueChange={setScopeType}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -406,28 +469,28 @@ function GrantsTab({ orgId }: { orgId: string }) {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5">
-            <Label>{t('grants.scopeId')}</Label>
-            <Input value={form.scope_id} onChange={(e) => set('scope_id', e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t('grants.resourceType')}</Label>
-            <Input
-              value={form.resource_type}
-              onChange={(e) => set('resource_type', e.target.value)}
-            />
-          </div>
+          {scopeType === 'team' && (
+            <div className="space-y-1.5">
+              <Label>{t('grants.scope.team')}</Label>
+              <Select value={scopeTeam} onValueChange={setScopeTeam}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={t('grants.selectTeam')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {(teams.data ?? []).map((tm) => (
+                    <SelectItem key={tm.id} value={tm.id}>
+                      {tm.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
+
         <div className="flex gap-2">
           <Button
-            onClick={async () => {
-              try {
-                await grant.mutateAsync(body())
-                toast.success(t('grants.granted'))
-              } catch (e) {
-                toastError(e)
-              }
-            }}
+            onClick={() => run((b) => grant.mutateAsync(b), 'grants.granted')}
             disabled={grant.isPending}
           >
             {grant.isPending && <Loader2 className="size-4 animate-spin" />}
@@ -435,14 +498,7 @@ function GrantsTab({ orgId }: { orgId: string }) {
           </Button>
           <Button
             variant="outline"
-            onClick={async () => {
-              try {
-                await orgsApi.revokeRole(body())
-                toast.success(t('grants.revoked'))
-              } catch (e) {
-                toastError(e)
-              }
-            }}
+            onClick={() => run((b) => orgsApi.revokeRole(b), 'grants.revoked')}
           >
             {t('grants.revoke')}
           </Button>

@@ -3,8 +3,10 @@
   "subtitle": "企业内的组织与团队、作用域角色授予",
   "create": {
     "title": "新建组织",
-    "slug": "标识 slug",
+    "slug": "标识 slug（可选）",
     "slugPlaceholder": "如 research",
+    "slugAuto": "留空将自动生成",
+    "slugHint": "仅用于 URL，可留空，系统按名称自动生成",
     "name": "名称",
     "namePlaceholder": "如 研发中心",
     "submit": "创建",
@@ -17,18 +19,20 @@
   "created": "组织已创建",
   "addMember": {
     "title": "添加组织成员",
-    "userId": "用户 ID",
-    "userIdPlaceholder": "用户 UUID",
+    "user": "用户",
+    "userPlaceholder": "搜索姓名或邮箱…",
     "role": "角色",
     "submit": "添加",
     "added": "成员已添加",
-    "userRequired": "请输入用户 ID"
+    "userRequired": "请选择用户",
+    "empty": "该组织暂无可选成员"
   },
   "orgRole": { "admin": "管理员", "member": "成员" },
   "teams": {
     "title": "团队",
     "create": "新建团队",
-    "slug": "标识 slug",
+    "slug": "标识 slug（可选）",
+    "slugAuto": "留空将自动生成",
     "name": "名称",
     "empty": "暂无团队",
     "created": "团队已创建",
@@ -39,7 +43,9 @@
     "desc": "把角色按作用域（租户/组织/团队/资源）授予用户或团队。",
     "principalType": "主体类型",
     "principalId": "主体 ID",
-    "roleKey": "角色 key",
+    "selectUser": "选择用户",
+    "selectTeam": "选择团队",
+    "roleKey": "角色",
     "scopeType": "作用域类型",
     "scopeId": "作用域 ID",
     "resourceType": "资源类型",
@@ -53,6 +59,14 @@
       "organization": "组织",
       "team": "团队",
       "resource": "资源"
+    },
+    "roles": {
+      "admin": "管理员",
+      "member": "成员",
+      "owner": "所有者",
+      "manager": "管理者",
+      "contributor": "贡献者",
+      "viewer": "查看者"
     }
   },
   "permissions": {

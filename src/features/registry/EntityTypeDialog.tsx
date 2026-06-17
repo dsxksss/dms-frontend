@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select'
 import { useCreateType, useUpdateType } from '@/hooks/use-registry'
 import { useToastError } from '@/hooks/use-toast-error'
+import { autoSlug } from '@/lib/slug'
 import type { EntityScope, EntityType, FieldDefInput } from '@/api/registry'
 import { FieldBuilder } from './FieldBuilder'
 
@@ -60,7 +61,6 @@ export function EntityTypeDialog({
 
   const submit = async () => {
     const errs: typeof errors = {}
-    if (!isEdit && !key.trim()) errs.key = t('types.keyRequired')
     if (!name.trim()) errs.name = t('types.nameRequired')
     setErrors(errs)
     if (Object.keys(errs).length) return
@@ -71,7 +71,9 @@ export function EntityTypeDialog({
         await update.mutateAsync({ name, fields, version: type.version })
         toast.success(t('types.updated'))
       } else {
-        await create.mutateAsync({ body: { key, name, fields }, scope })
+        // key 留空时按名称自动派生（中文名回退随机），用户无需手填。
+        const finalKey = key.trim() || autoSlug(name, 'type')
+        await create.mutateAsync({ body: { key: finalKey, name, fields }, scope })
         toast.success(t('types.created'))
       }
       onOpenChange(false)
@@ -96,15 +98,10 @@ export function EntityTypeDialog({
                 <Label htmlFor="key">{t('types.key')}</Label>
                 <Input
                   id="key"
-                  autoFocus
-                  placeholder={t('types.keyPlaceholder')}
+                  placeholder={t('types.keyAuto')}
                   value={key}
-                  aria-invalid={!!errors.key}
                   onChange={(e) => setKey(e.target.value)}
                 />
-                {errors.key && (
-                  <p className="text-destructive text-sm">{errors.key}</p>
-                )}
               </div>
               <div className="space-y-2">
                 <Label>{t('types.scope')}</Label>
@@ -130,7 +127,7 @@ export function EntityTypeDialog({
             <Label htmlFor="tname">{t('types.name')}</Label>
             <Input
               id="tname"
-              autoFocus={isEdit}
+              autoFocus
               placeholder={t('types.namePlaceholder')}
               value={name}
               aria-invalid={!!errors.name}

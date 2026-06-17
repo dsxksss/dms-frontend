@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useCreateTenant } from '@/hooks/use-platform'
 import { useToastError } from '@/hooks/use-toast-error'
+import { autoSlug } from '@/lib/slug'
 import { PLAN_OPTIONS } from './plans'
 
 export function CreateTenantDialog({
@@ -65,7 +66,6 @@ export function CreateTenantDialog({
   const submit = async () => {
     const e = {
       company_name: !form.company_name.trim(),
-      slug: !form.slug.trim(),
       admin_email: !form.admin_email.trim(),
       admin_password: !form.admin_password.trim(),
     }
@@ -74,7 +74,8 @@ export function CreateTenantDialog({
     try {
       const created = await create.mutateAsync({
         company_name: form.company_name.trim(),
-        slug: form.slug.trim(),
+        // slug 留空时按企业名自动派生（中文名回退随机）。
+        slug: form.slug.trim() || autoSlug(form.company_name, 'org'),
         plan: form.plan,
         admin_email: form.admin_email.trim(),
         admin_password: form.admin_password,
@@ -116,9 +117,8 @@ export function CreateTenantDialog({
               <Label htmlFor="tslug">{t('tenants.create.slug')}</Label>
               <Input
                 id="tslug"
-                placeholder={t('tenants.create.slugPlaceholder')}
+                placeholder={t('tenants.create.slugAuto')}
                 value={form.slug}
-                aria-invalid={err.slug}
                 onChange={(e) => set('slug')(e.target.value)}
               />
             </div>

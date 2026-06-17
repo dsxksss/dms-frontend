@@ -8,21 +8,44 @@ import { DataTable } from '@/components/data-table'
 import { EmptyState } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { UserPicker } from '@/features/membership/UserPicker'
 import { useAudit } from '@/hooks/use-audit'
 import { shortId, formatDateTime } from '@/lib/format'
 import type { AuditEntry } from '@/api/audit'
+import type { UserCard } from '@/api/membership'
+
+const ENTITY_TYPES = [
+  'project',
+  'dataset',
+  'entity',
+  'entity_type',
+  'file',
+  'protocol',
+  'run',
+  'signature',
+  'organization',
+  'team',
+]
+const ALL = '__all'
 
 export function AuditPage() {
   const { t } = useTranslation('audit')
-  const [draft, setDraft] = useState({ entity_type: '', actor_id: '' })
+  const [entityType, setEntityType] = useState('')
+  const [actorUser, setActorUser] = useState<UserCard[]>([])
   const [filters, setFilters] = useState({ entity_type: '', actor_id: '' })
   const [page, setPage] = useState({ limit: 20, offset: 0 })
   const [changesOf, setChangesOf] = useState<AuditEntry | null>(null)
@@ -121,29 +144,35 @@ export function AuditPage() {
 
       <div className="flex flex-wrap items-end gap-3 pb-3">
         <div className="space-y-1.5">
-          <Label htmlFor="etype">{t('filters.entityType')}</Label>
-          <Input
-            id="etype"
-            className="w-48"
-            placeholder={t('filters.entityTypePlaceholder')}
-            value={draft.entity_type}
-            onChange={(e) => setDraft((d) => ({ ...d, entity_type: e.target.value }))}
-          />
+          <Label>{t('filters.entityType')}</Label>
+          <Select
+            value={entityType || ALL}
+            onValueChange={(v) => setEntityType(v === ALL ? '' : v)}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>{t('filters.entityTypeAll')}</SelectItem>
+              {ENTITY_TYPES.map((et) => (
+                <SelectItem key={et} value={et}>
+                  {t(`entityTypes.${et}`, et)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="actor">{t('filters.actor')}</Label>
-          <Input
-            id="actor"
-            className="w-64"
-            placeholder={t('filters.actorPlaceholder')}
-            value={draft.actor_id}
-            onChange={(e) => setDraft((d) => ({ ...d, actor_id: e.target.value }))}
-          />
+        <div className="w-64 space-y-1.5">
+          <Label>{t('filters.actor')}</Label>
+          <UserPicker value={actorUser} onChange={setActorUser} max={1} />
         </div>
         <Button
           variant="outline"
           onClick={() => {
-            setFilters(draft)
+            setFilters({
+              entity_type: entityType,
+              actor_id: actorUser[0]?.id ?? '',
+            })
             setPage((p) => ({ ...p, offset: 0 }))
           }}
         >
@@ -152,7 +181,8 @@ export function AuditPage() {
         <Button
           variant="ghost"
           onClick={() => {
-            setDraft({ entity_type: '', actor_id: '' })
+            setEntityType('')
+            setActorUser([])
             setFilters({ entity_type: '', actor_id: '' })
             setPage((p) => ({ ...p, offset: 0 }))
           }}
