@@ -35,13 +35,13 @@
     "restart": "Needs redeploy",
     "readonly": "Read-only",
     "fields": {
-      "signup.tenant_enabled": "When on, visitors can self-provision a new company from the front door; when off, only platform admins can provision.",
-      "signup.default_plan": "Default subscription tier applied to newly provisioned companies.",
-      "auth.default_tenant": "Company to fall back to at sign-in when it can't be inferred from email or subdomain.",
-      "auth.tenant_host_suffix": "Domain suffix used to map subdomains to companies, e.g. dms.app (acme.dms.app → acme).",
-      "branding.product_name": "Product name shown throughout the UI.",
-      "storage.backend": "File storage backend (e.g. local fs / object storage). Deployment-level; changing it needs a redeploy.",
-      "storage.root": "Root path / bucket for file storage. Deployment-level; changing it needs a redeploy."
+      "signup.tenant_enabled": "When on, visitors can self-provision a new company from the sign-in page; when off, companies can only be provisioned by platform admins here (recommended off for cloud).",
+      "signup.default_plan": "Subscription tier applied by default when a company is self-provisioned or created here (sets that company's quota limits).",
+      "auth.default_tenant": "Sign-in fallback. Company resolution order is: email lookup (emails are globally unique, usually a hit) → subdomain → this default. Rarely needed on cloud SaaS — leave blank; mainly for a single-company on-prem install, where setting it lets users sign in with just email + password.",
+      "auth.tenant_host_suffix": "Domain suffix for mapping subdomains to companies — e.g. set dms.app and acme.dms.app resolves to company acme. Only needed for subdomain-per-company deployments; cloud resolves by email, so usually left blank.",
+      "branding.product_name": "Product name shown on the sign-in page, sidebar and throughout the UI.",
+      "storage.backend": "File storage backend (e.g. local fs / object storage). Deployment-level; hot-swapping would orphan existing files, so it is read-only — change it via a redeploy.",
+      "storage.root": "Root path / object-storage bucket for files. Deployment-level and read-only — changing it requires a redeploy and data migration."
     }
   },
   "tenantSettings": {

@@ -35,13 +35,13 @@
     "restart": "需重部署",
     "readonly": "只读",
     "fields": {
-      "signup.tenant_enabled": "开启后，访客可在前台自助开通新企业；关闭则只能由平台管理员开通。",
-      "signup.default_plan": "新企业默认采用的订阅档位。",
-      "auth.default_tenant": "无法从邮箱或子域名识别企业时，登录回退到的默认企业。",
-      "auth.tenant_host_suffix": "用子域名区分企业时的域名后缀，如 dms.app（acme.dms.app → acme）。",
-      "branding.product_name": "显示在界面各处的产品名称。",
-      "storage.backend": "文件存储后端（如本地 fs / 对象存储）。属部署级，改动需重新部署。",
-      "storage.root": "文件存储的根路径 / Bucket。属部署级，改动需重新部署。"
+      "signup.tenant_enabled": "开启后，访客可在登录页自助开通新企业；关闭则企业只能由平台管理员在此后台开通（推荐云端关闭）。",
+      "signup.default_plan": "通过自助开通或后台新建企业时，默认套用的订阅档位（决定该企业的配额上限）。",
+      "auth.default_tenant": "登录兜底项。系统识别企业的顺序是：邮箱反查（邮箱全局唯一，通常已命中）→ 子域名 → 此默认企业。云端 SaaS 几乎用不到，可留空；主要用于「单企业私有化部署」——设上后该实例的用户登录只需邮箱+密码。",
+      "auth.tenant_host_suffix": "按子域名区分企业时的域名后缀，如填 dms.app 则 acme.dms.app 解析为企业 acme。仅当以「子域名多企业」形式部署时需要；云端默认按邮箱反查，通常留空。",
+      "branding.product_name": "显示在登录页、侧栏等界面各处的产品名称。",
+      "storage.backend": "文件存储后端（如本地 fs / 对象存储）。属部署级配置，热改会导致已有文件失联，故只读——如需更换请走重新部署。",
+      "storage.root": "文件存储的根路径 / 对象存储 Bucket。属部署级配置，只读——更换需重新部署并迁移数据。"
     }
   },
   "tenantSettings": {
