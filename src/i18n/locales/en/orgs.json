@@ -70,11 +70,20 @@
     }
   },
   "permissions": {
-    "title": "My effective permissions",
-    "desc": "Cumulative permissions on the company plus an optional extra scope.",
-    "organization": "Organization ID (optional)",
-    "check": "Check",
-    "empty": "None"
+    "title": "What I can do",
+    "desc": "Actions you can perform in the current company.",
+    "empty": "No permissions",
+    "resources": {
+      "project": "Projects",
+      "dataset": "Datasets",
+      "org": "Organizations",
+      "user": "User directory",
+      "audit": "Audit log"
+    },
+    "actions": {
+      "read": "View",
+      "write": "Manage"
+    }
   },
   "tabs": { "teams": "Teams", "members": "Members", "grants": "Role grants", "join": "Join requests" }
 }

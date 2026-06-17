@@ -70,11 +70,20 @@
     }
   },
   "permissions": {
-    "title": "我的有效权限",
-    "desc": "当前用户在「企业 + 可选附加作用域」上的累积权限。",
-    "organization": "组织 ID（可选）",
-    "check": "查询",
-    "empty": "无"
+    "title": "我能做什么",
+    "desc": "你在当前企业里可执行的操作。",
+    "empty": "暂无权限",
+    "resources": {
+      "project": "项目",
+      "dataset": "数据集",
+      "org": "组织",
+      "user": "用户目录",
+      "audit": "审计日志"
+    },
+    "actions": {
+      "read": "查看",
+      "write": "管理"
+    }
   },
   "tabs": { "teams": "团队", "members": "成员", "grants": "角色授予", "join": "加入申请" }
 }
