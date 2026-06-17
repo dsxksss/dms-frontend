@@ -31,7 +31,7 @@ export function useCan(perm: string): boolean {
   return hasPerm(me, perm)
 }
 
-/** 后台管理权限：拥有任一管理类权限即视为可进 /admin。 */
+/** 后台管理权限：拥有任一管理类权限即视为可进 /system。 */
 export const ADMIN_PERMS = ['org:write', 'user:write', 'audit:read'] as const
 
 export function isAdmin(me: Me | null): boolean {

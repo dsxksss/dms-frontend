@@ -32,10 +32,10 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { to: '/admin', labelKey: 'nav.overview', icon: Gauge, end: true },
-  { to: '/admin/orgs', labelKey: 'nav.orgs', icon: Building2 },
-  { to: '/admin/users', labelKey: 'nav.users', icon: Users },
-  { to: '/admin/audit', labelKey: 'nav.audit', icon: ScrollText },
+  { to: '/system', labelKey: 'nav.overview', icon: Gauge, end: true },
+  { to: '/system/orgs', labelKey: 'nav.orgs', icon: Building2 },
+  { to: '/system/users', labelKey: 'nav.users', icon: Users },
+  { to: '/system/audit', labelKey: 'nav.audit', icon: ScrollText },
 ]
 
 function SidebarNav() {

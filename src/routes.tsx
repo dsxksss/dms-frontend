@@ -76,18 +76,18 @@ const PlatformSettingsPage = lazyPage(
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/signup', element: <SignupPage /> },
-  { path: '/admin/login', element: <AdminLoginPage /> },
+  { path: '/system/login', element: <AdminLoginPage /> },
   {
     element: <AdminProtectedRoute />,
     children: [
       {
         element: <AdminLayout />,
         children: [
-          { path: 'admin', element: <AdminOverviewPage /> },
-          { path: 'admin/orgs', element: <OrgsListPage /> },
-          { path: 'admin/orgs/:id', element: <OrgDetailPage /> },
-          { path: 'admin/users', element: <AdminUsersPage /> },
-          { path: 'admin/audit', element: <AuditPage /> },
+          { path: 'system', element: <AdminOverviewPage /> },
+          { path: 'system/orgs', element: <OrgsListPage /> },
+          { path: 'system/orgs/:id', element: <OrgDetailPage /> },
+          { path: 'system/users', element: <AdminUsersPage /> },
+          { path: 'system/audit', element: <AuditPage /> },
         ],
       },
     ],

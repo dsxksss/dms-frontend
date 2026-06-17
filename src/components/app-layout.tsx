@@ -107,7 +107,7 @@ function UserMenu() {
         <DropdownMenuSeparator />
         {admin && (
           <DropdownMenuItem asChild>
-            <Link to="/admin">
+            <Link to="/system">
               <ShieldCheck className="size-4" />
               {ta('toAdmin')}
             </Link>

@@ -25,7 +25,7 @@ export function LoginPage({ adminMode = false }: { adminMode?: boolean }) {
   const [searchParams] = useSearchParams()
   const from =
     (location.state as { from?: string } | null)?.from ??
-    (adminMode ? '/admin' : '/')
+    (adminMode ? '/system' : '/')
 
   // 企业由后端按邮箱反查 / 子域名 / ?tenant= / 默认 自动解析，用户无需在登录时指定。
   const resolvedTenant = resolveTenant(searchParams.get('tenant')) || undefined

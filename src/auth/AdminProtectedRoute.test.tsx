@@ -9,7 +9,7 @@ function tree() {
   return (
     <Routes>
       <Route element={<AdminProtectedRoute />}>
-        <Route path="/admin" element={<div>ADMIN_OK</div>} />
+        <Route path="/system" element={<div>ADMIN_OK</div>} />
       </Route>
     </Routes>
   )
@@ -21,13 +21,13 @@ beforeEach(async () => {
 
 describe('AdminProtectedRoute', () => {
   it('renders admin content for users with an admin permission', async () => {
-    renderWithProviders(tree(), { route: '/admin', me: TEST_ME })
+    renderWithProviders(tree(), { route: '/system', me: TEST_ME })
     expect(await screen.findByText('ADMIN_OK')).toBeInTheDocument()
   })
 
   it('blocks users without admin permission', async () => {
     renderWithProviders(tree(), {
-      route: '/admin',
+      route: '/system',
       me: { ...TEST_ME, permissions: ['project:read'] },
     })
     expect(await screen.findByText('无后台权限')).toBeInTheDocument()
