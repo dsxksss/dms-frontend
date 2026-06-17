@@ -1,39 +1,36 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Globe, Lock, Pencil, Trash2, Users } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState, ErrorState } from '@/components/states'
 import { ConfirmDialog } from '@/components/confirm-dialog'
-import { useAuth, useCan } from '@/auth/auth-context'
 import { useDataset, useDeleteDataset } from '@/hooks/use-datasets'
+import { useProjectRole } from '@/hooks/use-projects'
+import { roleAtLeast } from '@/lib/roles'
 import { useToastError } from '@/hooks/use-toast-error'
 import { shortId } from '@/lib/format'
-import { UserName } from '@/components/user-name'
-import type { Visibility } from '@/api/datasets'
 import { CreateDatasetDialog } from './CreateDatasetDialog'
 import { DatasetVersionsPanel } from './DatasetVersionsPanel'
 import { DatasetPreviewPanel } from './DatasetPreviewPanel'
-import { DatasetLinksPanel } from './DatasetLinksPanel'
-
-const VIS_ICON = { private: Lock, org: Users, public: Globe } as const
 
 export function DatasetDetailPage() {
-  const { id = '' } = useParams()
+  const { id: projectId = '', dsId = '' } = useParams()
   const { t } = useTranslation('datasets')
   const navigate = useNavigate()
-  const { me } = useAuth()
-  const canWrite = useCan('dataset:write')
-  const query = useDataset(id)
-  const del = useDeleteDataset()
+  const role = useProjectRole(projectId)
+  const canManage = roleAtLeast(role, 'contributor')
+  const query = useDataset(projectId, dsId)
+  const del = useDeleteDataset(projectId)
   const toastError = useToastError()
   const [editOpen, setEditOpen] = useState(false)
   const [delOpen, setDelOpen] = useState(false)
+
+  const backToProject = () => navigate(`/projects/${projectId}`)
 
   if (query.isLoading) {
     return (
@@ -49,15 +46,11 @@ export function DatasetDetailPage() {
   const dataset = query.data
   if (!dataset) return <EmptyState title={t('empty.title')} />
 
-  const isOwner = me?.user_id === dataset.owner_id
-  const canManage = canWrite && isOwner
-  const Vis = VIS_ICON[dataset.visibility as Visibility]
-
   const onDelete = async () => {
     try {
       await del.mutateAsync({ id: dataset.id, version: dataset.version })
       toast.success(t('toast.deleted'))
-      navigate('/datasets')
+      backToProject()
     } catch (e) {
       toastError(e)
     }
@@ -67,19 +60,13 @@ export function DatasetDetailPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/datasets')}>
+          <Button variant="ghost" size="icon" onClick={backToProject}>
             <ArrowLeft className="size-4" />
           </Button>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-semibold tracking-tight">
-                {dataset.name}
-              </h1>
-              <Badge variant="secondary" className="gap-1">
-                <Vis className="size-3" />
-                {t(`visibility.${dataset.visibility}`)}
-              </Badge>
-            </div>
+            <h1 className="text-xl font-semibold tracking-tight">
+              {dataset.name}
+            </h1>
             {dataset.description && (
               <p className="text-muted-foreground text-sm">{dataset.description}</p>
             )}
@@ -103,20 +90,12 @@ export function DatasetDetailPage() {
           <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
           <TabsTrigger value="versions">{t('tabs.versions')}</TabsTrigger>
           <TabsTrigger value="preview">{t('tabs.preview')}</TabsTrigger>
-          <TabsTrigger value="links">{t('tabs.links')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="pt-4">
           <dl className="grid max-w-xl grid-cols-[8rem_1fr] gap-y-3 text-sm">
             <dt className="text-muted-foreground">{t('overview.id')}</dt>
             <dd className="font-mono">{shortId(dataset.id)}</dd>
-            <dt className="text-muted-foreground">{t('overview.owner')}</dt>
-            <dd>
-              <UserName id={dataset.owner_id} />
-              {isOwner && <span className="text-muted-foreground ml-1">{t('you')}</span>}
-            </dd>
-            <dt className="text-muted-foreground">{t('overview.visibility')}</dt>
-            <dd>{t(`visibility.${dataset.visibility}`)}</dd>
             <dt className="text-muted-foreground">{t('overview.version')}</dt>
             <dd className="tabular-nums">{dataset.version}</dd>
             <dt className="text-muted-foreground">{t('overview.description')}</dt>
@@ -125,17 +104,19 @@ export function DatasetDetailPage() {
         </TabsContent>
 
         <TabsContent value="versions" className="pt-4">
-          <DatasetVersionsPanel datasetId={id} canManage={canManage} />
+          <DatasetVersionsPanel
+            projectId={projectId}
+            datasetId={dsId}
+            canManage={canManage}
+          />
         </TabsContent>
         <TabsContent value="preview" className="pt-4">
-          <DatasetPreviewPanel datasetId={id} />
-        </TabsContent>
-        <TabsContent value="links" className="pt-4">
-          <DatasetLinksPanel datasetId={id} canManage={canManage} />
+          <DatasetPreviewPanel projectId={projectId} datasetId={dsId} />
         </TabsContent>
       </Tabs>
 
       <CreateDatasetDialog
+        projectId={projectId}
         open={editOpen}
         onOpenChange={setEditOpen}
         dataset={dataset}

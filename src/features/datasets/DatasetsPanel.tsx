@@ -2,40 +2,37 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Globe, Lock, MoreHorizontal, Pencil, Plus, Trash2, Users } from 'lucide-react'
+import { MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { PageHeader } from '@/components/page-header'
 import { DataTable } from '@/components/data-table'
 import { EmptyState } from '@/components/states'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Can } from '@/auth/Can'
-import { useAuth, useCan } from '@/auth/auth-context'
 import { useDatasets, useDeleteDataset } from '@/hooks/use-datasets'
+import { useProjectRole } from '@/hooks/use-projects'
+import { roleAtLeast } from '@/lib/roles'
 import { useToastError } from '@/hooks/use-toast-error'
-import { UserName } from '@/components/user-name'
-import type { Dataset, Visibility } from '@/api/datasets'
+import type { Dataset } from '@/api/datasets'
 import { CreateDatasetDialog } from './CreateDatasetDialog'
 
-const VIS_ICON = { private: Lock, org: Users, public: Globe } as const
-
-export function DatasetsListPage() {
+/** 项目内数据集列表（项目成员可见，Contributor+ 可写）。 */
+export function DatasetsPanel({ projectId }: { projectId: string }) {
   const { t } = useTranslation('datasets')
   const navigate = useNavigate()
-  const { me } = useAuth()
-  const canWrite = useCan('dataset:write')
+  const role = useProjectRole(projectId)
+  const canWrite = roleAtLeast(role, 'contributor')
   const toastError = useToastError()
-  const query = useDatasets()
-  const del = useDeleteDataset()
+  const query = useDatasets(projectId)
+  const del = useDeleteDataset(projectId)
 
+  const [createOpen, setCreateOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Dataset | null>(null)
   const [delTarget, setDelTarget] = useState<Dataset | null>(null)
 
@@ -47,35 +44,20 @@ export function DatasetsListPage() {
         cell: ({ row }) => (
           <button
             className="hover:text-brand text-left font-medium hover:underline"
-            onClick={() => navigate(`/datasets/${row.original.id}`)}
+            onClick={() =>
+              navigate(`/projects/${projectId}/datasets/${row.original.id}`)
+            }
           >
             {row.original.name}
           </button>
         ),
       },
       {
-        accessorKey: 'visibility',
-        header: t('columns.visibility'),
-        cell: ({ row }) => {
-          const v = row.original.visibility as Visibility
-          const Icon = VIS_ICON[v]
-          return (
-            <Badge variant="secondary" className="gap-1">
-              <Icon className="size-3" />
-              {t(`visibility.${v}`)}
-            </Badge>
-          )
-        },
-      },
-      {
-        accessorKey: 'owner_id',
-        header: t('columns.owner'),
+        accessorKey: 'description',
+        header: t('columns.description'),
         cell: ({ row }) => (
-          <span className="flex items-center gap-1 text-sm">
-            <UserName id={row.original.owner_id} />
-            {me?.user_id === row.original.owner_id && (
-              <span className="text-muted-foreground">{t('you')}</span>
-            )}
+          <span className="text-muted-foreground text-sm">
+            {row.original.description || '—'}
           </span>
         ),
       },
@@ -90,9 +72,8 @@ export function DatasetsListPage() {
         id: 'actions',
         header: '',
         cell: ({ row }) => {
+          if (!canWrite) return null
           const d = row.original
-          const isOwner = me?.user_id === d.owner_id
-          if (!canWrite || !isOwner) return null
           return (
             <div className="flex justify-end">
               <DropdownMenu>
@@ -120,10 +101,8 @@ export function DatasetsListPage() {
         },
       },
     ],
-    [t, navigate, canWrite, me],
+    [t, navigate, projectId, canWrite],
   )
-
-  const [createOpen, setCreateOpen] = useState(false)
 
   const onDelete = async () => {
     if (!delTarget) return
@@ -137,19 +116,16 @@ export function DatasetsListPage() {
   }
 
   return (
-    <div>
-      <PageHeader
-        title={t('title')}
-        description={t('subtitle')}
-        actions={
-          <Can perm="dataset:write">
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="size-4" />
-              {t('create.title')}
-            </Button>
-          </Can>
-        }
-      />
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="font-medium">{t('title')}</h2>
+        {canWrite && (
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="size-4" />
+            {t('create.title')}
+          </Button>
+        )}
+      </div>
 
       <DataTable
         columns={columns}
@@ -173,13 +149,17 @@ export function DatasetsListPage() {
         }
       />
 
-      <CreateDatasetDialog open={createOpen} onOpenChange={setCreateOpen} />
       <CreateDatasetDialog
+        projectId={projectId}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+      />
+      <CreateDatasetDialog
+        projectId={projectId}
         open={!!editTarget}
         onOpenChange={(o) => !o && setEditTarget(null)}
         dataset={editTarget}
       />
-
       <ConfirmDialog
         open={!!delTarget}
         onOpenChange={(o) => !o && setDelTarget(null)}

@@ -1,10 +1,9 @@
 {
   "title": "Datasets",
-  "subtitle": "Enterprise data assets (independent of projects, shared by visibility)",
+  "subtitle": "Datasets within the project (visible to members, writable by Contributor+)",
   "columns": {
     "name": "Name",
-    "visibility": "Visibility",
-    "owner": "Owner",
+    "description": "Description",
     "version": "Version"
   },
   "visibility": { "private": "Private", "org": "Organization", "public": "Public" },

@@ -60,7 +60,7 @@ function RunLinksSection({
 }) {
   const { t } = useTranslation('protocols')
   const links = useRunLinks(projectId, runId)
-  const datasets = useDatasets()
+  const datasets = useDatasets(projectId)
   const add = useAddRunLink(projectId, runId)
   const del = useDeleteRunLink(projectId, runId)
   const toastError = useToastError()

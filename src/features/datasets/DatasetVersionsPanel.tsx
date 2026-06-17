@@ -25,16 +25,18 @@ import type { ColumnRole, DatasetVersion } from '@/api/datasets'
 const ROLES: ColumnRole[] = ['feature', 'label', 'id', 'ignore']
 
 function VersionCard({
+  projectId,
   datasetId,
   version,
   canManage,
 }: {
+  projectId: string
   datasetId: string
   version: DatasetVersion
   canManage: boolean
 }) {
   const { t } = useTranslation('datasets')
-  const setRoles = useSetColumnRoles(datasetId)
+  const setRoles = useSetColumnRoles(projectId, datasetId)
   const toastError = useToastError()
   const [draft, setDraft] = useState<Record<string, string>>(
     Object.fromEntries(version.columns.map((c) => [c.name, c.role])),
@@ -111,15 +113,17 @@ function VersionCard({
 }
 
 export function DatasetVersionsPanel({
+  projectId,
   datasetId,
   canManage,
 }: {
+  projectId: string
   datasetId: string
   canManage: boolean
 }) {
   const { t } = useTranslation('datasets')
-  const query = useDatasetVersions(datasetId)
-  const upload = useUploadVersion(datasetId)
+  const query = useDatasetVersions(projectId, datasetId)
+  const upload = useUploadVersion(projectId, datasetId)
   const toastError = useToastError()
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -171,6 +175,7 @@ export function DatasetVersionsPanel({
           {query.data.map((v) => (
             <VersionCard
               key={v.id}
+              projectId={projectId}
               datasetId={datasetId}
               version={v}
               canManage={canManage}

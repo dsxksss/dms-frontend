@@ -1,10 +1,9 @@
 {
   "title": "数据集",
-  "subtitle": "企业级数据资产（独立于项目，按可见性共享）",
+  "subtitle": "项目内的数据集（项目成员可见，Contributor 以上可写）",
   "columns": {
     "name": "名称",
-    "visibility": "可见性",
-    "owner": "所有者",
+    "description": "描述",
     "version": "版本"
   },
   "visibility": { "private": "私有", "org": "组织可见", "public": "企业公开" },

@@ -3,7 +3,6 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Building2,
-  Database,
   FolderKanban,
   Loader2,
   LogOut,
@@ -39,7 +38,6 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { to: '/projects', labelKey: 'nav.projects', icon: FolderKanban },
-  { to: '/datasets', labelKey: 'nav.datasets', icon: Database, perm: 'dataset:read' },
   { to: '/inbox', labelKey: 'nav.inbox', icon: Mail },
   {
     to: '/orgs',

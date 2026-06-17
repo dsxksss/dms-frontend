@@ -13,6 +13,7 @@ import { useProject } from '@/hooks/use-projects'
 import { shortId } from '@/lib/format'
 import { RegistryTab } from '@/features/registry/RegistryTab'
 import { ProtocolsTab } from '@/features/protocols/ProtocolsTab'
+import { DatasetsPanel } from '@/features/datasets/DatasetsPanel'
 import { FilesPanel } from '@/features/files/FilesPanel'
 import { SignaturesPanel } from '@/features/signatures/SignaturesPanel'
 import { MembersPanel } from './MembersPanel'
@@ -81,6 +82,7 @@ export function ProjectDetailPage() {
           <TabsTrigger value="members">{t('tabs.members')}</TabsTrigger>
           <TabsTrigger value="registry">{t('tabs.registry')}</TabsTrigger>
           <TabsTrigger value="protocols">{t('tabs.protocols')}</TabsTrigger>
+          <TabsTrigger value="datasets">{t('tabs.datasets')}</TabsTrigger>
           <TabsTrigger value="files">{t('tabs.files')}</TabsTrigger>
           <TabsTrigger value="signatures">{t('tabs.signatures')}</TabsTrigger>
         </TabsList>
@@ -111,6 +113,9 @@ export function ProjectDetailPage() {
         </TabsContent>
         <TabsContent value="protocols" className="pt-4">
           <ProtocolsTab projectId={id} />
+        </TabsContent>
+        <TabsContent value="datasets" className="pt-4">
+          <DatasetsPanel projectId={id} />
         </TabsContent>
         <TabsContent value="files" className="pt-4">
           <FilesPanel projectId={id} />

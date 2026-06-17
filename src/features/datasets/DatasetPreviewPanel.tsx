@@ -27,7 +27,13 @@ import { useDebounce } from '@/hooks/use-debounce'
 import { useToastError } from '@/hooks/use-toast-error'
 import { datasetsApi } from '@/api/datasets'
 
-export function DatasetPreviewPanel({ datasetId }: { datasetId: string }) {
+export function DatasetPreviewPanel({
+  projectId,
+  datasetId,
+}: {
+  projectId: string
+  datasetId: string
+}) {
   const { t } = useTranslation('datasets')
   const toastError = useToastError()
   const [search, setSearch] = useState('')
@@ -42,12 +48,12 @@ export function DatasetPreviewPanel({ datasetId }: { datasetId: string }) {
     sort: sort || undefined,
     desc,
   }
-  const query = useDatasetPreview(datasetId, params)
+  const query = useDatasetPreview(projectId, datasetId, params)
   const cols = query.data?.columns ?? []
 
   const doExport = async (format: 'csv' | 'parquet') => {
     try {
-      await datasetsApi.exportDownload(datasetId, format)
+      await datasetsApi.exportDownload(projectId, datasetId, format)
     } catch (e) {
       toastError(e)
     }

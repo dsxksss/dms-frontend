@@ -23,10 +23,6 @@ const ProjectDetailPage = lazyPage(
   () => import('@/features/projects/ProjectDetailPage'),
   'ProjectDetailPage',
 )
-const DatasetsListPage = lazyPage(
-  () => import('@/features/datasets/DatasetsListPage'),
-  'DatasetsListPage',
-)
 const DatasetDetailPage = lazyPage(
   () => import('@/features/datasets/DatasetDetailPage'),
   'DatasetDetailPage',
@@ -94,8 +90,7 @@ export const router = createBrowserRouter([
           { index: true, element: <Navigate to="/projects" replace /> },
           { path: 'projects', element: <ProjectsListPage /> },
           { path: 'projects/:id', element: <ProjectDetailPage /> },
-          { path: 'datasets', element: <DatasetsListPage /> },
-          { path: 'datasets/:id', element: <DatasetDetailPage /> },
+          { path: 'projects/:id/datasets/:dsId', element: <DatasetDetailPage /> },
           { path: 'orgs', element: <OrgsListPage /> },
           { path: 'orgs/:id', element: <OrgDetailPage /> },
           { path: 'inbox', element: <InboxPage /> },

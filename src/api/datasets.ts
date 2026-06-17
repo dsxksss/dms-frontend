@@ -1,6 +1,5 @@
 import { download, request } from '@/api/client'
 
-export type Visibility = 'private' | 'org' | 'public'
 export type ColumnType = 'string' | 'integer' | 'number' | 'boolean'
 export type ColumnRole = 'feature' | 'label' | 'id' | 'ignore'
 
@@ -10,14 +9,12 @@ export interface ColumnSchema {
   role: ColumnRole
 }
 
-/** Dataset 为企业级一等资源（owner + 可见性），不属于 project。 */
+/** Dataset 挂在项目下；可见/可写由项目成员角色决定（无 owner/visibility）。 */
 export interface Dataset {
   id: string
-  owner_id: string
-  organization_id: string | null
+  project_id: string
   name: string
   description: string
-  visibility: Visibility
   version: number
 }
 
@@ -40,18 +37,9 @@ export interface QueryPage {
   offset: number
 }
 
-export interface DatasetLink {
-  id: string
-  dataset_id: string
-  entity_id: string
-  kind: string
-}
-
 export interface CreateDatasetInput {
   name: string
   description?: string
-  visibility?: Visibility
-  organization_id?: string
 }
 
 export interface PreviewParams {
@@ -65,65 +53,57 @@ export interface PreviewParams {
   desc?: boolean
 }
 
-const ds = (id: string) => `/v1/datasets/${id}`
+const base = (projectId: string) => `/v1/projects/${projectId}/datasets`
+const ds = (projectId: string, id: string) => `${base(projectId)}/${id}`
 
 export const datasetsApi = {
-  list: () => request<Dataset[]>('/v1/datasets'),
-  get: (id: string) => request<Dataset>(ds(id)),
-  create: (body: CreateDatasetInput) =>
-    request<Dataset>('/v1/datasets', { method: 'POST', body }),
+  list: (projectId: string) => request<Dataset[]>(base(projectId)),
+  get: (projectId: string, id: string) => request<Dataset>(ds(projectId, id)),
+  create: (projectId: string, body: CreateDatasetInput) =>
+    request<Dataset>(base(projectId), { method: 'POST', body }),
   update: (
+    projectId: string,
     id: string,
-    body: {
-      name?: string
-      description?: string
-      visibility?: Visibility
-      version: number
-    },
-  ) => request<Dataset>(ds(id), { method: 'PATCH', body }),
-  remove: (id: string, version: number) =>
-    request<void>(ds(id), {
+    body: { name?: string; description?: string; version: number },
+  ) => request<Dataset>(ds(projectId, id), { method: 'PATCH', body }),
+  remove: (projectId: string, id: string, version: number) =>
+    request<void>(ds(projectId, id), {
       method: 'DELETE',
       query: { version },
       responseType: 'void',
     }),
 
-  listVersions: (id: string) =>
-    request<DatasetVersion[]>(`${ds(id)}/versions`),
-  uploadVersion: (id: string, file: File, format: string) =>
-    request<DatasetVersion>(`${ds(id)}/versions`, {
+  listVersions: (projectId: string, id: string) =>
+    request<DatasetVersion[]>(`${ds(projectId, id)}/versions`),
+  uploadVersion: (projectId: string, id: string, file: File, format: string) =>
+    request<DatasetVersion>(`${ds(projectId, id)}/versions`, {
       method: 'POST',
       raw: file,
       query: { format },
       headers: { 'content-type': file.type || 'application/octet-stream' },
     }),
   setColumnRoles: (
+    projectId: string,
     id: string,
     versionNo: number,
     roles: Record<string, string>,
   ) =>
-    request<DatasetVersion>(`${ds(id)}/versions/${versionNo}/columns`, {
-      method: 'PATCH',
-      body: { roles },
-    }),
+    request<DatasetVersion>(
+      `${ds(projectId, id)}/versions/${versionNo}/columns`,
+      { method: 'PATCH', body: { roles } },
+    ),
 
-  preview: (id: string, params: PreviewParams = {}) =>
-    request<QueryPage>(`${ds(id)}/preview`, { query: { ...params } }),
-  exportDownload: (id: string, format: string, version?: number) =>
-    download(`${ds(id)}/export`, `dataset.${format === 'parquet' ? 'parquet' : 'csv'}`, {
-      query: { format, version },
-    }),
-
-  listLinks: (id: string) => request<DatasetLink[]>(`${ds(id)}/links`),
-  addLink: (id: string, body: { entity_id: string; kind: string }) =>
-    request<DatasetLink>(`${ds(id)}/links`, { method: 'POST', body }),
-  deleteLink: (id: string, linkId: string) =>
-    request<void>(`${ds(id)}/links/${linkId}`, {
-      method: 'DELETE',
-      responseType: 'void',
-    }),
-
-  /** 反查：引用某实体的数据集（实体在项目内，故走项目作用域路径）。 */
-  forEntity: (projectId: string, entityId: string) =>
-    request<Dataset[]>(`/v1/projects/${projectId}/entities/${entityId}/datasets`),
+  preview: (projectId: string, id: string, params: PreviewParams = {}) =>
+    request<QueryPage>(`${ds(projectId, id)}/preview`, { query: { ...params } }),
+  exportDownload: (
+    projectId: string,
+    id: string,
+    format: string,
+    version?: number,
+  ) =>
+    download(
+      `${ds(projectId, id)}/export`,
+      `dataset.${format === 'parquet' ? 'parquet' : 'csv'}`,
+      { query: { format, version } },
+    ),
 }
