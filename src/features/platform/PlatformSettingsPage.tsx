@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Info, Loader2, Lock } from 'lucide-react'
+import { Loader2, Lock } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { PageHeader } from '@/components/page-header'
@@ -113,13 +113,6 @@ function SettingRow({
               {t('settings.readonly')}
             </Badge>
           )}
-          {/* 原始配置键：悬浮可见，平时不占视觉 */}
-          <span
-            title={setting.key}
-            className="text-muted-foreground/50 inline-flex cursor-help"
-          >
-            <Info className="size-3.5" />
-          </span>
         </div>
         {desc && <p className="text-muted-foreground text-xs">{desc}</p>}
       </div>
