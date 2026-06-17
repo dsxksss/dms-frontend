@@ -38,6 +38,14 @@
 现状：前端硬编码常见 entity_type 列表做下拉筛选。若后端能提供 `GET /v1/audit/entity-types`
 （distinct 列表）则更准；不提供也不阻塞。
 
+### 2.4 组织响应回带 `discoverable`（后端已同意配合）
+现状：`OrganizationResponse`（`GET /v1/orgs`、create/patch 响应）只含 `{ id, slug, name }`，
+不含 `discoverable`，导致前端的"允许被搜索并申请加入"开关无法回显当前真实状态（只能乐观本地态）。
+
+- 请在 `OrganizationResponse` 增加 `discoverable: bool`（域模型 `organizations.discoverable` 已有，
+  应用层 DTO `OrganizationResponse` 补一个字段 + `From<Organization>` 映射即可）。
+- 前端已把该开关改成 Switch 并按 `org.discoverable` 初始化（字段缺省时回退 false）；后端返回后即自动回显。
+
 ---
 
 > 约定不变：RFC7807 / `Paginated<T>` / plan 档 `demo|standard|enterprise|onprem` / `-1=不限`。

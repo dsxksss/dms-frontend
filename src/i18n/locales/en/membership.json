@@ -72,7 +72,8 @@
     "empty": "No requests"
   },
   "org": {
-    "discoverable": "Discoverable / accept join requests",
+    "discoverable": "Allow search & join requests",
+    "discoverableHint": "When on, other users in this company can find this organization and request to join; when off, members are added by invite only.",
     "updated": "Organization updated"
   }
 }

@@ -72,7 +72,8 @@
     "empty": "暂无申请"
   },
   "org": {
-    "discoverable": "允许被发现/申请加入",
+    "discoverable": "允许被搜索并申请加入",
+    "discoverableHint": "开启后，本企业其他用户可搜索到该组织并申请加入；关闭则只能由管理员邀请。",
     "updated": "组织已更新"
   }
 }

@@ -4,6 +4,8 @@ export interface Organization {
   id: string
   slug: string
   name: string
+  /** 是否可被搜索/申请加入；后端在 OrganizationResponse 返回后即可回显当前状态。 */
+  discoverable?: boolean
 }
 
 export interface Team {

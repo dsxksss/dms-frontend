@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Check, Loader2, Plus, Trash2, UserPlus, X } from 'lucide-react'
+import { ArrowLeft, Loader2, Plus, Trash2, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -162,7 +163,13 @@ function MembersTab({ orgId }: { orgId: string }) {
   )
 }
 
-function JoinRequestsTab({ orgId }: { orgId: string }) {
+function JoinRequestsTab({
+  orgId,
+  discoverable,
+}: {
+  orgId: string
+  discoverable?: boolean
+}) {
   const { t } = useTranslation('membership')
   const canManage = useCan('org:write')
   const jr = useOrgJoinRequests(orgId)
@@ -170,11 +177,17 @@ function JoinRequestsTab({ orgId }: { orgId: string }) {
   const reject = useRejectJoinRequest()
   const toastError = useToastError()
 
-  const setDiscoverable = async (discoverable: boolean) => {
+  // 以服务端值为初始；切换乐观更新，失败回滚。
+  const [on, setOn] = useState(!!discoverable)
+  useEffect(() => setOn(!!discoverable), [discoverable])
+
+  const toggleDiscoverable = async (next: boolean) => {
+    setOn(next)
     try {
-      await membershipApi.updateOrg(orgId, { discoverable })
+      await membershipApi.updateOrg(orgId, { discoverable: next })
       toast.success(t('org.updated'))
     } catch (e) {
+      setOn(!next)
       toastError(e)
     }
   }
@@ -182,14 +195,18 @@ function JoinRequestsTab({ orgId }: { orgId: string }) {
   return (
     <div className="space-y-4">
       {canManage && (
-        <div className="flex items-center gap-2 rounded-lg border p-3">
-          <span className="text-sm">{t('org.discoverable')}</span>
-          <Button variant="outline" size="sm" onClick={() => setDiscoverable(true)}>
-            <Check className="size-4" /> On
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setDiscoverable(false)}>
-            <X className="size-4" /> Off
-          </Button>
+        <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
+          <div className="space-y-0.5">
+            <Label htmlFor="org-discoverable">{t('org.discoverable')}</Label>
+            <p className="text-muted-foreground text-xs">
+              {t('org.discoverableHint')}
+            </p>
+          </div>
+          <Switch
+            id="org-discoverable"
+            checked={on}
+            onCheckedChange={toggleDiscoverable}
+          />
         </div>
       )}
 
@@ -545,7 +562,7 @@ export function OrgDetailPage() {
           <TeamsTab orgId={id} />
         </TabsContent>
         <TabsContent value="join" className="pt-4">
-          <JoinRequestsTab orgId={id} />
+          <JoinRequestsTab orgId={id} discoverable={org?.discoverable} />
         </TabsContent>
         <TabsContent value="grants" className="pt-4">
           <GrantsTab orgId={id} />
