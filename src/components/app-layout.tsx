@@ -25,7 +25,8 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { LangToggle } from '@/components/lang-toggle'
-import { useAuth, hasPerm, useIsAdmin } from '@/auth/auth-context'
+import { useAuth, hasPerm } from '@/auth/auth-context'
+import { useAdminAccess } from '@/hooks/use-orgs'
 import { cn } from '@/lib/utils'
 
 interface NavItem {
@@ -83,7 +84,7 @@ function UserMenu() {
   const { t } = useTranslation('auth')
   const { t: ta } = useTranslation('admin')
   const { me, logout } = useAuth()
-  const admin = useIsAdmin()
+  const { canAccess: admin } = useAdminAccess()
   const initial = (me?.user_id ?? '?').slice(0, 1).toUpperCase()
 
   return (

@@ -11,6 +11,8 @@
   "noAccess": {
     "title": "无后台权限",
     "desc": "你的账号没有管理权限（需 org:write / user:write / audit:read 之一）。",
+    "noOrgTitle": "后台暂不可用",
+    "noOrgDesc": "企业管理后台用于管理组织、成员与审计。你当前还没有组织——先在工作台创建组织后即可使用。",
     "toApp": "返回工作台"
   },
   "toAdmin": "后台管理",

@@ -11,6 +11,8 @@
   "noAccess": {
     "title": "No admin access",
     "desc": "Your account has no admin permission (needs one of org:write / user:write / audit:read).",
+    "noOrgTitle": "Admin not available yet",
+    "noOrgDesc": "The admin console manages organizations, members and audit. You don't have any organization yet — create one in the workspace to unlock it.",
     "toApp": "Back to app"
   },
   "toAdmin": "Admin console",
