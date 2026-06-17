@@ -53,8 +53,34 @@ export interface PreviewParams {
   desc?: boolean
 }
 
+/** 系统级公共数据集（全企业只读，平台超管维护）。 */
+export interface SystemDataset {
+  id: string
+  name: string
+  description: string
+  version: number
+}
+
 const base = (projectId: string) => `/v1/projects/${projectId}/datasets`
 const ds = (projectId: string, id: string) => `${base(projectId)}/${id}`
+
+const sysBase = '/v1/datasets/system'
+const sys = (id: string) => `${sysBase}/${id}`
+
+/** 公共数据集只读访问（任意已认证用户）。 */
+export const systemDatasetsApi = {
+  list: () => request<SystemDataset[]>(sysBase),
+  get: (id: string) => request<SystemDataset>(sys(id)),
+  listVersions: (id: string) => request<DatasetVersion[]>(`${sys(id)}/versions`),
+  preview: (id: string, params: PreviewParams = {}) =>
+    request<QueryPage>(`${sys(id)}/preview`, { query: { ...params } }),
+  exportDownload: (id: string, format: string) =>
+    download(
+      `${sys(id)}/export`,
+      `dataset.${format === 'parquet' ? 'parquet' : 'csv'}`,
+      { query: { format } },
+    ),
+}
 
 export const datasetsApi = {
   list: (projectId: string) => request<Dataset[]>(base(projectId)),

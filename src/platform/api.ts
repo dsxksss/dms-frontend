@@ -1,5 +1,6 @@
 import { platformRequest } from '@/platform/client'
 import type { Paginated, PageQuery, SessionTokens } from '@/api/types'
+import type { SystemDataset } from '@/api/datasets'
 
 /** GET /v1/platform/me */
 export interface PlatformMe {
@@ -146,5 +147,25 @@ export const platformApi = {
   activate: (id: string) =>
     platformRequest<TenantAdminView>(`${base}/tenants/${id}/activate`, {
       method: 'POST',
+    }),
+
+  // ---- 系统级公共数据集（平台维护，全企业只读）----
+  listDatasets: () => platformRequest<SystemDataset[]>(`${base}/datasets`),
+  createDataset: (body: { name: string; description?: string }) =>
+    platformRequest<SystemDataset>(`${base}/datasets`, {
+      method: 'POST',
+      body,
+    }),
+  uploadDatasetVersion: (id: string, file: File, format: string) =>
+    platformRequest<unknown>(`${base}/datasets/${id}/versions`, {
+      method: 'POST',
+      raw: file,
+      query: { format },
+      headers: { 'content-type': file.type || 'application/octet-stream' },
+    }),
+  deleteDataset: (id: string) =>
+    platformRequest<void>(`${base}/datasets/${id}`, {
+      method: 'DELETE',
+      responseType: 'void',
     }),
 }

@@ -9,8 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState, ErrorState } from '@/components/states'
 import { Can } from '@/auth/Can'
-import { useProject } from '@/hooks/use-projects'
+import { useProject, useProjectRole } from '@/hooks/use-projects'
+import { roleAtLeast } from '@/lib/roles'
 import { shortId } from '@/lib/format'
+import { ResourceGrantsPanel } from '@/features/grants/ResourceGrantsPanel'
 import { RegistryTab } from '@/features/registry/RegistryTab'
 import { ProtocolsTab } from '@/features/protocols/ProtocolsTab'
 import { DatasetsPanel } from '@/features/datasets/DatasetsPanel'
@@ -25,6 +27,8 @@ export function ProjectDetailPage() {
   const { t } = useTranslation('projects')
   const navigate = useNavigate()
   const query = useProject(id)
+  const role = useProjectRole(id)
+  const canGrant = roleAtLeast(role, 'manager')
   const [editOpen, setEditOpen] = useState(false)
 
   if (query.isLoading) {
@@ -107,6 +111,12 @@ export function ProjectDetailPage() {
         <TabsContent value="members" className="space-y-8 pt-4">
           <MembersPanel projectId={id} />
           <SharesPanel projectId={id} />
+          {canGrant && (
+            <div className="space-y-3">
+              <h2 className="font-medium">{t('resourceGrants.title', { ns: 'common' })}</h2>
+              <ResourceGrantsPanel resourceType="project" resourceId={id} />
+            </div>
+          )}
         </TabsContent>
         <TabsContent value="registry" className="pt-4">
           <RegistryTab projectId={id} />

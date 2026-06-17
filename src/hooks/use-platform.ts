@@ -61,6 +61,39 @@ export function useSetTenantActive(id: string) {
   })
 }
 
+export function usePlatformDatasets() {
+  return useQuery({
+    queryKey: [...root, 'datasets'],
+    queryFn: () => platformApi.listDatasets(),
+  })
+}
+
+export function useCreatePlatformDataset() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { name: string; description?: string }) =>
+      platformApi.createDataset(body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...root, 'datasets'] }),
+  })
+}
+
+export function useUploadPlatformDatasetVersion(id: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ file, format }: { file: File; format: string }) =>
+      platformApi.uploadDatasetVersion(id, file, format),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...root, 'datasets'] }),
+  })
+}
+
+export function useDeletePlatformDataset() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => platformApi.deleteDataset(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...root, 'datasets'] }),
+  })
+}
+
 export function usePlatformSettings() {
   return useQuery({
     queryKey: platformKeys.settings(),

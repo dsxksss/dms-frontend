@@ -27,6 +27,14 @@ const DatasetDetailPage = lazyPage(
   () => import('@/features/datasets/DatasetDetailPage'),
   'DatasetDetailPage',
 )
+const PublicDatasetsPage = lazyPage(
+  () => import('@/features/datasets/PublicDatasetsPage'),
+  'PublicDatasetsPage',
+)
+const PlatformDatasetsPage = lazyPage(
+  () => import('@/features/platform/PlatformDatasetsPage'),
+  'PlatformDatasetsPage',
+)
 const OrgsListPage = lazyPage(() => import('@/features/orgs/OrgsListPage'), 'OrgsListPage')
 const OrgDetailPage = lazyPage(
   () => import('@/features/orgs/OrgDetailPage'),
@@ -74,6 +82,7 @@ export const router = createBrowserRouter([
               { path: 'system', element: <PlatformOverviewPage /> },
               { path: 'system/tenants', element: <TenantsListPage /> },
               { path: 'system/tenants/:id', element: <TenantDetailPage /> },
+              { path: 'system/datasets', element: <PlatformDatasetsPage /> },
               { path: 'system/settings', element: <PlatformSettingsPage /> },
             ],
           },
@@ -91,6 +100,7 @@ export const router = createBrowserRouter([
           { path: 'projects', element: <ProjectsListPage /> },
           { path: 'projects/:id', element: <ProjectDetailPage /> },
           { path: 'projects/:id/datasets/:dsId', element: <DatasetDetailPage /> },
+          { path: 'public-datasets', element: <PublicDatasetsPage /> },
           { path: 'orgs', element: <OrgsListPage /> },
           { path: 'orgs/:id', element: <OrgDetailPage /> },
           { path: 'inbox', element: <InboxPage /> },

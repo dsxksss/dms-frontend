@@ -14,6 +14,7 @@ import { useProjectRole } from '@/hooks/use-projects'
 import { roleAtLeast } from '@/lib/roles'
 import { useToastError } from '@/hooks/use-toast-error'
 import { shortId } from '@/lib/format'
+import { ResourceGrantsPanel } from '@/features/grants/ResourceGrantsPanel'
 import { CreateDatasetDialog } from './CreateDatasetDialog'
 import { DatasetVersionsPanel } from './DatasetVersionsPanel'
 import { DatasetPreviewPanel } from './DatasetPreviewPanel'
@@ -24,6 +25,7 @@ export function DatasetDetailPage() {
   const navigate = useNavigate()
   const role = useProjectRole(projectId)
   const canManage = roleAtLeast(role, 'contributor')
+  const canGrant = roleAtLeast(role, 'manager')
   const query = useDataset(projectId, dsId)
   const del = useDeleteDataset(projectId)
   const toastError = useToastError()
@@ -90,6 +92,11 @@ export function DatasetDetailPage() {
           <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
           <TabsTrigger value="versions">{t('tabs.versions')}</TabsTrigger>
           <TabsTrigger value="preview">{t('tabs.preview')}</TabsTrigger>
+          {canGrant && (
+            <TabsTrigger value="collab">
+              {t('resourceGrants.title', { ns: 'common' })}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="overview" className="pt-4">
@@ -113,6 +120,11 @@ export function DatasetDetailPage() {
         <TabsContent value="preview" className="pt-4">
           <DatasetPreviewPanel projectId={projectId} datasetId={dsId} />
         </TabsContent>
+        {canGrant && (
+          <TabsContent value="collab" className="pt-4">
+            <ResourceGrantsPanel resourceType="dataset" resourceId={dsId} />
+          </TabsContent>
+        )}
       </Tabs>
 
       <CreateDatasetDialog

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Boxes, FlaskConical, KeyRound, Link2, Pencil, Plus, ShieldCheck, Sparkles } from 'lucide-react'
+import { Boxes, FlaskConical, KeyRound, Link2, Pencil, Plus, ShieldCheck, Sparkles, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -11,6 +11,7 @@ import { useEntityTypes, useSeedDrugRd } from '@/hooks/use-registry'
 import { useToastError } from '@/hooks/use-toast-error'
 import { roleAtLeast } from '@/lib/roles'
 import type { EntityType, TypeKind } from '@/api/registry'
+import { ResourceGrantsDialog } from '@/features/grants/ResourceGrantsDialog'
 import { EntityTypeDialog } from './EntityTypeDialog'
 import { FieldGrantsDialog } from './FieldGrantsDialog'
 
@@ -20,12 +21,14 @@ function TypeCard({
   canManage,
   onEdit,
   onGrants,
+  onCollab,
 }: {
   ty: EntityType
   typeName: (id: string) => string
   canManage: boolean
   onEdit: () => void
   onGrants: () => void
+  onCollab: () => void
 }) {
   const { t } = useTranslation('registry')
   const sensitiveCount = ty.fields.filter((f) => f.sensitive).length
@@ -69,6 +72,15 @@ function TypeCard({
         </div>
         {canManage && (
           <div className="flex justify-end gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              title={t('resourceGrants.title', { ns: 'common' })}
+              onClick={onCollab}
+            >
+              <Users className="size-4" />
+            </Button>
             {sensitiveCount > 0 && (
               <Button
                 variant="ghost"
@@ -101,6 +113,7 @@ export function EntityTypesPanel({ projectId }: { projectId: string }) {
   const [createKind, setCreateKind] = useState<TypeKind | null>(null)
   const [editTarget, setEditTarget] = useState<EntityType | null>(null)
   const [grantsTarget, setGrantsTarget] = useState<EntityType | null>(null)
+  const [collabTarget, setCollabTarget] = useState<EntityType | null>(null)
 
   const all = query.data ?? []
   const assets = all.filter((ty) => ty.kind === 'asset')
@@ -141,6 +154,7 @@ export function EntityTypesPanel({ projectId }: { projectId: string }) {
               canManage={canManage}
               onEdit={() => setEditTarget(ty)}
               onGrants={() => setGrantsTarget(ty)}
+              onCollab={() => setCollabTarget(ty)}
             />
           ))}
         </div>
@@ -196,6 +210,15 @@ export function EntityTypesPanel({ projectId }: { projectId: string }) {
           type={grantsTarget}
           open={!!grantsTarget}
           onOpenChange={(o) => !o && setGrantsTarget(null)}
+        />
+      )}
+      {collabTarget && (
+        <ResourceGrantsDialog
+          resourceType={collabTarget.kind === 'asset' ? 'asset_type' : 'template_type'}
+          resourceId={collabTarget.id}
+          name={collabTarget.name}
+          open={!!collabTarget}
+          onOpenChange={(o) => !o && setCollabTarget(null)}
         />
       )}
     </div>

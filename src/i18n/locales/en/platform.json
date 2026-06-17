@@ -25,7 +25,23 @@
   "nav": {
     "overview": "Overview",
     "tenants": "Companies",
+    "datasets": "Public datasets",
     "settings": "System settings"
+  },
+  "datasets": {
+    "title": "Public datasets",
+    "desc": "Read-only across all companies once uploaded.",
+    "create": "New dataset",
+    "name": "Name",
+    "description": "Description",
+    "empty": "No public datasets yet",
+    "emptyDesc": "Click \"New dataset\" to create one, then upload a CSV version.",
+    "upload": "Upload version (CSV)",
+    "uploaded": "Version uploaded",
+    "created": "Dataset created",
+    "deleted": "Dataset deleted",
+    "deleteTitle": "Delete public dataset?",
+    "deleteConfirm": "Delete \"{{name}}\"? It will no longer be visible to any company."
   },
   "settings": {
     "title": "Platform settings",

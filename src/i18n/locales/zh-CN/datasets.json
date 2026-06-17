@@ -6,6 +6,13 @@
     "description": "描述",
     "version": "版本"
   },
+  "public": {
+    "title": "公共数据集",
+    "subtitle": "平台维护的公共数据集，全企业只读、可预览导出。",
+    "empty": "暂无公共数据集",
+    "emptyDesc": "平台管理员上传后，这里会列出可用的公共数据集。",
+    "pick": "选择一个数据集查看"
+  },
   "visibility": { "private": "私有", "org": "组织可见", "public": "企业公开" },
   "create": {
     "title": "新建数据集",

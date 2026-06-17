@@ -20,10 +20,28 @@
   "nav": {
     "projects": "项目",
     "datasets": "数据集",
+    "publicDatasets": "公共数据集",
     "organizations": "组织",
     "inbox": "邀请",
     "audit": "审计日志",
     "settings": "设置"
+  },
+  "resourceGrants": {
+    "title": "协作者",
+    "desc": "给具体的人按操作单独放行（在角色之外叠加）。仅项目 Manager 可设置。",
+    "user": "用户",
+    "action": "操作",
+    "add": "授权",
+    "empty": "暂无单独授权",
+    "granted": "已授权",
+    "revoked": "已撤销",
+    "actions": {
+      "read": "查看",
+      "create": "新增",
+      "update": "修改",
+      "delete": "删除",
+      "manage": "管理"
+    }
   },
   "actions": {
     "getStarted": "开始使用",

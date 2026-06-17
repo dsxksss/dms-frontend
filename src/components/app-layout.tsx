@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import {
   Building2,
   FolderKanban,
+  Globe,
   Loader2,
   LogOut,
   Mail,
@@ -38,6 +39,7 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { to: '/projects', labelKey: 'nav.projects', icon: FolderKanban },
+  { to: '/public-datasets', labelKey: 'nav.publicDatasets', icon: Globe },
   { to: '/inbox', labelKey: 'nav.inbox', icon: Mail },
   {
     to: '/orgs',

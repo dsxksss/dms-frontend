@@ -20,10 +20,28 @@
   "nav": {
     "projects": "Projects",
     "datasets": "Datasets",
+    "publicDatasets": "Public datasets",
     "organizations": "Organizations",
     "inbox": "Invitations",
     "audit": "Audit log",
     "settings": "Settings"
+  },
+  "resourceGrants": {
+    "title": "Collaborators",
+    "desc": "Grant specific people specific actions (added on top of their role). Project Managers only.",
+    "user": "User",
+    "action": "Action",
+    "add": "Grant",
+    "empty": "No individual grants",
+    "granted": "Granted",
+    "revoked": "Revoked",
+    "actions": {
+      "read": "View",
+      "create": "Create",
+      "update": "Update",
+      "delete": "Delete",
+      "manage": "Manage"
+    }
   },
   "actions": {
     "getStarted": "Get started",

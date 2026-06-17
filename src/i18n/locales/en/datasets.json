@@ -6,6 +6,13 @@
     "description": "Description",
     "version": "Version"
   },
+  "public": {
+    "title": "Public datasets",
+    "subtitle": "Platform-maintained datasets, read-only across all companies — preview and export.",
+    "empty": "No public datasets yet",
+    "emptyDesc": "Once a platform admin uploads them, available public datasets appear here.",
+    "pick": "Pick a dataset to view"
+  },
   "visibility": { "private": "Private", "org": "Organization", "public": "Public" },
   "create": {
     "title": "New dataset",

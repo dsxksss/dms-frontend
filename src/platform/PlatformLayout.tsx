@@ -1,7 +1,7 @@
 import { Suspense, type ComponentType } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Building2, Gauge, Loader2, LogOut, Settings } from 'lucide-react'
+import { Building2, Database, Gauge, Loader2, LogOut, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -26,6 +26,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { to: '/system', labelKey: 'nav.overview', icon: Gauge, end: true },
   { to: '/system/tenants', labelKey: 'nav.tenants', icon: Building2 },
+  { to: '/system/datasets', labelKey: 'nav.datasets', icon: Database },
   { to: '/system/settings', labelKey: 'nav.settings', icon: Settings },
 ]
 
