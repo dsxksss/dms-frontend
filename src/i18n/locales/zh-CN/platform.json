@@ -68,7 +68,8 @@
     "demo": "体验版",
     "standard": "标准版",
     "enterprise": "企业版",
-    "onprem": "私有化"
+    "onprem": "私有化",
+    "summary": "{{orgs}} 组织 · 每组 {{users}} 人 · {{storage}}"
   },
   "tenants": {
     "title": "企业管理",

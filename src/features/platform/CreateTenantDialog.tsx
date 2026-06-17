@@ -23,7 +23,7 @@ import { Label } from '@/components/ui/label'
 import { useCreateTenant } from '@/hooks/use-platform'
 import { useToastError } from '@/hooks/use-toast-error'
 import { autoSlug } from '@/lib/slug'
-import { PLAN_OPTIONS } from './plans'
+import { PLAN_OPTIONS, planSummary } from './plans'
 
 export function CreateTenantDialog({
   open,
@@ -134,6 +134,9 @@ export function CreateTenantDialog({
                 {PLAN_OPTIONS.map((p) => (
                   <SelectItem key={p} value={p}>
                     {t(`plan.${p}`)}
+                    <span className="text-muted-foreground ml-1">
+                      · {planSummary(p, t)}
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>

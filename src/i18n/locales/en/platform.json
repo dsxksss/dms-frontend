@@ -68,7 +68,8 @@
     "demo": "Demo",
     "standard": "Standard",
     "enterprise": "Enterprise",
-    "onprem": "On-prem"
+    "onprem": "On-prem",
+    "summary": "{{orgs}} orgs · {{users}}/org · {{storage}}"
   },
   "tenants": {
     "title": "Companies",

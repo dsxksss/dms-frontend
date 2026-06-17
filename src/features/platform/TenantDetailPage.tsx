@@ -29,7 +29,7 @@ import { formatBytes, formatDateTime } from '@/lib/format'
 import type { UpdateTenantBody } from '@/platform/api'
 import { PlanBadge } from './plan-badge'
 import { TenantSettingsCard } from './TenantSettingsCard'
-import { PLAN_OPTIONS, PLAN_BASELINE, type PlanTier } from './plans'
+import { PLAN_OPTIONS, PLAN_BASELINE, planSummary, type PlanTier } from './plans'
 
 interface QuotaForm {
   plan: string
@@ -220,6 +220,9 @@ export function TenantDetailPage() {
                       {PLAN_OPTIONS.map((p) => (
                         <SelectItem key={p} value={p}>
                           {t(`plan.${p}`)}
+                          <span className="text-muted-foreground ml-1">
+                            · {planSummary(p, t)}
+                          </span>
                         </SelectItem>
                       ))}
                     </SelectContent>
