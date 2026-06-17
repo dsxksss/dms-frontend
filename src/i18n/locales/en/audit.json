@@ -34,5 +34,12 @@
   "empty": "No audit entries",
   "none": "—",
   "viewChanges": "View changes",
-  "changesTitle": "Before / after"
+  "changesTitle": "Before / after",
+  "changes": {
+    "field": "Field",
+    "before": "Before",
+    "after": "After",
+    "none": "No change details",
+    "raw": "View raw JSON"
+  }
 }

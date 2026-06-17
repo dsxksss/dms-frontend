@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { UserPicker } from '@/features/membership/UserPicker'
+import { ChangesView } from '@/features/audit/ChangesView'
 import { useAudit } from '@/hooks/use-audit'
 import { shortId, formatDateTime } from '@/lib/format'
 import type { AuditEntry } from '@/api/audit'
@@ -211,9 +212,7 @@ export function AuditPage() {
           <DialogHeader>
             <DialogTitle>{t('changesTitle')}</DialogTitle>
           </DialogHeader>
-          <pre className="bg-muted max-h-[60vh] overflow-auto rounded-md p-3 text-xs">
-            {JSON.stringify(changesOf?.changes ?? {}, null, 2)}
-          </pre>
+          <ChangesView changes={changesOf?.changes} />
         </DialogContent>
       </Dialog>
     </div>

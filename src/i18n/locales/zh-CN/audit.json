@@ -34,5 +34,12 @@
   "empty": "暂无审计记录",
   "none": "—",
   "viewChanges": "查看变更",
-  "changesTitle": "前后变更"
+  "changesTitle": "前后变更",
+  "changes": {
+    "field": "字段",
+    "before": "变更前",
+    "after": "变更后",
+    "none": "无变更详情",
+    "raw": "查看原始 JSON"
+  }
 }
