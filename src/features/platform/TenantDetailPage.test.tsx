@@ -38,6 +38,7 @@ describe('TenantDetailPage', () => {
   it('renders name, plan and usage/quota', async () => {
     server.use(
       http.get('*/v1/platform/tenants/t1', () => HttpResponse.json(TENANT)),
+      http.get('*/v1/platform/settings', () => HttpResponse.json([])),
     )
     renderDetail()
     expect(await screen.findByText('恒瑞医药')).toBeInTheDocument()
@@ -56,6 +57,7 @@ describe('TenantDetailPage', () => {
         suspended = true
         return HttpResponse.json({ ...TENANT, active: false })
       }),
+      http.get('*/v1/platform/settings', () => HttpResponse.json([])),
     )
     const user = userEvent.setup()
     renderDetail()

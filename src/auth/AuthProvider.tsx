@@ -33,7 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const applySession = async (tenant: string, tokens: SessionTokens) => {
     useSession.getState().setSession({
-      tenant,
+      // 优先用后端回传的 tenant（用户只填邮箱时由后端反查得出），回退到请求里的。
+      tenant: tokens.tenant ?? tenant,
       accessToken: tokens.access_token,
       refreshToken: tokens.refresh_token,
     })

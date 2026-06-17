@@ -24,7 +24,25 @@
   },
   "nav": {
     "overview": "Overview",
-    "tenants": "Tenants"
+    "tenants": "Tenants",
+    "settings": "System settings"
+  },
+  "settings": {
+    "title": "Platform settings",
+    "desc": "Runtime settings take effect immediately; items marked restart or read-only can't be changed online.",
+    "save": "Save",
+    "saved": "Saved",
+    "restart": "Needs redeploy",
+    "readonly": "Read-only"
+  },
+  "tenantSettings": {
+    "title": "Tenant settings",
+    "desc": "Override a setting for this tenant only (shallow-merged into the tenant's settings).",
+    "empty": "No tenant-level overrides",
+    "key": "Setting",
+    "pickKey": "Pick a setting…",
+    "value": "Value",
+    "override": "Override"
   },
   "overview": {
     "title": "Platform overview",

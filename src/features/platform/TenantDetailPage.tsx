@@ -28,6 +28,7 @@ import { useToastError } from '@/hooks/use-toast-error'
 import { formatBytes, formatDateTime } from '@/lib/format'
 import type { UpdateTenantBody } from '@/platform/api'
 import { PlanBadge } from './plan-badge'
+import { TenantSettingsCard } from './TenantSettingsCard'
 import { PLAN_OPTIONS, PLAN_BASELINE, type PlanTier } from './plans'
 
 interface QuotaForm {
@@ -306,6 +307,8 @@ export function TenantDetailPage() {
           </Button>
         </CardContent>
       </Card>
+
+      <TenantSettingsCard tenantId={d.id} settings={d.settings} />
 
       <ConfirmDialog
         open={confirmActive}

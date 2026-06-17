@@ -10,6 +10,7 @@ export const platformKeys = {
   license: () => [...root, 'license'] as const,
   tenants: (params: PageQuery) => [...root, 'tenants', params] as const,
   tenant: (id: string) => [...root, 'tenant', id] as const,
+  settings: () => [...root, 'settings'] as const,
 }
 
 export function usePlatformStats() {
@@ -57,5 +58,21 @@ export function useSetTenantActive(id: string) {
     mutationFn: (active: boolean) =>
       active ? platformApi.activate(id) : platformApi.suspend(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: root }),
+  })
+}
+
+export function usePlatformSettings() {
+  return useQuery({
+    queryKey: platformKeys.settings(),
+    queryFn: () => platformApi.settings(),
+  })
+}
+
+export function useUpdatePlatformSettings() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: Record<string, unknown>) =>
+      platformApi.updateSettings(body),
+    onSuccess: (data) => qc.setQueryData(platformKeys.settings(), data),
   })
 }

@@ -69,6 +69,10 @@ const TenantDetailPage = lazyPage(
   () => import('@/features/platform/TenantDetailPage'),
   'TenantDetailPage',
 )
+const PlatformSettingsPage = lazyPage(
+  () => import('@/features/platform/PlatformSettingsPage'),
+  'PlatformSettingsPage',
+)
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -103,6 +107,7 @@ export const router = createBrowserRouter([
               { path: 'platform', element: <PlatformOverviewPage /> },
               { path: 'platform/tenants', element: <TenantsListPage /> },
               { path: 'platform/tenants/:id', element: <TenantDetailPage /> },
+              { path: 'platform/settings', element: <PlatformSettingsPage /> },
             ],
           },
         ],

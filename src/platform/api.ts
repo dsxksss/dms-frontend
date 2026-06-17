@@ -46,7 +46,24 @@ export interface TenantAdminView {
   storage_bytes: number
   active: boolean
   created_at: string
+  /** 企业级配置（自由 key/value，浅合并进 tenants.settings jsonb）。 */
+  settings?: Record<string, unknown>
   usage: TenantUsage
+}
+
+/** GET /v1/platform/settings 的单项（平台全局运行时/部署级配置）。 */
+export interface PlatformSetting {
+  key: string
+  label: string
+  value_type: 'bool' | 'string' | 'enum'
+  /** live=改后即时生效；restart=需重新部署。 */
+  apply: 'live' | 'restart'
+  /** false=只读展示（如存储后端/地址）。 */
+  editable: boolean
+  /** true=敏感项，value 已脱敏为 "***"。 */
+  secret: boolean
+  value: unknown
+  options?: string[]
 }
 
 export interface CreateTenantBody {
@@ -65,6 +82,8 @@ export interface UpdateTenantBody {
   max_users_per_org?: number
   storage_bytes?: number
   active?: boolean
+  /** 企业级配置浅合并进 tenants.settings jsonb。 */
+  settings?: Record<string, unknown>
 }
 
 const base = '/v1/platform'
@@ -90,6 +109,14 @@ export const platformApi = {
   stats: () => platformRequest<PlatformStats>(`${base}/stats`),
 
   license: () => platformRequest<PlatformLicense>(`${base}/license`),
+
+  settings: () => platformRequest<PlatformSetting[]>(`${base}/settings`),
+
+  updateSettings: (body: Record<string, unknown>) =>
+    platformRequest<PlatformSetting[]>(`${base}/settings`, {
+      method: 'PATCH',
+      body,
+    }),
 
   listTenants: (params: PageQuery = {}) =>
     platformRequest<Paginated<TenantAdminView>>(`${base}/tenants`, {

@@ -29,6 +29,11 @@ export interface SessionTokens {
   token_type: string
   /** access token 有效秒数（后端返回，当前前端用 401 刷新策略，未强依赖）。 */
   expires_in?: number
+  /**
+   * 后端解析出的租户 slug（登录时即使用户只填邮箱，也会回传）。
+   * 前端存下供 refresh/logout 静默携带——用户全程无需提供租户。
+   */
+  tenant?: string
 }
 
 export interface LoginRequest {

@@ -24,7 +24,25 @@
   },
   "nav": {
     "overview": "概览",
-    "tenants": "企业"
+    "tenants": "企业",
+    "settings": "系统配置"
+  },
+  "settings": {
+    "title": "平台全局配置",
+    "desc": "运行时配置改完即时生效；标「需重部署」「只读」的项不可在线改。",
+    "save": "保存",
+    "saved": "已保存",
+    "restart": "需重部署",
+    "readonly": "只读"
+  },
+  "tenantSettings": {
+    "title": "企业级配置",
+    "desc": "为该企业单独覆盖某项配置（浅合并进企业 settings）。",
+    "empty": "暂无企业级覆盖",
+    "key": "配置项",
+    "pickKey": "选择配置项…",
+    "value": "值",
+    "override": "覆盖"
   },
   "overview": {
     "title": "平台概览",
