@@ -1,0 +1,112 @@
+{
+  "title": "Platform",
+  "account": "Platform admin",
+  "logout": "Sign out",
+  "unlimited": "Unlimited",
+  "login": {
+    "title": "Platform admin",
+    "subtitle": "Cross-tenant control plane · platform admins only",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "invalid": "Wrong email or password, or this account is not a platform admin",
+    "required": {
+      "email": "Email is required",
+      "emailFormat": "Invalid email format",
+      "password": "Password is required"
+    }
+  },
+  "noAccess": {
+    "title": "No platform access",
+    "desc": "This account is not a platform admin and cannot access the cross-tenant control plane.",
+    "toApp": "Back to app"
+  },
+  "nav": {
+    "overview": "Overview",
+    "tenants": "Tenants"
+  },
+  "overview": {
+    "title": "Platform overview",
+    "desc": "Tenants, usage and license status across the platform."
+  },
+  "stats": {
+    "tenants": "Tenants",
+    "active": "Active",
+    "suspended": "Suspended",
+    "orgs": "Organizations",
+    "users": "Users",
+    "storage": "Storage used"
+  },
+  "license": {
+    "title": "License",
+    "tenants": "Tenants (used / max)",
+    "signed": "Public key",
+    "baked": "Baked in",
+    "unbaked": "Not baked",
+    "machine": "Machine code"
+  },
+  "plan": {
+    "demo": "Demo",
+    "standard": "Standard",
+    "enterprise": "Enterprise",
+    "onprem": "On-prem"
+  },
+  "tenants": {
+    "title": "Tenants",
+    "subtitle": "Provision, adjust quotas, suspend or restore tenants.",
+    "empty": "No tenants",
+    "emptyDesc": "Click \"Provision tenant\" to create the first tenant.",
+    "active": "Active",
+    "suspended": "Suspended",
+    "back": "Back to tenants",
+    "perOrg": " / org",
+    "usageSummary": "{{orgs}} orgs · {{users}} users · {{storage}}",
+    "usageTitle": "Usage / quota",
+    "usageOrgs": "Organizations",
+    "usageUsers": "Users",
+    "usageStorage": "Storage",
+    "suspend": "Suspend",
+    "activate": "Restore",
+    "suspendedDone": "Tenant suspended",
+    "activatedDone": "Tenant restored",
+    "columns": {
+      "name": "Name",
+      "slug": "Slug",
+      "plan": "Plan",
+      "usage": "Usage",
+      "status": "Status",
+      "created": "Created"
+    },
+    "create": {
+      "title": "Provision tenant",
+      "company": "Company name",
+      "slug": "Slug",
+      "slugPlaceholder": "e.g. acme",
+      "plan": "Plan",
+      "planHint": "Selecting a plan applies its default quotas; you can adjust them on the detail page afterward.",
+      "adminEmail": "Admin email",
+      "adminPassword": "Admin password",
+      "adminName": "Admin name (optional)",
+      "submit": "Provision",
+      "done": "Tenant provisioned"
+    },
+    "edit": {
+      "title": "Plan & quotas",
+      "maxOrgs": "Max organizations (-1 = unlimited)",
+      "maxUsers": "Max users per org (-1 = unlimited)",
+      "storageBytes": "Storage quota (bytes, -1 = unlimited)",
+      "unlimitedHint": "use -1 for unlimited",
+      "save": "Save",
+      "saved": "Saved",
+      "noChange": "No changes"
+    },
+    "lifecycle": {
+      "title": "Tenant status",
+      "suspendDesc": "Once suspended, all users in this tenant cannot sign in or read/write.",
+      "activateDesc": "Once restored, users in this tenant can sign in again.",
+      "suspendConfirm": "Suspend \"{{name}}\"? All its users will be unable to sign in.",
+      "activateConfirm": "Restore \"{{name}}\"? Its users will be able to sign in again."
+    }
+  }
+}

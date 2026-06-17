@@ -1,0 +1,112 @@
+{
+  "title": "平台超管",
+  "account": "平台管理员",
+  "logout": "退出登录",
+  "unlimited": "不限",
+  "login": {
+    "title": "平台超管",
+    "subtitle": "跨企业控制面 · 仅平台管理员",
+    "email": "邮箱",
+    "password": "密码",
+    "submit": "登录",
+    "submitting": "登录中…",
+    "invalid": "邮箱或密码不正确，或该账号非平台管理员",
+    "required": {
+      "email": "请输入邮箱",
+      "emailFormat": "邮箱格式不正确",
+      "password": "请输入密码"
+    }
+  },
+  "noAccess": {
+    "title": "无平台权限",
+    "desc": "该账号不是平台管理员，无法进入跨企业控制面。",
+    "toApp": "返回工作台"
+  },
+  "nav": {
+    "overview": "概览",
+    "tenants": "企业"
+  },
+  "overview": {
+    "title": "平台概览",
+    "desc": "全平台企业、用量与 License 状态。"
+  },
+  "stats": {
+    "tenants": "企业总数",
+    "active": "启用中",
+    "suspended": "已停用",
+    "orgs": "组织总数",
+    "users": "用户总数",
+    "storage": "存储用量"
+  },
+  "license": {
+    "title": "License 状态",
+    "tenants": "企业数（已用 / 上限）",
+    "signed": "公钥",
+    "baked": "已内置",
+    "unbaked": "未内置",
+    "machine": "机器码"
+  },
+  "plan": {
+    "demo": "体验版",
+    "standard": "标准版",
+    "enterprise": "企业版",
+    "onprem": "私有化"
+  },
+  "tenants": {
+    "title": "企业管理",
+    "subtitle": "开通、调配额、停用 / 恢复企业。",
+    "empty": "暂无企业",
+    "emptyDesc": "点击「开通企业」创建第一个企业租户。",
+    "active": "启用中",
+    "suspended": "已停用",
+    "back": "返回企业列表",
+    "perOrg": " / 组织",
+    "usageSummary": "{{orgs}} 组织 · {{users}} 用户 · {{storage}}",
+    "usageTitle": "用量 / 配额",
+    "usageOrgs": "组织",
+    "usageUsers": "用户",
+    "usageStorage": "存储",
+    "suspend": "停用",
+    "activate": "恢复",
+    "suspendedDone": "已停用该企业",
+    "activatedDone": "已恢复该企业",
+    "columns": {
+      "name": "企业名称",
+      "slug": "标识",
+      "plan": "套餐",
+      "usage": "用量",
+      "status": "状态",
+      "created": "创建时间"
+    },
+    "create": {
+      "title": "开通企业",
+      "company": "企业名称",
+      "slug": "标识（slug）",
+      "slugPlaceholder": "如 acme",
+      "plan": "套餐",
+      "planHint": "选择套餐将套用该档默认配额，开通后可在详情页调整。",
+      "adminEmail": "管理员邮箱",
+      "adminPassword": "管理员密码",
+      "adminName": "管理员姓名（可选）",
+      "submit": "开通",
+      "done": "企业已开通"
+    },
+    "edit": {
+      "title": "套餐与配额",
+      "maxOrgs": "组织数上限（-1 不限）",
+      "maxUsers": "每组织人数上限（-1 不限）",
+      "storageBytes": "存储配额（字节，-1 不限）",
+      "unlimitedHint": "填 -1 表示不限",
+      "save": "保存",
+      "saved": "已保存",
+      "noChange": "未做修改"
+    },
+    "lifecycle": {
+      "title": "企业状态",
+      "suspendDesc": "停用后该企业所有用户将无法登录与读写。",
+      "activateDesc": "恢复后该企业用户可正常登录。",
+      "suspendConfirm": "确认停用「{{name}}」？该企业所有用户将无法登录。",
+      "activateConfirm": "确认恢复「{{name}}」？该企业用户将可重新登录。"
+    }
+  }
+}

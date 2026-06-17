@@ -1,15 +1,7 @@
 import { Suspense, type ComponentType } from 'react'
-import { NavLink, Outlet, Link } from 'react-router-dom'
+import { NavLink, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import {
-  Building2,
-  Gauge,
-  Loader2,
-  LogOut,
-  ScrollText,
-  Users,
-  ArrowLeft,
-} from 'lucide-react'
+import { Building2, Gauge, Loader2, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -21,7 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { LangToggle } from '@/components/lang-toggle'
-import { useAuth } from '@/auth/auth-context'
+import { usePlatformAuth } from '@/platform/platform-auth'
 import { cn } from '@/lib/utils'
 
 interface NavItem {
@@ -32,19 +24,17 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { to: '/admin', labelKey: 'nav.overview', icon: Gauge, end: true },
-  { to: '/admin/orgs', labelKey: 'nav.orgs', icon: Building2 },
-  { to: '/admin/users', labelKey: 'nav.users', icon: Users },
-  { to: '/admin/audit', labelKey: 'nav.audit', icon: ScrollText },
+  { to: '/platform', labelKey: 'nav.overview', icon: Gauge, end: true },
+  { to: '/platform/tenants', labelKey: 'nav.tenants', icon: Building2 },
 ]
 
 function SidebarNav() {
-  const { t } = useTranslation('admin')
+  const { t } = useTranslation('platform')
   return (
     <nav className="flex flex-col gap-1 p-3">
       <div className="flex items-center gap-2 px-2 py-3">
-        <div className="bg-foreground text-background flex size-7 items-center justify-center rounded-md text-sm font-semibold">
-          A
+        <div className="bg-brand text-brand-foreground flex size-7 items-center justify-center rounded-md text-sm font-semibold">
+          P
         </div>
         <span className="font-semibold tracking-tight">{t('title')}</span>
       </div>
@@ -71,9 +61,9 @@ function SidebarNav() {
 }
 
 function UserMenu() {
-  const { t } = useTranslation('auth')
-  const { me, logout } = useAuth()
-  const initial = (me?.user_id ?? '?').slice(0, 1).toUpperCase()
+  const { t } = useTranslation('platform')
+  const { me, logout } = usePlatformAuth()
+  const initial = (me?.email ?? '?').slice(0, 1).toUpperCase()
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -85,11 +75,11 @@ function UserMenu() {
           {initial}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-52">
+      <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="flex flex-col">
-          <span>{t('account')}</span>
+          <span>{me?.display_name ?? t('account')}</span>
           <span className="text-muted-foreground truncate font-mono text-xs">
-            {me?.tenant_id}
+            {me?.email}
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -102,8 +92,7 @@ function UserMenu() {
   )
 }
 
-export function AdminLayout() {
-  const { t } = useTranslation('admin')
+export function PlatformLayout() {
   return (
     <div className="flex min-h-[100dvh]">
       <aside className="bg-sidebar hidden w-60 shrink-0 border-r md:block">
@@ -111,12 +100,6 @@ export function AdminLayout() {
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 items-center gap-2 border-b px-4">
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/">
-              <ArrowLeft className="size-4" />
-              {t('toApp')}
-            </Link>
-          </Button>
           <div className="flex-1" />
           <LangToggle />
           <ThemeToggle />

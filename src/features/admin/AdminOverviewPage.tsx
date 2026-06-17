@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Building2, Globe, ScrollText, Users } from 'lucide-react'
+import { Building2, ScrollText, Users } from 'lucide-react'
 import { PageHeader } from '@/components/page-header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -8,7 +8,6 @@ const CARDS = [
   { to: '/admin/orgs', icon: Building2, key: 'orgs', nav: 'nav.orgs' },
   { to: '/admin/users', icon: Users, key: 'users', nav: 'nav.users' },
   { to: '/admin/audit', icon: ScrollText, key: 'audit', nav: 'nav.audit' },
-  { to: '/admin/platform', icon: Globe, key: 'platform', nav: 'nav.platform' },
 ] as const
 
 export function AdminOverviewPage() {

@@ -8,6 +8,10 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { SignupPage } from '@/features/auth/SignupPage'
 import { SignupTenantPage } from '@/features/auth/SignupTenantPage'
 import { AdminLoginPage } from '@/features/admin/AdminLoginPage'
+import { PlatformRoot } from '@/platform/PlatformRoot'
+import { PlatformProtectedRoute } from '@/platform/PlatformProtectedRoute'
+import { PlatformLayout } from '@/platform/PlatformLayout'
+import { PlatformLoginPage } from '@/features/platform/PlatformLoginPage'
 
 // 业务页面按路由懒加载（首屏只载登录/壳）。
 const lazyPage = <T extends Record<string, React.ComponentType>>(
@@ -53,9 +57,17 @@ const AdminUsersPage = lazyPage(
   () => import('@/features/admin/AdminUsersPage'),
   'AdminUsersPage',
 )
-const PlatformAdminPage = lazyPage(
-  () => import('@/features/admin/PlatformAdminPage'),
-  'PlatformAdminPage',
+const PlatformOverviewPage = lazyPage(
+  () => import('@/features/platform/PlatformOverviewPage'),
+  'PlatformOverviewPage',
+)
+const TenantsListPage = lazyPage(
+  () => import('@/features/platform/TenantsListPage'),
+  'TenantsListPage',
+)
+const TenantDetailPage = lazyPage(
+  () => import('@/features/platform/TenantDetailPage'),
+  'TenantDetailPage',
 )
 
 export const router = createBrowserRouter([
@@ -74,7 +86,25 @@ export const router = createBrowserRouter([
           { path: 'admin/orgs/:id', element: <OrgDetailPage /> },
           { path: 'admin/users', element: <AdminUsersPage /> },
           { path: 'admin/audit', element: <AuditPage /> },
-          { path: 'admin/platform', element: <PlatformAdminPage /> },
+        ],
+      },
+    ],
+  },
+  {
+    element: <PlatformRoot />,
+    children: [
+      { path: 'platform/login', element: <PlatformLoginPage /> },
+      {
+        element: <PlatformProtectedRoute />,
+        children: [
+          {
+            element: <PlatformLayout />,
+            children: [
+              { path: 'platform', element: <PlatformOverviewPage /> },
+              { path: 'platform/tenants', element: <TenantsListPage /> },
+              { path: 'platform/tenants/:id', element: <TenantDetailPage /> },
+            ],
+          },
         ],
       },
     ],

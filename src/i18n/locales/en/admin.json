@@ -6,8 +6,7 @@
     "overview": "Overview",
     "orgs": "Organizations",
     "users": "User directory",
-    "audit": "Audit log",
-    "platform": "Platform admin"
+    "audit": "Audit log"
   },
   "noAccess": {
     "title": "No admin access",
@@ -21,17 +20,12 @@
     "welcomeDesc": "Manage your company's organizations, members, audit and compliance.",
     "orgs": "Organizations / teams / members / role grants",
     "users": "User directory search",
-    "audit": "Audit log (IP / actor / changes / parent chain)",
-    "platform": "Cross-enterprise management (needs backend)"
+    "audit": "Audit log (IP / actor / changes / parent chain)"
   },
   "users": {
     "title": "User directory",
     "search": "Search name / email…",
     "empty": "No matching users",
     "hint": "Search users in this company (invisible users are excluded)"
-  },
-  "platform": {
-    "title": "Platform admin (cross-enterprise)",
-    "desc": "Manage all enterprises / licenses / plan usage. The backend is multi-tenant with RLS isolation and has no cross-tenant API yet; needs backend support first."
   }
 }
