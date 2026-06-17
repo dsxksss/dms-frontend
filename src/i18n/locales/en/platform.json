@@ -5,7 +5,7 @@
   "unlimited": "Unlimited",
   "login": {
     "title": "Platform admin",
-    "subtitle": "Cross-tenant control plane · platform admins only",
+    "subtitle": "Cross-company control plane · platform admins only",
     "email": "Email",
     "password": "Password",
     "submit": "Sign in",
@@ -19,12 +19,12 @@
   },
   "noAccess": {
     "title": "No platform access",
-    "desc": "This account is not a platform admin and cannot access the cross-tenant control plane.",
+    "desc": "This account is not a platform admin and cannot access the cross-company control plane.",
     "toApp": "Back to app"
   },
   "nav": {
     "overview": "Overview",
-    "tenants": "Tenants",
+    "tenants": "Companies",
     "settings": "System settings"
   },
   "settings": {
@@ -36,9 +36,9 @@
     "readonly": "Read-only"
   },
   "tenantSettings": {
-    "title": "Tenant settings",
-    "desc": "Override a setting for this tenant only (shallow-merged into the tenant's settings).",
-    "empty": "No tenant-level overrides",
+    "title": "Company settings",
+    "desc": "Override a setting for this company only (shallow-merged into the company's settings).",
+    "empty": "No company-level overrides",
     "key": "Setting",
     "pickKey": "Pick a setting…",
     "value": "Value",
@@ -46,10 +46,10 @@
   },
   "overview": {
     "title": "Platform overview",
-    "desc": "Tenants, usage and license status across the platform."
+    "desc": "Companies, usage and license status across the platform."
   },
   "stats": {
-    "tenants": "Tenants",
+    "tenants": "Companies",
     "active": "Active",
     "suspended": "Suspended",
     "orgs": "Organizations",
@@ -58,7 +58,7 @@
   },
   "license": {
     "title": "License",
-    "tenants": "Tenants (used / max)",
+    "tenants": "Companies (used / max)",
     "signed": "Public key",
     "baked": "Baked in",
     "unbaked": "Not baked",
@@ -71,13 +71,13 @@
     "onprem": "On-prem"
   },
   "tenants": {
-    "title": "Tenants",
-    "subtitle": "Provision, adjust quotas, suspend or restore tenants.",
-    "empty": "No tenants",
-    "emptyDesc": "Click \"Provision tenant\" to create the first tenant.",
+    "title": "Companies",
+    "subtitle": "Provision, adjust quotas, suspend or restore companies.",
+    "empty": "No companies",
+    "emptyDesc": "Click \"Provision company\" to create the first one.",
     "active": "Active",
     "suspended": "Suspended",
-    "back": "Back to tenants",
+    "back": "Back to companies",
     "perOrg": " / org",
     "usageSummary": "{{orgs}} orgs · {{users}} users · {{storage}}",
     "usageTitle": "Usage / quota",
@@ -86,8 +86,8 @@
     "usageStorage": "Storage",
     "suspend": "Suspend",
     "activate": "Restore",
-    "suspendedDone": "Tenant suspended",
-    "activatedDone": "Tenant restored",
+    "suspendedDone": "Company suspended",
+    "activatedDone": "Company restored",
     "columns": {
       "name": "Name",
       "slug": "Slug",
@@ -97,7 +97,7 @@
       "created": "Created"
     },
     "create": {
-      "title": "Provision tenant",
+      "title": "Provision company",
       "company": "Company name",
       "slug": "Slug (optional)",
       "slugPlaceholder": "e.g. acme",
@@ -108,7 +108,7 @@
       "adminPassword": "Admin password",
       "adminName": "Admin name (optional)",
       "submit": "Provision",
-      "done": "Tenant provisioned"
+      "done": "Company provisioned"
     },
     "edit": {
       "title": "Plan & quotas",
@@ -121,9 +121,9 @@
       "noChange": "No changes"
     },
     "lifecycle": {
-      "title": "Tenant status",
-      "suspendDesc": "Once suspended, all users in this tenant cannot sign in or read/write.",
-      "activateDesc": "Once restored, users in this tenant can sign in again.",
+      "title": "Company status",
+      "suspendDesc": "Once suspended, all users in this company cannot sign in or read/write.",
+      "activateDesc": "Once restored, users in this company can sign in again.",
       "suspendConfirm": "Suspend \"{{name}}\"? All its users will be unable to sign in.",
       "activateConfirm": "Restore \"{{name}}\"? Its users will be able to sign in again."
     }

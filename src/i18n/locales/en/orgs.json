@@ -40,7 +40,7 @@
   },
   "grants": {
     "title": "Role grants",
-    "desc": "Grant a role to a user or team, scoped to tenant/org/team/resource.",
+    "desc": "Grant a role to a user or team, scoped to company/org/team/resource.",
     "principalType": "Principal type",
     "principalId": "Principal ID",
     "selectUser": "Select user",
@@ -55,7 +55,7 @@
     "revoked": "Revoked",
     "principal": { "user": "User", "team": "Team" },
     "scope": {
-      "tenant": "Tenant",
+      "tenant": "Company",
       "organization": "Organization",
       "team": "Team",
       "resource": "Resource"
@@ -71,7 +71,7 @@
   },
   "permissions": {
     "title": "My effective permissions",
-    "desc": "Cumulative permissions on the tenant plus an optional extra scope.",
+    "desc": "Cumulative permissions on the company plus an optional extra scope.",
     "organization": "Organization ID (optional)",
     "check": "Check",
     "empty": "None"

@@ -18,11 +18,11 @@ describe('SignupPage', () => {
     expect(screen.getByText('请输入密码')).toBeInTheDocument()
   })
 
-  it('does not ask for tenant by default, but reveals it on demand', async () => {
+  it('does not ask for company by default, but reveals it on demand', async () => {
     const user = userEvent.setup()
     renderWithProviders(<SignupPage />, { me: null })
-    expect(screen.queryByLabelText('租户')).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: '切换租户' }))
-    expect(screen.getByLabelText('租户')).toBeInTheDocument()
+    expect(screen.queryByLabelText('企业')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '指定企业' }))
+    expect(screen.getByLabelText('企业')).toBeInTheDocument()
   })
 })

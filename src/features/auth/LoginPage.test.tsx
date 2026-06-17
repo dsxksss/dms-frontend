@@ -27,7 +27,7 @@ describe('LoginPage', () => {
   it('asks only for email and password (no tenant field by default)', async () => {
     const user = userEvent.setup()
     renderLogin()
-    expect(screen.queryByLabelText('租户')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('企业')).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: '登录' }))
     expect(await screen.findByText('请输入邮箱')).toBeInTheDocument()
     expect(screen.getByText('请输入密码')).toBeInTheDocument()
@@ -48,15 +48,13 @@ describe('LoginPage', () => {
     await user.type(screen.getByLabelText('邮箱'), 'admin@acme.test')
     await user.type(screen.getByLabelText('密码'), 'wrong')
     await user.click(screen.getByRole('button', { name: '登录' }))
-    expect(
-      await screen.findByText('租户、邮箱或密码不正确'),
-    ).toBeInTheDocument()
+    expect(await screen.findByText('邮箱或密码不正确')).toBeInTheDocument()
   })
 
-  it('reveals the tenant field via the switch link', async () => {
+  it('reveals the company field via the switch link', async () => {
     const user = userEvent.setup()
     renderLogin()
-    await user.click(screen.getByRole('button', { name: '切换租户' }))
-    expect(screen.getByLabelText('租户')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '指定企业' }))
+    expect(screen.getByLabelText('企业')).toBeInTheDocument()
   })
 })

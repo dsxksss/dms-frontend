@@ -40,7 +40,7 @@
   },
   "grants": {
     "title": "角色授予",
-    "desc": "把角色按作用域（租户/组织/团队/资源）授予用户或团队。",
+    "desc": "把角色按作用域（企业/组织/团队/资源）授予用户或团队。",
     "principalType": "主体类型",
     "principalId": "主体 ID",
     "selectUser": "选择用户",
@@ -55,7 +55,7 @@
     "revoked": "已撤销",
     "principal": { "user": "用户", "team": "团队" },
     "scope": {
-      "tenant": "租户",
+      "tenant": "企业",
       "organization": "组织",
       "team": "团队",
       "resource": "资源"
@@ -71,7 +71,7 @@
   },
   "permissions": {
     "title": "我的有效权限",
-    "desc": "当前用户在「租户 + 可选附加作用域」上的累积权限。",
+    "desc": "当前用户在「企业 + 可选附加作用域」上的累积权限。",
     "organization": "组织 ID（可选）",
     "check": "查询",
     "empty": "无"

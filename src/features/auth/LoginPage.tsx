@@ -162,20 +162,12 @@ export function LoginPage({ adminMode = false }: { adminMode?: boolean }) {
           )}
         </form>
 
-        {!adminMode &&
-          (import.meta.env.VITE_SIGNUP_ENABLED !== 'false' ||
-            import.meta.env.VITE_TENANT_SIGNUP_ENABLED !== 'false') && (
+        {/* 企业开通改由平台管理员在后台进行，前台不再提供自助开通入口；这里只留普通用户注册。 */}
+        {!adminMode && import.meta.env.VITE_SIGNUP_ENABLED !== 'false' && (
           <div className="text-muted-foreground mt-4 flex justify-center gap-4 text-sm">
-            {import.meta.env.VITE_SIGNUP_ENABLED !== 'false' && (
-              <Link to="/signup" className="text-brand hover:underline">
-                {t('signup.createAccount')}
-              </Link>
-            )}
-            {import.meta.env.VITE_TENANT_SIGNUP_ENABLED !== 'false' && (
-              <Link to="/signup/tenant" className="text-brand hover:underline">
-                {t('signup.openTenant')}
-              </Link>
-            )}
+            <Link to="/signup" className="text-brand hover:underline">
+              {t('signup.createAccount')}
+            </Link>
           </div>
         )}
       </div>

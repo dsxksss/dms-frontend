@@ -6,7 +6,6 @@ import { AppLayout } from '@/components/app-layout'
 import { AdminLayout } from '@/components/admin-layout'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { SignupPage } from '@/features/auth/SignupPage'
-import { SignupTenantPage } from '@/features/auth/SignupTenantPage'
 import { AdminLoginPage } from '@/features/admin/AdminLoginPage'
 import { PlatformRoot } from '@/platform/PlatformRoot'
 import { PlatformProtectedRoute } from '@/platform/PlatformProtectedRoute'
@@ -77,7 +76,6 @@ const PlatformSettingsPage = lazyPage(
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/signup', element: <SignupPage /> },
-  { path: '/signup/tenant', element: <SignupTenantPage /> },
   { path: '/admin/login', element: <AdminLoginPage /> },
   {
     element: <AdminProtectedRoute />,
