@@ -8,6 +8,7 @@
     "assetTypes": "药物资产类型",
     "dataTemplates": "数据模版",
     "emptyKind": "暂无",
+    "sensitiveCount": "{{count}} 项敏感",
     "edit": "编辑类型",
     "boundAsset": "绑定资产类型(可选)",
     "boundNone": "不绑定",

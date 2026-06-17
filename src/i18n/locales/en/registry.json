@@ -8,6 +8,7 @@
     "assetTypes": "Asset types",
     "dataTemplates": "Data templates",
     "emptyKind": "None yet",
+    "sensitiveCount": "{{count}} sensitive",
     "edit": "Edit type",
     "boundAsset": "Bound asset type (optional)",
     "boundNone": "Not bound",

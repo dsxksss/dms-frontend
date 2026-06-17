@@ -61,7 +61,9 @@ function TypeCard({
         <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
           <span>{t('types.fieldCount', { count: ty.fields.length })}</span>
           {sensitiveCount > 0 && (
-            <span className="text-warning">· {sensitiveCount} sensitive</span>
+            <span className="text-warning">
+              · {t('types.sensitiveCount', { count: sensitiveCount })}
+            </span>
           )}
           {ty.bound_asset_type_id && (
             <Badge variant="outline" className="gap-1 text-xs">
