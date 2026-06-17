@@ -261,11 +261,11 @@ export const registryApi = {
       method: 'POST',
       body,
     }),
-  deleteRelation: (projectId: string, assetId: string, relationId: string) =>
-    request<void>(
-      `${pbase(projectId)}/assets/${assetId}/relations/${relationId}`,
-      { method: 'DELETE', responseType: 'void' },
-    ),
+  deleteRelation: (projectId: string, relationId: string) =>
+    request<void>(`${pbase(projectId)}/relations/${relationId}`, {
+      method: 'DELETE',
+      responseType: 'void',
+    }),
   graph: (
     projectId: string,
     assetId: string,

@@ -55,7 +55,7 @@ export function EntityRelationsDialog({
   const tree = useComponentTree(projectId, entity.id, open)
   const lineage = useLineage(projectId, entity.id, open)
   const add = useAddRelation(projectId, entity.id)
-  const del = useDeleteRelation(projectId, entity.id)
+  const del = useDeleteRelation(projectId)
   const toastError = useToastError()
 
   const [kind, setKind] = useState<string>(RELATION_KINDS.hasComponent)

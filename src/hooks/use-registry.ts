@@ -212,11 +212,11 @@ export function useAddRelation(projectId: string, assetId: string) {
   })
 }
 
-export function useDeleteRelation(projectId: string, assetId: string) {
+export function useDeleteRelation(projectId: string) {
   const invalidate = useInvalidateRegistry(projectId)
   return useMutation({
     mutationFn: (relationId: string) =>
-      registryApi.deleteRelation(projectId, assetId, relationId),
+      registryApi.deleteRelation(projectId, relationId),
     onSuccess: invalidate,
   })
 }
