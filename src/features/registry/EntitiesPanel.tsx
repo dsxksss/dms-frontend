@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Check, GitBranch, Lock, MoreHorizontal, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { Check, GitBranch, Lock, MoreHorizontal, Pencil, Plus, Trash2, Upload, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { DataTable } from '@/components/data-table'
@@ -32,6 +32,7 @@ import { isHiddenSensitive } from '@/lib/field-types'
 import type { Entity, EntityType, FieldDef } from '@/api/registry'
 import { EntityDialog } from './EntityDialog'
 import { EntityRelationsDialog } from './EntityRelationsDialog'
+import { ImportEntitiesDialog } from './ImportEntitiesDialog'
 
 function Cell({ field, data }: { field: FieldDef; data: Record<string, unknown> }) {
   const { t } = useTranslation('registry')
@@ -81,6 +82,7 @@ export function EntitiesPanel({ projectId }: { projectId: string }) {
   const entities = useEntities(projectId, { type: typeId, ...page }, !!typeId)
 
   const [createOpen, setCreateOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Entity | null>(null)
   const [relTarget, setRelTarget] = useState<Entity | null>(null)
   const [delTarget, setDelTarget] = useState<Entity | null>(null)
@@ -186,10 +188,16 @@ export function EntitiesPanel({ projectId }: { projectId: string }) {
           </Select>
         </div>
         {canEdit && selectedType && (
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="size-4" />
-            {t('entities.create')}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
+              <Upload className="size-4" />
+              {t('import.button')}
+            </Button>
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="size-4" />
+              {t('entities.create')}
+            </Button>
+          </div>
         )}
       </div>
 
@@ -222,6 +230,12 @@ export function EntitiesPanel({ projectId }: { projectId: string }) {
             entity={editTarget}
             open={!!editTarget}
             onOpenChange={(o) => !o && setEditTarget(null)}
+          />
+          <ImportEntitiesDialog
+            projectId={projectId}
+            type={selectedType}
+            open={importOpen}
+            onOpenChange={setImportOpen}
           />
         </>
       )}

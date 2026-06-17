@@ -37,6 +37,8 @@ export function renderWithProviders(
     status: me ? 'authed' : 'anon',
     me,
     login: async () => {},
+    signupUser: async () => {},
+    signupTenant: async () => {},
     logout: async () => {},
   }
   const qc = makeQueryClient()

@@ -117,5 +117,25 @@
     "search": "搜索…",
     "none": "（未选择）",
     "empty": "无匹配实体"
+  },
+  "import": {
+    "button": "批量导入",
+    "title": "批量导入实体",
+    "format": "格式",
+    "csv": "CSV（含表头，列名=字段名）",
+    "fasta": "FASTA（序列文件）",
+    "nameField": "名称字段",
+    "nameFieldHint": "FASTA 记录头写入该字段（默认 name）",
+    "seqField": "序列字段",
+    "seqFieldHint": "序列写入该字段（默认类型首个 sequence 字段）",
+    "content": "内容",
+    "contentPlaceholder": "粘贴 CSV / FASTA 文本，或选择文件",
+    "pickFile": "选择文件",
+    "submit": "导入",
+    "importing": "导入中…",
+    "empty": "请粘贴内容或选择文件",
+    "created": "成功导入 {{count}} 条",
+    "failedCount": "失败 {{count}} 条",
+    "rowError": "第 {{row}} 行：{{error}}"
   }
 }

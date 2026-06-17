@@ -67,6 +67,29 @@ export function useSeedDrugRd(projectId: string) {
   })
 }
 
+export function useImportEntities(projectId: string, typeId: string) {
+  const invalidate = useInvalidateRegistry(projectId)
+  return useMutation({
+    mutationFn: ({
+      body,
+      format,
+      name_field,
+      seq_field,
+    }: {
+      body: string
+      format: 'csv' | 'fasta'
+      name_field?: string
+      seq_field?: string
+    }) =>
+      registryApi.importEntities(projectId, typeId, body, {
+        format,
+        name_field,
+        seq_field,
+      }),
+    onSuccess: invalidate,
+  })
+}
+
 // ---- field grants ----
 export function useFieldGrants(projectId: string, typeId: string) {
   return useQuery({

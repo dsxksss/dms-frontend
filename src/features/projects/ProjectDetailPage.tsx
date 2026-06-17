@@ -16,6 +16,7 @@ import { ProtocolsTab } from '@/features/protocols/ProtocolsTab'
 import { FilesPanel } from '@/features/files/FilesPanel'
 import { SignaturesPanel } from '@/features/signatures/SignaturesPanel'
 import { MembersPanel } from './MembersPanel'
+import { SharesPanel } from './SharesPanel'
 import { CreateProjectDialog } from './CreateProjectDialog'
 
 export function ProjectDetailPage() {
@@ -101,8 +102,9 @@ export function ProjectDetailPage() {
           </dl>
         </TabsContent>
 
-        <TabsContent value="members" className="pt-4">
+        <TabsContent value="members" className="space-y-8 pt-4">
           <MembersPanel projectId={id} />
+          <SharesPanel projectId={id} />
         </TabsContent>
         <TabsContent value="registry" className="pt-4">
           <RegistryTab projectId={id} />

@@ -88,6 +88,18 @@
     "contributor": "Contributor",
     "viewer": "Viewer"
   },
+  "shares": {
+    "title": "跨组织共享",
+    "desc": "把项目共享给某组织（其成员按所授角色访问）；不选组织 = 集团共享（所有组织）。",
+    "add": "新增共享",
+    "org": "组织",
+    "allOrgs": "所有组织（集团共享）",
+    "role": "角色",
+    "empty": "暂无跨组织共享",
+    "added": "已共享",
+    "removed": "已取消共享",
+    "removeTitle": "取消共享？"
+  },
   "notFound": "项目不存在或无权访问",
   "comingSoon": "即将上线"
 }

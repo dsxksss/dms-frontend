@@ -88,6 +88,18 @@
     "contributor": "Contributor",
     "viewer": "Viewer"
   },
+  "shares": {
+    "title": "Cross-org sharing",
+    "desc": "Share this project with an organization (its members get the granted role); no org = share with all orgs (group-wide).",
+    "add": "Add share",
+    "org": "Organization",
+    "allOrgs": "All organizations (group-wide)",
+    "role": "Role",
+    "empty": "No cross-org shares",
+    "added": "Shared",
+    "removed": "Share removed",
+    "removeTitle": "Remove share?"
+  },
   "notFound": "Project not found or not accessible",
   "comingSoon": "Coming soon"
 }

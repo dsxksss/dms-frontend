@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -174,6 +174,22 @@ export function LoginPage() {
             </button>
           )}
         </form>
+
+        {(import.meta.env.VITE_SIGNUP_ENABLED !== 'false' ||
+          import.meta.env.VITE_TENANT_SIGNUP_ENABLED !== 'false') && (
+          <div className="text-muted-foreground mt-4 flex justify-center gap-4 text-sm">
+            {import.meta.env.VITE_SIGNUP_ENABLED !== 'false' && (
+              <Link to="/signup" className="text-brand hover:underline">
+                {t('signup.createAccount')}
+              </Link>
+            )}
+            {import.meta.env.VITE_TENANT_SIGNUP_ENABLED !== 'false' && (
+              <Link to="/signup/tenant" className="text-brand hover:underline">
+                {t('signup.openTenant')}
+              </Link>
+            )}
+          </div>
+        )}
       </div>
     </main>
   )

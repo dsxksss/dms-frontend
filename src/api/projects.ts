@@ -17,6 +17,14 @@ export interface Member {
   role: ProjectRole
 }
 
+/** 跨组织项目共享（org_id 为 null = 集团共享，对所有组织）。 */
+export interface ProjectShare {
+  id: string
+  project_id: string
+  org_id: string | null
+  role: ProjectRole
+}
+
 export interface CreateProjectInput {
   name: string
   description?: string
@@ -60,6 +68,16 @@ export const projectsApi = {
     request<Member>(`/v1/projects/${id}/members`, { method: 'POST', body }),
   removeMember: (id: string, userId: string) =>
     request<void>(`/v1/projects/${id}/members/${userId}`, {
+      method: 'DELETE',
+      responseType: 'void',
+    }),
+
+  // ---- cross-org shares ----
+  listShares: (id: string) => request<ProjectShare[]>(`/v1/projects/${id}/shares`),
+  addShare: (id: string, body: { org_id?: string; role?: ProjectRole }) =>
+    request<ProjectShare>(`/v1/projects/${id}/shares`, { method: 'POST', body }),
+  removeShare: (id: string, shareId: string) =>
+    request<void>(`/v1/projects/${id}/shares/${shareId}`, {
       method: 'DELETE',
       responseType: 'void',
     }),

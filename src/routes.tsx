@@ -3,6 +3,8 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { ProtectedRoute } from '@/auth/ProtectedRoute'
 import { AppLayout } from '@/components/app-layout'
 import { LoginPage } from '@/features/auth/LoginPage'
+import { SignupPage } from '@/features/auth/SignupPage'
+import { SignupTenantPage } from '@/features/auth/SignupTenantPage'
 
 // 业务页面按路由懒加载（首屏只载登录/壳）。
 const lazyPage = <T extends Record<string, React.ComponentType>>(
@@ -43,6 +45,8 @@ const SettingsPage = lazyPage(
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
+  { path: '/signup', element: <SignupPage /> },
+  { path: '/signup/tenant', element: <SignupTenantPage /> },
   {
     element: <ProtectedRoute />,
     children: [

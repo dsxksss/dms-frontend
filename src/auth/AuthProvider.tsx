@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { authApi } from '@/api/auth'
+import type { TenantSignupRequest, UserSignupRequest } from '@/api/auth'
 import { useSession } from '@/auth/session'
 import { AuthContext, type AuthStatus } from '@/auth/auth-context'
-import type { LoginRequest, Me } from '@/api/types'
+import type { LoginRequest, Me, SessionTokens } from '@/api/types'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading')
@@ -30,17 +31,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
   }, [])
 
-  const login = async (req: LoginRequest) => {
-    const tokens = await authApi.login(req)
+  const applySession = async (tenant: string, tokens: SessionTokens) => {
     useSession.getState().setSession({
-      // 留空时由后端按 Host 推断；刷新时同样省略 tenant 走 Host。
-      tenant: req.tenant ?? '',
+      tenant,
       accessToken: tokens.access_token,
       refreshToken: tokens.refresh_token,
     })
     const m = await authApi.me()
     setMe(m)
     setStatus('authed')
+  }
+
+  const login = async (req: LoginRequest) => {
+    // 留空时由后端按 Host 推断；刷新时同样省略 tenant 走 Host。
+    await applySession(req.tenant ?? '', await authApi.login(req))
+  }
+
+  const signupUser = async (req: UserSignupRequest) => {
+    await applySession(req.tenant ?? '', await authApi.signupUser(req))
+  }
+
+  const signupTenant = async (req: TenantSignupRequest) => {
+    await applySession(req.slug ?? '', await authApi.signupTenant(req))
   }
 
   const logout = async () => {
@@ -58,7 +70,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ status, me, login, logout }}>
+    <AuthContext.Provider
+      value={{ status, me, login, signupUser, signupTenant, logout }}
+    >
       {children}
     </AuthContext.Provider>
   )

@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react'
 import type { LoginRequest, Me } from '@/api/types'
+import type { TenantSignupRequest, UserSignupRequest } from '@/api/auth'
 
 export type AuthStatus = 'loading' | 'authed' | 'anon'
 
@@ -7,6 +8,8 @@ export interface AuthContextValue {
   status: AuthStatus
   me: Me | null
   login: (req: LoginRequest) => Promise<void>
+  signupUser: (req: UserSignupRequest) => Promise<void>
+  signupTenant: (req: TenantSignupRequest) => Promise<void>
   logout: () => Promise<void>
 }
 

@@ -70,6 +70,12 @@ export interface FieldGrant {
   field: string
 }
 
+/** 批量导入结果：逐行部分成功。 */
+export interface ImportReport {
+  created: number
+  failed: { row: number; error: string }[]
+}
+
 /** 关系类型常量（与后端对齐）。 */
 export const RELATION_KINDS = {
   derivedFrom: 'derived_from',
@@ -115,6 +121,18 @@ export const registryApi = {
   seedDrugRd: (projectId: string) =>
     request<EntityType[]>(`${base(projectId)}/registry/seed-drug-rd`, {
       method: 'POST',
+    }),
+  importEntities: (
+    projectId: string,
+    typeId: string,
+    body: string,
+    params: { format: 'csv' | 'fasta'; name_field?: string; seq_field?: string },
+  ) =>
+    request<ImportReport>(`${base(projectId)}/entity-types/${typeId}/import`, {
+      method: 'POST',
+      raw: body,
+      query: { ...params },
+      headers: { 'content-type': 'text/plain' },
     }),
 
   // ---- field grants ----

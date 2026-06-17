@@ -117,5 +117,25 @@
     "search": "Search…",
     "none": "(none)",
     "empty": "No matching entities"
+  },
+  "import": {
+    "button": "Bulk import",
+    "title": "Bulk import entities",
+    "format": "Format",
+    "csv": "CSV (header row, column names = field names)",
+    "fasta": "FASTA (sequence file)",
+    "nameField": "Name field",
+    "nameFieldHint": "FASTA record header goes into this field (default: name)",
+    "seqField": "Sequence field",
+    "seqFieldHint": "Sequence goes into this field (default: first sequence field)",
+    "content": "Content",
+    "contentPlaceholder": "Paste CSV / FASTA text, or choose a file",
+    "pickFile": "Choose file",
+    "submit": "Import",
+    "importing": "Importing…",
+    "empty": "Paste content or choose a file",
+    "created": "Imported {{count}} successfully",
+    "failedCount": "{{count}} failed",
+    "rowError": "Row {{row}}: {{error}}"
   }
 }

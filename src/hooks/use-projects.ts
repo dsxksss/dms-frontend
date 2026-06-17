@@ -91,6 +91,32 @@ export function useRemoveMember(id: string) {
   })
 }
 
+export function useShares(id: string) {
+  return useQuery({
+    queryKey: ['projects', id, 'shares'],
+    queryFn: () => projectsApi.listShares(id),
+  })
+}
+
+export function useAddShare(id: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { org_id?: string; role?: ProjectRole }) =>
+      projectsApi.addShare(id, body),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ['projects', id, 'shares'] }),
+  })
+}
+
+export function useRemoveShare(id: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (shareId: string) => projectsApi.removeShare(id, shareId),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ['projects', id, 'shares'] }),
+  })
+}
+
 /** 当前用户在该项目的成员角色（用于资源级 UI 门禁）。加载中或非成员返回 null。 */
 export function useProjectRole(projectId: string): ProjectRole | null {
   const { me } = useAuth()
