@@ -2,6 +2,13 @@
   "title": "Data assets",
   "subtitle": "Dynamic schema · sensitive fields (structure / sequence / CDR) hidden by default, granted on demand.",
   "tabs": { "assets": "Assets", "data": "Data", "types": "Types" },
+  "drawer": {
+    "fields": "Fields",
+    "lineage": "Lineage",
+    "audit": "Audit",
+    "noLineage": "No lineage or composition relations",
+    "noAudit": "No audit records"
+  },
   "types": {
     "title": "Type management",
     "create": "New type",

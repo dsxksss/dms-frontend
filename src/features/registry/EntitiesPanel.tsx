@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Check, GitBranch, Lock, MoreHorizontal, Pencil, Plus, Trash2, Upload, X } from 'lucide-react'
+import { Check, GitBranch, Loader2, Lock, MoreHorizontal, Pencil, Plus, Trash2, Upload, X } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { DataTable } from '@/components/data-table'
-import { EmptyState } from '@/components/states'
+import { EmptyState, ErrorState } from '@/components/states'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +25,7 @@ import type { Entity, EntityType, FieldDef, TypeKind } from '@/api/registry'
 import { EntityDialog } from './EntityDialog'
 import { EntityRelationsDialog } from './EntityRelationsDialog'
 import { ImportEntitiesDialog } from './ImportEntitiesDialog'
+import { AssetDrawer } from './AssetDrawer'
 
 function Cell({ field, data }: { field: FieldDef; data: Record<string, unknown> }) {
   const { t } = useTranslation('registry')
@@ -85,88 +85,58 @@ export function RecordsPanel({
   const [editTarget, setEditTarget] = useState<Entity | null>(null)
   const [relTarget, setRelTarget] = useState<Entity | null>(null)
   const [delTarget, setDelTarget] = useState<Entity | null>(null)
+  const [drawerTarget, setDrawerTarget] = useState<Entity | null>(null)
   const del = useDeleteRecord(projectId, kind)
 
   const isAsset = kind === 'asset'
+  const fields = selectedType?.fields ?? []
+  const items = records.data?.items ?? []
+  const total = records.data?.total ?? 0
+  const hasMore = page.offset + items.length < total
 
-  // 不手动 useMemo：交由 React Compiler 自动记忆（cell 用到 setState，手动 deps 反而冲突）。
-  const fieldCols: ColumnDef<Entity, unknown>[] = (selectedType?.fields ?? []).map(
-    (f) => ({
-      id: f.name,
-      header: f.name,
-      cell: ({ row }) => <Cell field={f} data={row.original.data} />,
-    }),
+  // 动态列：ID + 每个字段 + (模板)资产记录 + 操作。
+  const gridTemplate = [
+    '104px',
+    ...fields.map(() => 'minmax(130px,1fr)'),
+    ...(isAsset ? [] : ['140px']),
+    '48px',
+  ].join(' ')
+  const minWidth = 152 + fields.length * 140 + (isAsset ? 0 : 140)
+
+  const rowMenu = (e: Entity) => (
+    <span className="flex justify-end" onClick={(ev) => ev.stopPropagation()}>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon-sm">
+            <MoreHorizontal className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {isAsset && (
+            <DropdownMenuItem onClick={() => setRelTarget(e)}>
+              <GitBranch className="size-4" />
+              {t('entities.relations')}
+            </DropdownMenuItem>
+          )}
+          {canEdit && (
+            <>
+              <DropdownMenuItem onClick={() => setEditTarget(e)}>
+                <Pencil className="size-4" />
+                {t('entities.edit')}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => setDelTarget(e)}
+              >
+                <Trash2 className="size-4" />
+                {t('actions.delete', { ns: 'common' })}
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </span>
   )
-  const columns: ColumnDef<Entity, unknown>[] = !selectedType
-    ? []
-    : [
-        {
-          id: 'id',
-          header: 'ID',
-          cell: ({ row }) => (
-            <span className="text-brand font-mono text-xs font-semibold">
-              {shortId(row.original.id)}
-            </span>
-          ),
-        },
-        ...fieldCols,
-        ...(isAsset
-          ? []
-          : [
-              {
-                id: 'asset_record',
-                header: t('entities.assetRecord'),
-                cell: ({ row }) => (
-                  <span className="text-muted-foreground font-mono text-xs">
-                    {row.original.asset_record_id
-                      ? shortId(row.original.asset_record_id)
-                      : '—'}
-                  </span>
-                ),
-              } as ColumnDef<Entity, unknown>,
-            ]),
-        {
-          id: 'actions',
-          header: '',
-          cell: ({ row }) => {
-            const e = row.original
-            return (
-              <div className="flex justify-end">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="size-8">
-                      <MoreHorizontal className="size-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {isAsset && (
-                      <DropdownMenuItem onClick={() => setRelTarget(e)}>
-                        <GitBranch className="size-4" />
-                        {t('entities.relations')}
-                      </DropdownMenuItem>
-                    )}
-                    {canEdit && (
-                      <>
-                        <DropdownMenuItem onClick={() => setEditTarget(e)}>
-                          <Pencil className="size-4" />
-                          {t('entities.edit')}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => setDelTarget(e)}
-                        >
-                          <Trash2 className="size-4" />
-                          {t('actions.delete', { ns: 'common' })}
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            )
-          },
-        },
-      ]
 
   const onDelete = async () => {
     if (!delTarget) return
@@ -223,20 +193,85 @@ export function RecordsPanel({
         )}
       </div>
 
-      <DataTable
-        columns={columns}
-        data={records.data?.items ?? []}
-        loading={records.isLoading || (!!typeId && !selectedType)}
-        error={records.isError ? records.error : undefined}
-        onRetry={() => records.refetch()}
-        empty={<EmptyState title={t('entities.empty')} />}
-        pagination={{
-          limit: page.limit,
-          offset: page.offset,
-          total: records.data?.total ?? 0,
-          onChange: setPage,
-        }}
-      />
+      {records.isLoading || (!!typeId && !selectedType) ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="text-muted-foreground size-6 animate-spin" />
+        </div>
+      ) : records.isError ? (
+        <ErrorState error={records.error} onRetry={() => records.refetch()} />
+      ) : items.length === 0 ? (
+        <EmptyState title={t('entities.empty')} />
+      ) : (
+        <>
+          <Card className="gap-0 overflow-hidden py-0">
+            <div className="overflow-x-auto">
+              <div style={{ minWidth }}>
+                <div
+                  className="bg-surface-2 text-muted-foreground grid gap-2 border-b px-4 py-2.5 text-[11px] font-semibold tracking-[0.04em] uppercase"
+                  style={{ gridTemplateColumns: gridTemplate }}
+                >
+                  <div>ID</div>
+                  {fields.map((f) => (
+                    <div key={f.name} className="truncate normal-case">
+                      {f.name}
+                    </div>
+                  ))}
+                  {!isAsset && <div>{t('entities.assetRecord')}</div>}
+                  <div />
+                </div>
+                {items.map((e) => (
+                  <div
+                    key={e.id}
+                    className={cn(
+                      'border-divider grid items-center gap-2 border-b px-4 py-3 text-[13px] last:border-b-0',
+                      isAsset && 'hover:bg-row-hover cursor-pointer',
+                    )}
+                    style={{ gridTemplateColumns: gridTemplate }}
+                    onClick={isAsset ? () => setDrawerTarget(e) : undefined}
+                  >
+                    <span className="text-brand font-mono text-xs font-semibold">
+                      {shortId(e.id)}
+                    </span>
+                    {fields.map((f) => (
+                      <span key={f.name} className="min-w-0 truncate text-[12.5px]">
+                        <Cell field={f} data={e.data} />
+                      </span>
+                    ))}
+                    {!isAsset && (
+                      <span className="text-muted-foreground font-mono text-xs">
+                        {e.asset_record_id ? shortId(e.asset_record_id) : '—'}
+                      </span>
+                    )}
+                    {rowMenu(e)}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+          {(page.offset > 0 || hasMore) && (
+            <div className="flex items-center justify-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page.offset === 0}
+                onClick={() =>
+                  setPage((p) => ({ ...p, offset: Math.max(0, p.offset - p.limit) }))
+                }
+              >
+                {t('table.prev', { ns: 'common' })}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!hasMore}
+                onClick={() => setPage((p) => ({ ...p, offset: p.offset + p.limit }))}
+              >
+                {t('table.next', { ns: 'common' })}
+              </Button>
+            </div>
+          )}
+        </>
+      )}
 
       {selectedType && (
         <>
@@ -280,6 +315,27 @@ export function RecordsPanel({
         loading={del.isPending}
         onConfirm={onDelete}
       />
+      {drawerTarget && selectedType && (
+        <AssetDrawer
+          projectId={projectId}
+          type={selectedType}
+          recordId={drawerTarget.id}
+          open={!!drawerTarget}
+          onOpenChange={(o) => !o && setDrawerTarget(null)}
+          onEdit={
+            canEdit
+              ? () => {
+                  setEditTarget(drawerTarget)
+                  setDrawerTarget(null)
+                }
+              : undefined
+          }
+          onRelations={() => {
+            setRelTarget(drawerTarget)
+            setDrawerTarget(null)
+          }}
+        />
+      )}
     </div>
   )
 }

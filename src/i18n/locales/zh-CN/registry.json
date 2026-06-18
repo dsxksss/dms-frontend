@@ -2,6 +2,13 @@
   "title": "数据资产",
   "subtitle": "动态 Schema · 敏感字段（结构 / 序列 / CDR）默认隐藏，按需授权。",
   "tabs": { "assets": "药物资产", "data": "药物数据", "types": "类型" },
+  "drawer": {
+    "fields": "字段",
+    "lineage": "谱系",
+    "audit": "审计",
+    "noLineage": "暂无谱系或组合关系",
+    "noAudit": "暂无审计记录"
+  },
   "types": {
     "title": "类型管理",
     "create": "新建类型",
