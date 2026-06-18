@@ -2,7 +2,7 @@
   "title": "实验方案",
   "subtitle": "可复用的方案模板与执行记录（ELN）",
   "tabs": { "protocols": "方案", "runs": "执行" },
-  "columns": { "name": "名称", "key": "标识", "steps": "步骤", "status": "状态", "protocol": "方案", "performedBy": "执行人", "started": "开始" },
+  "columns": { "name": "名称", "key": "标识", "steps": "步骤", "status": "状态", "protocol": "方案", "performedBy": "执行人", "started": "开始", "signature": "签名" },
   "protocol": {
     "create": "新建方案",
     "edit": "编辑方案",
@@ -35,6 +35,8 @@
     "nameRequired": "步骤名必填"
   },
   "run": {
+    "section": "执行实例",
+    "signed": "已签",
     "start": "发起执行",
     "starting": "发起中…",
     "name": "执行名称",

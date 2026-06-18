@@ -16,18 +16,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Check } from 'lucide-react'
 import { useProjectRole } from '@/hooks/use-projects'
 import { useProtocols, useRuns } from '@/hooks/use-protocols'
+import { useSignatures } from '@/hooks/use-signatures'
 import { roleAtLeast } from '@/lib/roles'
 import { statusTone } from '@/lib/tone'
-import { formatDateTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { RunStatus } from '@/api/protocols'
 import { StartRunDialog } from './StartRunDialog'
 import { RunDetailDialog } from './RunDetailDialog'
 
 const STATUSES: RunStatus[] = ['draft', 'in_progress', 'completed', 'aborted']
-const COLS = 'grid-cols-[1.4fr_1fr_170px_120px_130px]'
+const COLS = 'grid-cols-[1.3fr_1.1fr_160px_110px_100px]'
 
 export function RunsPanel({ projectId }: { projectId: string }) {
   const { t } = useTranslation('protocols')
@@ -42,6 +43,8 @@ export function RunsPanel({ projectId }: { projectId: string }) {
     () => Object.fromEntries((protocols.data?.items ?? []).map((p) => [p.id, p.name])),
     [protocols.data],
   )
+  const sigs = useSignatures(projectId, { target_kind: 'run', limit: 200 })
+  const signedRuns = new Set(sigs.data?.items.map((s) => s.target_id) ?? [])
 
   const [startOpen, setStartOpen] = useState(false)
   const [openRun, setOpenRun] = useState<string | null>(null)
@@ -112,7 +115,7 @@ export function RunsPanel({ projectId }: { projectId: string }) {
                   <div>{t('columns.protocol')}</div>
                   <div>{t('columns.performedBy')}</div>
                   <div>{t('columns.status')}</div>
-                  <div>{t('columns.started')}</div>
+                  <div>{t('columns.signature')}</div>
                 </div>
                 {items.map((r) => (
                   <div
@@ -139,8 +142,15 @@ export function RunsPanel({ projectId }: { projectId: string }) {
                         {t(`status.${r.status}`)}
                       </Badge>
                     </span>
-                    <span className="text-muted-foreground text-[11px] tabular-nums">
-                      {formatDateTime(r.started_at)}
+                    <span>
+                      {signedRuns.has(r.id) ? (
+                        <Badge variant="success">
+                          <Check className="size-3" />
+                          {t('run.signed')}
+                        </Badge>
+                      ) : (
+                        <span className="text-[#aeb6c2]">—</span>
+                      )}
                     </span>
                   </div>
                 ))}

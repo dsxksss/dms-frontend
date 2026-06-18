@@ -2,7 +2,7 @@
   "title": "Protocols",
   "subtitle": "Reusable protocol templates and execution records (ELN)",
   "tabs": { "protocols": "Protocols", "runs": "Runs" },
-  "columns": { "name": "Name", "key": "Key", "steps": "Steps", "status": "Status", "protocol": "Protocol", "performedBy": "Performed by", "started": "Started" },
+  "columns": { "name": "Name", "key": "Key", "steps": "Steps", "status": "Status", "protocol": "Protocol", "performedBy": "Performed by", "started": "Started", "signature": "Signature" },
   "protocol": {
     "create": "New protocol",
     "edit": "Edit protocol",
@@ -35,6 +35,8 @@
     "nameRequired": "Step name is required"
   },
   "run": {
+    "section": "Runs",
+    "signed": "Signed",
     "start": "Start run",
     "starting": "Starting…",
     "name": "Run name",
