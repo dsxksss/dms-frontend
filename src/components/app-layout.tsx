@@ -6,7 +6,6 @@ import {
   Building2,
   ChevronsUpDown,
   FolderKanban,
-  Globe,
   Languages,
   Loader2,
   LogOut,
@@ -46,7 +45,6 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { to: '/projects', labelKey: 'nav.projects', icon: FolderKanban },
-  { to: '/public-datasets', labelKey: 'nav.publicDatasets', icon: Globe },
   { to: '/inbox', labelKey: 'nav.inbox', icon: Mail },
   {
     to: '/orgs',
