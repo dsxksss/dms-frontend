@@ -7,6 +7,7 @@ import {
   useParams,
 } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useQueries } from '@tanstack/react-query'
 import {
   Bell,
   Boxes,
@@ -28,15 +29,21 @@ import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { PageHeader } from '@/components/page-header'
 import { NavLabel } from '@/components/nav-label'
+import { UserAvatar } from '@/components/user-avatar'
 import { EmptyState, ErrorState } from '@/components/states'
 import { Can } from '@/auth/Can'
-import { useProject, useProjectRole } from '@/hooks/use-projects'
+import { useCan } from '@/auth/auth-context'
+import { useMembers, useProject, useProjectRole } from '@/hooks/use-projects'
+import { useEntityTypes } from '@/hooks/use-registry'
+import { useDatasets } from '@/hooks/use-datasets'
+import { useRuns } from '@/hooks/use-protocols'
+import { useAudit } from '@/hooks/use-audit'
+import { registryApi } from '@/api/registry'
 import { roleAtLeast } from '@/lib/roles'
 import { roleTone } from '@/lib/tone'
 import { codeOf, tintOf } from '@/lib/tile'
-import { shortId } from '@/lib/format'
+import { formatDateTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { ResourceGrantsPanel } from '@/features/grants/ResourceGrantsPanel'
 import { RegistryTab } from '@/features/registry/RegistryTab'
@@ -227,17 +234,53 @@ export function ProjectLayout() {
 
 /* —— sections —— */
 
+const STAT_TINTS = [
+  { bg: '#EAF0FF', fg: '#2F6BFF', icon: Boxes },
+  { bg: '#E7F6EC', fg: '#15803D', icon: Table2 },
+  { bg: '#FEF4E6', fg: '#B45309', icon: FlaskConical },
+  { bg: '#F3EEFB', fg: '#7C3AED', icon: Users },
+]
+const TYPE_COLORS = ['#2F6BFF', '#16A34A', '#C77B16', '#7C3AED', '#DB2777', '#0E9AB5']
+
 export function ProjectOverviewSection() {
   const id = useProjectId()
   const { t } = useTranslation('projects')
   const query = useProject(id)
   const [editOpen, setEditOpen] = useState(false)
 
+  const types = useEntityTypes(id)
+  const assetTypes = (types.data ?? []).filter((ty) => ty.kind === 'asset')
+  const counts = useQueries({
+    queries: assetTypes.map((ty) => ({
+      queryKey: ['registry', id, 'count', ty.id],
+      queryFn: () =>
+        registryApi
+          .listRecords(id, 'asset', { type: ty.id, limit: 1 })
+          .then((r) => r.total),
+      enabled: !!id,
+    })),
+  })
+  const datasets = useDatasets(id)
+  const runs = useRuns(id, { limit: 1 })
+  const members = useMembers(id)
+  const canAudit = useCan('audit:read')
+  const audit = useAudit({ limit: 6 })
+
+  const totalAssets = counts.reduce((s, c) => s + ((c.data as number) ?? 0), 0)
+  const typeBars = assetTypes
+    .map((ty, i) => ({
+      name: ty.name,
+      count: (counts[i].data as number) ?? 0,
+      color: TYPE_COLORS[i % TYPE_COLORS.length],
+    }))
+    .sort((a, b) => b.count - a.count)
+  const maxCount = Math.max(1, ...typeBars.map((b) => b.count))
+
   if (query.isLoading) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-8 w-56" />
-        <Skeleton className="h-56 w-full max-w-[640px]" />
+        <Skeleton className="h-56 w-full" />
       </div>
     )
   }
@@ -247,89 +290,137 @@ export function ProjectOverviewSection() {
   const project = query.data
   if (!project) return <EmptyState title={t('notFound')} />
 
-  const rows: Array<[string, React.ReactNode]> = [
-    [t('overview.id'), <span className="font-mono text-[12.5px]">{shortId(project.id)}</span>],
-    [
-      t('overview.organization'),
-      project.organization_id ? (
-        <span className="font-mono text-[12.5px]">
-          {shortId(project.organization_id)}
-        </span>
-      ) : (
-        <span className="text-muted-foreground">{t('overview.none')}</span>
-      ),
-    ],
-    [
-      t('overview.status'),
-      <Badge variant={project.archived ? 'neutral' : 'success'}>
-        {t(project.archived ? 'status.archived' : 'status.active')}
-      </Badge>,
-    ],
-    [t('overview.version'), <span className="tabular-nums">{project.version}</span>],
-    [
-      t('overview.description'),
-      project.description || (
-        <span className="text-muted-foreground">{t('overview.none')}</span>
-      ),
-    ],
+  const stats = [
+    { label: t('tabs.registry'), value: totalAssets },
+    { label: t('tabs.datasets'), value: datasets.data?.length ?? 0 },
+    { label: t('overview.runs'), value: runs.data?.total ?? 0 },
+    { label: t('tabs.members'), value: members.data?.length ?? 0 },
   ]
+  const mlist = members.data ?? []
 
   return (
     <div className="mx-auto max-w-[1180px]">
-      <PageHeader
-        title={project.name}
-        description={project.description || undefined}
-        actions={
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-[24px] font-extrabold tracking-tight">
+            {project.name}{' '}
+            <span className="text-muted-foreground text-[16px] font-semibold">
+              {t('tabs.overview')}
+            </span>
+          </h1>
+          {project.description && (
+            <p className="text-muted-foreground mt-1 text-[13px]">
+              {project.description}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          {mlist.length > 0 && (
+            <div className="flex items-center">
+              {mlist.slice(0, 4).map((m, i) => (
+                <UserAvatar
+                  key={m.user_id}
+                  seed={m.user_id}
+                  className={cn('ring-card ring-2', i > 0 && '-ml-2')}
+                />
+              ))}
+              {mlist.length > 4 && (
+                <span className="bg-muted text-muted-foreground ring-card -ml-2 flex size-[30px] items-center justify-center rounded-full text-[10px] font-bold ring-2">
+                  +{mlist.length - 4}
+                </span>
+              )}
+            </div>
+          )}
           <Can perm="project:write">
             <Button variant="outline" onClick={() => setEditOpen(true)}>
               <Pencil className="size-4" />
               {t('row.edit')}
             </Button>
           </Can>
-        }
-      />
+        </div>
+      </div>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,360px)_1fr]">
-        <Card className="gap-0 py-0">
-          {rows.map(([label, value], i) => (
-            <div
-              key={i}
-              className={cn(
-                'flex items-center gap-4 px-5 py-3.5',
-                i < rows.length - 1 && 'border-divider border-b',
-              )}
-            >
-              <div className="text-muted-foreground w-28 shrink-0 text-[12.5px]">
-                {label}
-              </div>
-              <div className="min-w-0 flex-1 text-[13px]">{value}</div>
-            </div>
-          ))}
-        </Card>
-
-        <div className="grid grid-cols-2 gap-4 self-start sm:grid-cols-3">
-          {SECTIONS.filter((s) => s.seg !== '').map((s) => {
-            const tint = tintOf(s.key)
-            return (
-              <Link
-                key={s.key}
-                to={`/projects/${id}/${s.seg}`}
-                className="group bg-card hover:border-brand/40 flex flex-col gap-2.5 rounded-[14px] border p-4 shadow-[0_1px_2px_rgba(20,40,80,0.04)] transition-all hover:shadow-[0_8px_24px_rgba(20,40,80,0.08)]"
-              >
+      <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">
+        {stats.map((s, i) => {
+          const tint = STAT_TINTS[i]
+          return (
+            <Card key={i} className="gap-0 px-[18px] py-4">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground text-[12.5px] font-semibold">
+                  {s.label}
+                </span>
                 <span
-                  className="flex size-9 items-center justify-center rounded-[10px]"
+                  className="flex size-[30px] items-center justify-center rounded-[8px]"
                   style={{ background: tint.bg, color: tint.fg }}
                 >
-                  <s.icon className="size-[18px]" />
+                  <tint.icon className="size-4" />
                 </span>
-                <div className="text-[13.5px] font-bold">{t(`tabs.${s.key}`)}</div>
-                <div className="text-brand text-[12px] font-semibold opacity-0 transition-opacity group-hover:opacity-100">
-                  {t('openSection')} →
+              </div>
+              <div className="mt-2 text-[27px] font-extrabold tracking-tight tabular-nums">
+                {s.value}
+              </div>
+            </Card>
+          )
+        })}
+      </div>
+
+      <div className="mt-[18px] grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+        <Card className="gap-0 px-5 py-[18px]">
+          <div className="mb-3.5 text-[14px] font-bold">{t('overview.byType')}</div>
+          {typeBars.length === 0 ? (
+            <p className="text-muted-foreground text-[13px]">{t('overview.none')}</p>
+          ) : (
+            typeBars.map((b) => (
+              <div key={b.name} className="mb-3 flex items-center gap-3 last:mb-0">
+                <div className="w-[92px] shrink-0 truncate text-[12.5px] font-semibold">
+                  {b.name}
                 </div>
-              </Link>
-            )
-          })}
-        </div>
+                <div className="bg-muted h-[9px] flex-1 overflow-hidden rounded-full">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${(b.count / maxCount) * 100}%`,
+                      background: b.color,
+                    }}
+                  />
+                </div>
+                <div className="text-muted-foreground w-9 text-right font-mono text-[12px] tabular-nums">
+                  {b.count}
+                </div>
+              </div>
+            ))
+          )}
+        </Card>
+
+        <Card className="gap-0 px-5 py-[18px]">
+          <div className="mb-3.5 text-[14px] font-bold">{t('overview.recent')}</div>
+          {!canAudit ? (
+            <p className="text-muted-foreground text-[13px]">{t('overview.noActivity')}</p>
+          ) : audit.data && audit.data.items.length > 0 ? (
+            audit.data.items.slice(0, 5).map((a) => (
+              <div key={a.id} className="mb-3.5 flex gap-2.5 last:mb-0">
+                <UserAvatar
+                  seed={a.actor_id ?? a.user_name ?? '?'}
+                  initials={a.user_name ?? undefined}
+                  className="size-6"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="text-[12.5px] leading-[1.45]">
+                    <b>{a.user_name ?? '—'}</b>{' '}
+                    <span className="text-[#5a6473]">
+                      {a.event_description ?? a.action}
+                    </span>
+                  </div>
+                  <div className="text-muted-foreground mt-0.5 text-[11px] tabular-nums">
+                    {formatDateTime(a.occurred_at)}
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-muted-foreground text-[13px]">{t('overview.noActivity')}</p>
+          )}
+        </Card>
       </div>
 
       <CreateProjectDialog

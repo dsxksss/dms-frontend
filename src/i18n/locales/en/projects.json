@@ -73,7 +73,12 @@
     "version": "Version",
     "status": "Status",
     "description": "Description",
-    "none": "(none)"
+    "none": "(none)",
+    "runs": "Runs",
+    "byType": "By asset type",
+    "recent": "Recent",
+    "info": "Project info",
+    "noActivity": "No activity yet"
   },
   "members": {
     "title": "Members",

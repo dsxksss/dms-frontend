@@ -73,7 +73,12 @@
     "version": "版本",
     "status": "状态",
     "description": "描述",
-    "none": "（无）"
+    "none": "（无）",
+    "runs": "执行实例",
+    "byType": "资产类型分布",
+    "recent": "最近活动",
+    "info": "项目信息",
+    "noActivity": "暂无活动"
   },
   "members": {
     "title": "成员",
