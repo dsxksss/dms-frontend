@@ -7,9 +7,12 @@ import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EmptyState, TableSkeleton } from '@/components/states'
 import { useDebounce } from '@/hooks/use-debounce'
+import { roleTone, statusTone } from '@/lib/tone'
+import { codeOf, tintOf } from '@/lib/tile'
 import {
   useAcceptInvitation,
   useCancelJoinRequest,
@@ -33,20 +36,31 @@ function InvitationsTab() {
     return <EmptyState title={t('inbox.noInvitations')} />
 
   return (
-    <ul className="divide-y rounded-md border">
-      {list.data.map((inv) => (
-        <li key={inv.id} className="flex items-center justify-between gap-3 px-4 py-3">
-          <div className="flex flex-col">
-            <span className="flex items-center gap-2 text-sm">
-              <Badge variant="secondary">{t(`inbox.kind.${inv.kind}`)}</Badge>
-              <span className="font-medium">{inv.target_name}</span>
-              <span className="text-muted-foreground">· {inv.role}</span>
+    <div className="flex flex-col gap-3">
+      {list.data.map((inv) => {
+        const tint = tintOf(inv.id)
+        return (
+          <Card key={inv.id} className="flex-row items-center gap-3.5 px-[18px] py-4">
+            <span
+              className="flex size-10 shrink-0 items-center justify-center rounded-[11px] text-[12px] font-extrabold"
+              style={{ background: tint.bg, color: tint.fg }}
+            >
+              {codeOf(inv.target_name)}
             </span>
-            {inv.message && (
-              <span className="text-muted-foreground text-xs">{inv.message}</span>
-            )}
-          </div>
-          <div className="flex gap-1">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <Badge variant="neutral">{t(`inbox.kind.${inv.kind}`)}</Badge>
+                <span className="truncate text-[14px] font-bold">
+                  {inv.target_name}
+                </span>
+              </div>
+              {inv.message && (
+                <div className="text-muted-foreground mt-0.5 truncate text-[12px]">
+                  {inv.message}
+                </div>
+              )}
+            </div>
+            <Badge variant={roleTone(inv.role)}>{inv.role}</Badge>
             <Button
               size="sm"
               onClick={async () => {
@@ -63,7 +77,7 @@ function InvitationsTab() {
             </Button>
             <Button
               size="sm"
-              variant="ghost"
+              variant="outline"
               onClick={async () => {
                 try {
                   await decline.mutateAsync(inv.id)
@@ -76,10 +90,10 @@ function InvitationsTab() {
               <X className="size-4" />
               {t('inbox.decline')}
             </Button>
-          </div>
-        </li>
-      ))}
-    </ul>
+          </Card>
+        )
+      })}
+    </div>
   )
 }
 
@@ -99,7 +113,7 @@ function JoinRequestsTab() {
         <li key={r.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
           <span className="flex items-center gap-2">
             <span className="font-medium">{r.org_name}</span>
-            <Badge variant="secondary">{r.status}</Badge>
+            <Badge variant={statusTone(r.status)}>{r.status}</Badge>
           </span>
           <Button
             size="sm"
@@ -179,9 +193,9 @@ function DiscoverTab() {
 export function InboxPage() {
   const { t } = useTranslation('membership')
   return (
-    <div>
+    <div className="mx-auto max-w-[760px]">
       <PageHeader title={t('inbox.title')} description={t('inbox.subtitle')} />
-      <Tabs defaultValue="invitations">
+      <Tabs defaultValue="invitations" className="gap-4">
         <TabsList>
           <TabsTrigger value="invitations">{t('inbox.tabInvitations')}</TabsTrigger>
           <TabsTrigger value="requests">{t('inbox.tabJoinRequests')}</TabsTrigger>
