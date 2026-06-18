@@ -42,7 +42,7 @@ export function FieldBuilder({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium">{t('fieldBuilder.title')}</span>
+        <span className="text-[13px] font-bold">{t('fieldBuilder.title')}</span>
         <Button type="button" variant="outline" size="sm" onClick={add}>
           <Plus className="size-4" />
           {t('fieldBuilder.add')}

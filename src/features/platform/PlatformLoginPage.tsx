@@ -9,8 +9,8 @@ import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ThemeToggle } from '@/components/theme-toggle'
 import { LangToggle } from '@/components/lang-toggle'
+import { BrandMark } from '@/components/brand-mark'
 import { usePlatformAuth } from '@/platform/platform-auth'
 import { errorI18nKey, isAppError } from '@/lib/errors'
 
@@ -56,69 +56,100 @@ export function PlatformLoginPage() {
   }
 
   return (
-    <main className="bg-background relative flex min-h-[100dvh] items-center justify-center p-6">
-      <div className="absolute top-4 right-4 flex items-center gap-1">
-        <LangToggle />
-        <ThemeToggle />
-      </div>
-
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-2 text-center">
-          <div className="bg-brand text-brand-foreground flex size-10 items-center justify-center rounded-lg font-semibold">
-            P
-          </div>
-          <h1 className="text-xl font-semibold tracking-tight">
+    <main className="flex h-[100dvh]">
+      <div className="relative hidden flex-col justify-between overflow-hidden bg-[#161A2B] p-12 text-white lg:flex lg:flex-1">
+        <div className="relative z-10 flex items-center gap-3">
+          <BrandMark variant="platform" className="size-[34px]" />
+          <div className="text-[18px] font-extrabold">{t('title')}</div>
+        </div>
+        <div className="relative z-10 max-w-[420px]">
+          <h1 className="text-[30px] leading-[1.3] font-extrabold tracking-tight">
             {t('login.title')}
           </h1>
-          <p className="text-muted-foreground text-sm">{t('login.subtitle')}</p>
+          <p className="mt-4 text-[14px] leading-[1.7] text-[#9AA0C4]">
+            {t('overview.desc')}
+          </p>
+        </div>
+        <div className="relative z-10 text-[12px] text-[#8990B5]">
+          Platform Console · machine-bound license
+        </div>
+        <div className="absolute -right-24 -bottom-24 size-80 rounded-full bg-[#6D5BD0]/20" />
+        <div className="absolute top-24 right-16 size-40 rounded-full bg-white/5" />
+      </div>
+
+      <div className="bg-card relative flex flex-1 items-center justify-center lg:w-[480px] lg:flex-none">
+        <div className="absolute top-4 right-4">
+          <LangToggle />
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">{t('login.email')}</Label>
-            <Input
-              id="email"
-              type="email"
-              autoFocus
-              autoComplete="username"
-              aria-invalid={!!errors.email}
-              {...register('email')}
-            />
-            {errors.email && (
-              <p className="text-destructive text-sm">{errors.email.message}</p>
-            )}
-          </div>
+        <div className="w-[340px] max-w-[86vw]">
+          <h1 className="text-[22px] font-extrabold">{t('login.title')}</h1>
+          <p className="text-muted-foreground mt-1.5 text-[13px]">
+            {t('login.subtitle')}
+          </p>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">{t('login.password')}</Label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              aria-invalid={!!errors.password}
-              {...register('password')}
-            />
-            {errors.password && (
-              <p className="text-destructive text-sm">
-                {errors.password.message}
-              </p>
-            )}
-          </div>
-
-          {formError && (
-            <div
-              role="alert"
-              className="border-destructive/30 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm"
-            >
-              {formError}
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            noValidate
+            className="mt-[26px] space-y-4"
+          >
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-xs font-semibold text-[#5a6473]">
+                {t('login.email')}
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                autoFocus
+                autoComplete="username"
+                aria-invalid={!!errors.email}
+                {...register('email')}
+              />
+              {errors.email && (
+                <p className="text-destructive text-xs">{errors.email.message}</p>
+              )}
             </div>
-          )}
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-            {isSubmitting ? t('login.submitting') : t('login.submit')}
-          </Button>
-        </form>
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="password"
+                className="text-xs font-semibold text-[#5a6473]"
+              >
+                {t('login.password')}
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                aria-invalid={!!errors.password}
+                {...register('password')}
+              />
+              {errors.password && (
+                <p className="text-destructive text-xs">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
+
+            {formError && (
+              <div
+                role="alert"
+                className="border-destructive/30 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-[13px]"
+              >
+                {formError}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              className="h-11 w-full text-sm"
+              disabled={isSubmitting}
+            >
+              {isSubmitting && <Loader2 className="size-4 animate-spin" />}
+              {isSubmitting ? t('login.submitting') : t('login.submit')}
+            </Button>
+          </form>
+        </div>
       </div>
     </main>
   )

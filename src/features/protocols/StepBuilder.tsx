@@ -25,7 +25,7 @@ export function StepBuilder({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium">{t('steps.title')}</span>
+        <span className="text-[13px] font-bold">{t('steps.title')}</span>
         <Button type="button" variant="outline" size="sm" onClick={add}>
           <Plus className="size-4" />
           {t('steps.add')}

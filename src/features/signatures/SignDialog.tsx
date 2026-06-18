@@ -13,16 +13,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { useSign } from '@/hooks/use-signatures'
 import { useToastError } from '@/hooks/use-toast-error'
 import { sha256Hex } from '@/lib/sha256'
+import { cn } from '@/lib/utils'
 import type { SignatureMeaning } from '@/api/signatures'
 
 const MEANINGS: SignatureMeaning[] = [
@@ -90,29 +84,38 @@ export function SignDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <PenLine className="size-4" />
-            {t('sign.title')}
-          </DialogTitle>
+          <div className="flex items-center gap-3">
+            <span className="bg-accent text-brand flex size-11 shrink-0 items-center justify-center rounded-[12px]">
+              <PenLine className="size-5" />
+            </span>
+            <div>
+              <DialogTitle>{t('sign.title')}</DialogTitle>
+              <p className="text-muted-foreground mt-0.5 text-[11.5px]">
+                21 CFR Part 11 · §11.200
+              </p>
+            </div>
+          </div>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>{t('sign.meaning')}</Label>
-            <Select
-              value={meaning}
-              onValueChange={(v) => setMeaning(v as SignatureMeaning)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MEANINGS.map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {t(`meaning.${m}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-wrap gap-2">
+              {MEANINGS.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMeaning(m)}
+                  className={cn(
+                    'rounded-[9px] border px-3 py-1.5 text-[12.5px] font-semibold transition-colors',
+                    meaning === m
+                      ? 'border-brand bg-accent text-brand'
+                      : 'text-secondary-foreground hover:bg-background',
+                  )}
+                >
+                  {t(`meaning.${m}`)}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="sig-reason">{t('sign.reason')}</Label>
