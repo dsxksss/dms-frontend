@@ -37,6 +37,7 @@ import { useCan } from '@/auth/auth-context'
 import { useMembers, useProject, useProjectRole } from '@/hooks/use-projects'
 import { useEntityTypes } from '@/hooks/use-registry'
 import { useDatasets } from '@/hooks/use-datasets'
+import { useFilesSummary } from '@/hooks/use-files'
 import { useRuns } from '@/hooks/use-protocols'
 import { useAudit } from '@/hooks/use-audit'
 import { registryApi } from '@/api/registry'
@@ -82,6 +83,33 @@ function ProjectSidebarBody({ onNavigate }: { onNavigate?: () => void }) {
   const project = useProject(id).data
   const role = useProjectRole(id)
   const tint = tintOf(id)
+
+  // 分区计数徽标（资产数=各资产类型记录数求和，并发取；其余单查询，均缓存复用）。
+  const types = useEntityTypes(id)
+  const assetTypes = (types.data ?? []).filter((ty) => ty.kind === 'asset')
+  const assetCounts = useQueries({
+    queries: assetTypes.map((ty) => ({
+      queryKey: ['registry', id, 'count', 'asset', ty.id],
+      queryFn: () =>
+        registryApi
+          .listRecords(id, 'asset', { type: ty.id, limit: 1 })
+          .then((r) => r.total),
+      enabled: !!id,
+    })),
+  })
+  const datasets = useDatasets(id)
+  const runs = useRuns(id, { limit: 1 })
+  const files = useFilesSummary(id)
+  const members = useMembers(id)
+  const sectionCount: Record<string, number | undefined> = {
+    registry: types.data
+      ? assetCounts.reduce((s, c) => s + ((c.data as number) ?? 0), 0)
+      : undefined,
+    datasets: datasets.data?.length,
+    protocols: runs.data?.total,
+    files: files.data?.total,
+    members: members.data?.length,
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -138,6 +166,11 @@ function ProjectSidebarBody({ onNavigate }: { onNavigate?: () => void }) {
               zh={t(`tabs.${s.key}`)}
               en={isZh ? t(`tabs.${s.key}`, { lng: 'en' }) : undefined}
             />
+            {sectionCount[s.key] != null && (
+              <span className="bg-muted text-muted-foreground rounded-full px-1.5 text-[10.5px] font-bold tabular-nums">
+                {sectionCount[s.key]}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>
@@ -252,7 +285,7 @@ export function ProjectOverviewSection() {
   const assetTypes = (types.data ?? []).filter((ty) => ty.kind === 'asset')
   const counts = useQueries({
     queries: assetTypes.map((ty) => ({
-      queryKey: ['registry', id, 'count', ty.id],
+      queryKey: ['registry', id, 'count', 'asset', ty.id],
       queryFn: () =>
         registryApi
           .listRecords(id, 'asset', { type: ty.id, limit: 1 })

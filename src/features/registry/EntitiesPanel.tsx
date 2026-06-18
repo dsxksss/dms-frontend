@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useQueries } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Check, GitBranch, Loader2, MoreHorizontal, Pencil, Plus, Trash2, Upload, X } from 'lucide-react'
 import { toast } from 'sonner'
@@ -20,6 +21,7 @@ import { roleAtLeast } from '@/lib/roles'
 import { shortId } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { isHiddenSensitive } from '@/lib/field-types'
+import { registryApi } from '@/api/registry'
 import type { Entity, EntityType, FieldDef, TypeKind } from '@/api/registry'
 import { EntityDialog } from './EntityDialog'
 import { EntityRelationsDialog } from './EntityRelationsDialog'
@@ -73,6 +75,16 @@ export function RecordsPanel({
 
   const selectedType: EntityType | undefined = types.find((ty) => ty.id === typeId)
   const records = useRecords(projectId, kind, { type: typeId, ...page }, !!typeId)
+  const typeCounts = useQueries({
+    queries: types.map((ty) => ({
+      queryKey: ['registry', projectId, 'count', kind, ty.id],
+      queryFn: () =>
+        registryApi
+          .listRecords(projectId, kind, { type: ty.id, limit: 1 })
+          .then((r) => r.total),
+      enabled: !!projectId,
+    })),
+  })
 
   const [createOpen, setCreateOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
@@ -154,23 +166,37 @@ export function RecordsPanel({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-1.5 border-b">
-        {types.map((ty) => (
-          <button
-            key={ty.id}
-            onClick={() => {
-              setTypeId(ty.id)
-              setPage({ limit: 20, offset: 0 })
-            }}
-            className={cn(
-              '-mb-px border-b-2 px-3 py-2.5 text-[13px] font-semibold whitespace-nowrap transition-colors',
-              typeId === ty.id
-                ? 'border-brand text-brand'
-                : 'text-muted-foreground hover:text-foreground border-transparent',
-            )}
-          >
-            {ty.name}
-          </button>
-        ))}
+        {types.map((ty, i) => {
+          const active = typeId === ty.id
+          const count = typeCounts[i]?.data as number | undefined
+          return (
+            <button
+              key={ty.id}
+              onClick={() => {
+                setTypeId(ty.id)
+                setPage({ limit: 20, offset: 0 })
+              }}
+              className={cn(
+                '-mb-px flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-[13px] font-semibold whitespace-nowrap transition-colors',
+                active
+                  ? 'border-brand text-brand'
+                  : 'text-muted-foreground hover:text-foreground border-transparent',
+              )}
+            >
+              {ty.name}
+              {count != null && (
+                <span
+                  className={cn(
+                    'rounded-full px-1.5 text-[11px] tabular-nums',
+                    active ? 'bg-accent text-brand' : 'bg-muted text-muted-foreground',
+                  )}
+                >
+                  {count}
+                </span>
+              )}
+            </button>
+          )
+        })}
         {canEdit && selectedType && (
           <div className="ml-auto flex gap-2 pb-1.5">
             {isAsset && (
