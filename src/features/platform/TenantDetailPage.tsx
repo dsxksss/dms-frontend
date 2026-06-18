@@ -146,18 +146,9 @@ export function TenantDetailPage() {
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-xl font-semibold tracking-tight">{d.name}</h1>
           <PlanBadge plan={d.plan} />
-          {d.active ? (
-            <Badge
-              variant="outline"
-              className="border-transparent bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-            >
-              {t('tenants.active')}
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="text-muted-foreground">
-              {t('tenants.suspended')}
-            </Badge>
-          )}
+          <Badge variant={d.active ? 'success' : 'neutral'}>
+            {t(d.active ? 'tenants.active' : 'tenants.suspended')}
+          </Badge>
         </div>
         <p className="text-muted-foreground mt-1 font-mono text-xs">
           {d.slug} · {formatDateTime(d.created_at)}

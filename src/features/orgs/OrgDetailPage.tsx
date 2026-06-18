@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
+import { roleTone } from '@/lib/tone'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -100,7 +101,7 @@ function MembersTab({ orgId }: { orgId: string }) {
                       </SelectContent>
                     </Select>
                   ) : (
-                    <Badge variant="secondary">{to(`orgRole.${m.role}`)}</Badge>
+                    <Badge variant={roleTone(m.role)}>{to(`orgRole.${m.role}`)}</Badge>
                   )}
                   {canManage && (
                     <Button

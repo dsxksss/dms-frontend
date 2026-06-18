@@ -38,16 +38,10 @@ import {
 } from '@/hooks/use-protocols'
 import { useToastError } from '@/hooks/use-toast-error'
 import { roleAtLeast } from '@/lib/roles'
+import { statusTone } from '@/lib/tone'
 import { shortId, formatDateTime } from '@/lib/format'
 import { buildData, initialValues, type FormValues } from '@/lib/field-types'
 import type { LinkTarget, RunResults, RunStatus } from '@/api/protocols'
-
-const STATUS_VARIANT: Record<RunStatus, string> = {
-  draft: 'bg-muted text-muted-foreground',
-  in_progress: 'bg-brand/15 text-brand border-transparent',
-  completed: 'bg-success/15 text-success border-transparent',
-  aborted: 'bg-destructive/15 text-destructive border-transparent',
-}
 
 function RunLinksSection({
   projectId,
@@ -238,7 +232,7 @@ export function RunDetailDialog({
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 {run.name}
-                <Badge className={STATUS_VARIANT[run.status]}>
+                <Badge variant={statusTone(run.status)}>
                   {t(`status.${run.status}`)}
                 </Badge>
               </DialogTitle>

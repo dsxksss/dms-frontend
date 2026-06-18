@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { roleTone } from '@/lib/tone'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
@@ -139,7 +140,7 @@ export function InvitePanel({
               >
                 <span className="flex items-center gap-2">
                   <UserName id={inv.invitee_user_id} className="text-sm" />
-                  <Badge variant="secondary">{roleLabel(inv.role)}</Badge>
+                  <Badge variant={roleTone(inv.role)}>{roleLabel(inv.role)}</Badge>
                   <span className="text-muted-foreground text-xs">{inv.status}</span>
                 </span>
                 {canInvite && (

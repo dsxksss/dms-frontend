@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { roleTone } from '@/lib/tone'
 import {
   Select,
   SelectContent,
@@ -137,7 +138,7 @@ export function SharesPanel({ projectId }: { projectId: string }) {
             >
               <span className="flex items-center gap-2">
                 <span className="font-medium">{orgName(s.org_id)}</span>
-                <Badge variant="secondary">{t(`roles.${s.role}`)}</Badge>
+                <Badge variant={roleTone(s.role)}>{t(`roles.${s.role}`)}</Badge>
               </span>
               {canManage && (
                 <Button
