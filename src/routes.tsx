@@ -19,9 +19,37 @@ const ProjectsListPage = lazyPage(
   () => import('@/features/projects/ProjectsListPage'),
   'ProjectsListPage',
 )
-const ProjectDetailPage = lazyPage(
-  () => import('@/features/projects/ProjectDetailPage'),
-  'ProjectDetailPage',
+const ProjectLayout = lazyPage(
+  () => import('@/features/projects/ProjectWorkspace'),
+  'ProjectLayout',
+)
+const ProjectOverviewSection = lazyPage(
+  () => import('@/features/projects/ProjectWorkspace'),
+  'ProjectOverviewSection',
+)
+const ProjectRegistrySection = lazyPage(
+  () => import('@/features/projects/ProjectWorkspace'),
+  'ProjectRegistrySection',
+)
+const ProjectProtocolsSection = lazyPage(
+  () => import('@/features/projects/ProjectWorkspace'),
+  'ProjectProtocolsSection',
+)
+const ProjectDatasetsSection = lazyPage(
+  () => import('@/features/projects/ProjectWorkspace'),
+  'ProjectDatasetsSection',
+)
+const ProjectFilesSection = lazyPage(
+  () => import('@/features/projects/ProjectWorkspace'),
+  'ProjectFilesSection',
+)
+const ProjectMembersSection = lazyPage(
+  () => import('@/features/projects/ProjectWorkspace'),
+  'ProjectMembersSection',
+)
+const ProjectSignaturesSection = lazyPage(
+  () => import('@/features/projects/ProjectWorkspace'),
+  'ProjectSignaturesSection',
 )
 const DatasetDetailPage = lazyPage(
   () => import('@/features/datasets/DatasetDetailPage'),
@@ -98,14 +126,28 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="/projects" replace /> },
           { path: 'projects', element: <ProjectsListPage /> },
-          { path: 'projects/:id', element: <ProjectDetailPage /> },
-          { path: 'projects/:id/datasets/:dsId', element: <DatasetDetailPage /> },
           { path: 'public-datasets', element: <PublicDatasetsPage /> },
           { path: 'orgs', element: <OrgsListPage /> },
           { path: 'orgs/:id', element: <OrgDetailPage /> },
           { path: 'inbox', element: <InboxPage /> },
           { path: 'audit', element: <AuditPage /> },
           { path: 'settings', element: <SettingsPage /> },
+        ],
+      },
+      {
+        element: <ProjectLayout />,
+        children: [
+          { path: 'projects/:id', element: <ProjectOverviewSection /> },
+          { path: 'projects/:id/registry', element: <ProjectRegistrySection /> },
+          { path: 'projects/:id/protocols', element: <ProjectProtocolsSection /> },
+          { path: 'projects/:id/datasets', element: <ProjectDatasetsSection /> },
+          { path: 'projects/:id/datasets/:dsId', element: <DatasetDetailPage /> },
+          { path: 'projects/:id/files', element: <ProjectFilesSection /> },
+          { path: 'projects/:id/members', element: <ProjectMembersSection /> },
+          {
+            path: 'projects/:id/signatures',
+            element: <ProjectSignaturesSection />,
+          },
         ],
       },
     ],

@@ -14,6 +14,9 @@
     "personalProject": "Personal project",
     "open": "Open project"
   },
+  "back": "Back to projects",
+  "roleLabel": "My role",
+  "openSection": "Open",
   "create": {
     "title": "New project",
     "name": "Name",
