@@ -182,11 +182,11 @@ export function useCancelJoinRequest() {
   })
 }
 
-export function useOrgJoinRequests(orgId: string) {
+export function useOrgJoinRequests(orgId: string, enabled = true) {
   return useQuery({
     queryKey: membershipKeys.orgJoinRequests(orgId),
     queryFn: () => membershipApi.listOrgJoinRequests(orgId),
-    enabled: !!orgId,
+    enabled: enabled && !!orgId,
   })
 }
 
