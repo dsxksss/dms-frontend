@@ -59,20 +59,23 @@ export function DatasetDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={backToProject}>
-            <ArrowLeft className="size-4" />
-          </Button>
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight">
-              {dataset.name}
-            </h1>
-            {dataset.description && (
-              <p className="text-muted-foreground text-sm">{dataset.description}</p>
-            )}
-          </div>
+    <div className="mx-auto max-w-[1200px]">
+      <button
+        onClick={backToProject}
+        className="text-muted-foreground hover:text-foreground mb-1.5 inline-flex items-center gap-1 text-[12.5px]"
+      >
+        <ArrowLeft className="size-3.5" />
+        {t('title')}
+      </button>
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0 space-y-1.5">
+          <h1 className="text-[22px] font-extrabold tracking-tight">
+            {dataset.name}
+          </h1>
+          <p className="text-muted-foreground text-[12.5px]">
+            {dataset.description ? `${dataset.description} · ` : ''}v
+            {dataset.version}
+          </p>
         </div>
         {canManage && (
           <div className="flex gap-2">
@@ -80,14 +83,14 @@ export function DatasetDetailPage() {
               <Pencil className="size-4" />
               {t('row.edit')}
             </Button>
-            <Button variant="outline" onClick={() => setDelOpen(true)}>
+            <Button variant="outline" size="icon" onClick={() => setDelOpen(true)}>
               <Trash2 className="text-destructive size-4" />
             </Button>
           </div>
         )}
       </div>
 
-      <Tabs defaultValue="versions">
+      <Tabs defaultValue="versions" className="gap-4">
         <TabsList>
           <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
           <TabsTrigger value="versions">{t('tabs.versions')}</TabsTrigger>
