@@ -39,7 +39,7 @@ describe('AuditPage', () => {
     )
     renderWithProviders(<AuditPage />)
     expect(await screen.findByText('Admin User')).toBeInTheDocument()
-    expect(screen.getByText('127.0.0.1')).toBeInTheDocument()
+    expect(screen.getByText(/127\.0\.0\.1/)).toBeInTheDocument()
     expect(screen.getByText('create')).toBeInTheDocument()
   })
 })

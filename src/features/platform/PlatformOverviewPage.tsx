@@ -1,15 +1,8 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  Building2,
-  CheckCircle2,
-  HardDrive,
-  PauseCircle,
-  ShieldCheck,
-  Users,
-} from 'lucide-react'
+import { ShieldCheck } from 'lucide-react'
 import { PageHeader } from '@/components/page-header'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { ErrorState } from '@/components/states'
@@ -17,31 +10,27 @@ import { usePlatformStats, usePlatformLicense } from '@/hooks/use-platform'
 import { formatBytes } from '@/lib/format'
 
 function StatCard({
-  icon,
   label,
   value,
+  sub,
   loading,
 }: {
-  icon: ReactNode
   label: string
   value: ReactNode
+  sub?: ReactNode
   loading?: boolean
 }) {
   return (
-    <Card>
-      <CardContent className="flex items-center gap-3 py-4">
-        <div className="bg-muted text-muted-foreground flex size-9 items-center justify-center rounded-md">
-          {icon}
-        </div>
-        <div className="min-w-0">
-          <p className="text-muted-foreground text-xs">{label}</p>
-          {loading ? (
-            <Skeleton className="mt-1 h-6 w-16" />
-          ) : (
-            <p className="text-lg font-semibold tabular-nums">{value}</p>
-          )}
-        </div>
-      </CardContent>
+    <Card className="gap-0 px-5 py-[18px]">
+      <p className="text-muted-foreground text-[12.5px] font-semibold">{label}</p>
+      {loading ? (
+        <Skeleton className="mt-2 h-8 w-20" />
+      ) : (
+        <p className="mt-2 text-[30px] font-extrabold tracking-tight tabular-nums">
+          {value}
+        </p>
+      )}
+      {sub && <p className="text-muted-foreground mt-0.5 text-[11.5px]">{sub}</p>}
     </Card>
   )
 }
@@ -51,46 +40,39 @@ export function PlatformOverviewPage() {
   const stats = usePlatformStats()
   const license = usePlatformLicense()
 
+  const used = license.data?.tenants_used ?? 0
+  const max = license.data?.max_tenants
+  const pct = max && max > 0 ? Math.min(100, Math.round((used / max) * 100)) : 0
+
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-[1180px] space-y-[18px]">
       <PageHeader title={t('overview.title')} description={t('overview.desc')} />
 
       {stats.isError ? (
         <ErrorState error={stats.error} onRetry={() => stats.refetch()} />
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">
           <StatCard
-            icon={<Building2 className="size-4" />}
             label={t('stats.tenants')}
             value={stats.data?.tenants ?? 0}
+            sub={
+              stats.data
+                ? `${stats.data.active_tenants} ${t('stats.active')} · ${stats.data.suspended_tenants} ${t('stats.suspended')}`
+                : undefined
+            }
             loading={stats.isLoading}
           />
           <StatCard
-            icon={<CheckCircle2 className="size-4" />}
-            label={t('stats.active')}
-            value={stats.data?.active_tenants ?? 0}
-            loading={stats.isLoading}
-          />
-          <StatCard
-            icon={<PauseCircle className="size-4" />}
-            label={t('stats.suspended')}
-            value={stats.data?.suspended_tenants ?? 0}
-            loading={stats.isLoading}
-          />
-          <StatCard
-            icon={<Building2 className="size-4" />}
             label={t('stats.orgs')}
             value={stats.data?.total_orgs ?? 0}
             loading={stats.isLoading}
           />
           <StatCard
-            icon={<Users className="size-4" />}
             label={t('stats.users')}
             value={stats.data?.total_users ?? 0}
             loading={stats.isLoading}
           />
           <StatCard
-            icon={<HardDrive className="size-4" />}
             label={t('stats.storage')}
             value={formatBytes(stats.data?.total_storage ?? 0)}
             loading={stats.isLoading}
@@ -98,56 +80,51 @@ export function PlatformOverviewPage() {
         </div>
       )}
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <ShieldCheck className="text-muted-foreground size-4" />
-            {t('license.title')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm">
-          {license.isError ? (
-            <ErrorState error={license.error} onRetry={() => license.refetch()} />
-          ) : license.isLoading ? (
-            <Skeleton className="h-20 w-full" />
-          ) : (
-            <dl className="grid gap-x-8 gap-y-3 sm:grid-cols-2">
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-muted-foreground">{t('license.tenants')}</dt>
-                <dd className="font-medium tabular-nums">
-                  {license.data?.tenants_used ?? 0}
-                  {' / '}
-                  {license.data?.max_tenants == null
-                    ? t('unlimited')
-                    : license.data.max_tenants}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-muted-foreground">{t('license.signed')}</dt>
-                <dd>
-                  <Badge
-                    variant="outline"
-                    className={
-                      license.data?.license_pubkey_baked
-                        ? 'border-transparent bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                        : 'text-muted-foreground'
-                    }
-                  >
-                    {license.data?.license_pubkey_baked
-                      ? t('license.baked')
-                      : t('license.unbaked')}
-                  </Badge>
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-4 sm:col-span-2">
-                <dt className="text-muted-foreground">{t('license.machine')}</dt>
-                <dd className="truncate font-mono text-xs">
-                  {license.data?.machine_code ?? '-'}
-                </dd>
-              </div>
-            </dl>
+      <Card className="gap-0 px-[22px] py-5">
+        <div className="mb-4 flex items-center gap-2.5">
+          <ShieldCheck className="size-[18px] text-[#7C3AED]" />
+          <span className="text-[15px] font-bold">{t('license.title')}</span>
+          {license.data && (
+            <Badge variant="purple" className="ml-auto">
+              {license.data.license_pubkey_baked
+                ? t('license.baked')
+                : t('license.unbaked')}
+            </Badge>
           )}
-        </CardContent>
+        </div>
+
+        {license.isError ? (
+          <ErrorState error={license.error} onRetry={() => license.refetch()} />
+        ) : license.isLoading ? (
+          <Skeleton className="h-16 w-full" />
+        ) : (
+          <div className="flex flex-col gap-6 sm:flex-row">
+            <div>
+              <div className="text-muted-foreground text-[11.5px]">
+                {t('license.machine')}
+              </div>
+              <div className="mt-1 font-mono text-[13px] font-semibold">
+                {license.data?.machine_code ?? '-'}
+              </div>
+            </div>
+            <div className="flex-1">
+              <div className="text-muted-foreground text-[11.5px]">
+                {t('license.tenants')}
+              </div>
+              <div className="mt-1.5 flex items-center gap-2.5">
+                <div className="bg-muted h-[9px] max-w-[300px] flex-1 overflow-hidden rounded-full">
+                  <div
+                    className="h-full rounded-full bg-[linear-gradient(90deg,#6D5BD0,#8E7DE8)]"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <span className="font-mono text-[13px] font-bold tabular-nums">
+                  {used} / {max == null ? t('unlimited') : max}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   )

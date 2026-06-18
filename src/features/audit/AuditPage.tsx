@@ -1,11 +1,19 @@
-import { useMemo, useState } from 'react'
+import { useState, type ComponentType } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Eye } from 'lucide-react'
+import {
+  Activity,
+  Eye,
+  KeyRound,
+  Loader2,
+  Pencil,
+  PenLine,
+  Plus,
+  Trash2,
+} from 'lucide-react'
 
 import { PageHeader } from '@/components/page-header'
-import { DataTable } from '@/components/data-table'
-import { EmptyState } from '@/components/states'
+import { EmptyState, ErrorState } from '@/components/states'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
@@ -26,6 +34,7 @@ import { UserPicker } from '@/features/membership/UserPicker'
 import { ChangesView } from '@/features/audit/ChangesView'
 import { useAudit } from '@/hooks/use-audit'
 import { shortId, formatDateTime } from '@/lib/format'
+import type { Tone } from '@/lib/tone'
 import type { AuditEntry } from '@/api/audit'
 import type { UserCard } from '@/api/membership'
 
@@ -43,6 +52,35 @@ const ENTITY_TYPES = [
 ]
 const ALL = '__all'
 
+/** 审计动作 → 图标 + tone（按 action 关键字归类）。 */
+function actionMeta(action: string): {
+  tone: Tone
+  Icon: ComponentType<{ className?: string }>
+} {
+  const a = action.toLowerCase()
+  if (a.includes('creat') || a.includes('add') || a.includes('invit'))
+    return { tone: 'success', Icon: Plus }
+  if (a.includes('delet') || a.includes('remov') || a.includes('revok'))
+    return { tone: 'danger', Icon: Trash2 }
+  if (a.includes('sign')) return { tone: 'purple', Icon: PenLine }
+  if (a.includes('grant') || a.includes('share') || a.includes('permission'))
+    return { tone: 'info', Icon: KeyRound }
+  if (a.includes('updat') || a.includes('patch') || a.includes('chang'))
+    return { tone: 'warning', Icon: Pencil }
+  return { tone: 'neutral', Icon: Activity }
+}
+
+const TONE_TILE: Record<Tone, string> = {
+  success: 'bg-[#E7F6EC] text-[#15803D]',
+  warning: 'bg-[#FEF4E6] text-[#B45309]',
+  info: 'bg-[#EAF0FF] text-[#2F6BFF]',
+  danger: 'bg-[#FDECEC] text-[#B91C1C]',
+  neutral: 'bg-[#EEF0F3] text-[#64748B]',
+  purple: 'bg-[#EFE9FB] text-[#6D5BD0]',
+  pink: 'bg-[#FBEAF2] text-[#BE185D]',
+  lock: 'bg-[#FFF3F0] text-[#E0492C]',
+}
+
 export function AuditPage() {
   const { t } = useTranslation('audit')
   const [entityType, setEntityType] = useState('')
@@ -57,93 +95,15 @@ export function AuditPage() {
     ...page,
   })
 
-  const columns = useMemo<ColumnDef<AuditEntry, unknown>[]>(
-    () => [
-      {
-        id: 'time',
-        header: t('columns.time'),
-        cell: ({ row }) => (
-          <span className="text-muted-foreground whitespace-nowrap text-xs tabular-nums">
-            {formatDateTime(row.original.occurred_at)}
-          </span>
-        ),
-      },
-      {
-        id: 'user',
-        header: t('columns.user'),
-        cell: ({ row }) => {
-          const e = row.original
-          return (
-            <div className="flex flex-col">
-              <span className="text-sm">{e.user_name ?? t('none')}</span>
-              {e.user_handle && (
-                <span className="text-muted-foreground font-mono text-xs">
-                  {e.user_handle}
-                </span>
-              )}
-            </div>
-          )
-        },
-      },
-      {
-        id: 'ip',
-        header: t('columns.ip'),
-        cell: ({ row }) => (
-          <span className="font-mono text-xs">{row.original.ip_address ?? t('none')}</span>
-        ),
-      },
-      {
-        id: 'action',
-        header: t('columns.action'),
-        cell: ({ row }) => <Badge variant="secondary">{row.original.action}</Badge>,
-      },
-      {
-        id: 'event',
-        header: t('columns.event'),
-        cell: ({ row }) => (
-          <span className="text-sm">{row.original.event_description ?? t('none')}</span>
-        ),
-      },
-      {
-        id: 'entity',
-        header: t('columns.entity'),
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <span className="text-sm">{row.original.entity_type}</span>
-            <span className="text-muted-foreground font-mono text-xs">
-              {shortId(row.original.entity_id)}
-            </span>
-            {row.original.parent_type && (
-              <span className="text-muted-foreground text-xs">
-                ↳ {row.original.parent_type} {shortId(row.original.parent_id)}
-              </span>
-            )}
-          </div>
-        ),
-      },
-      {
-        id: 'changes',
-        header: t('columns.changes'),
-        cell: ({ row }) => (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setChangesOf(row.original)}
-          >
-            <Eye className="size-4" />
-            {t('viewChanges')}
-          </Button>
-        ),
-      },
-    ],
-    [t],
-  )
+  const items = query.data?.items ?? []
+  const total = query.data?.total ?? 0
+  const hasMore = page.offset + items.length < total
 
   return (
-    <div>
+    <div className="mx-auto max-w-[920px]">
       <PageHeader title={t('title')} description={t('subtitle')} />
 
-      <div className="flex flex-wrap items-end gap-3 pb-3">
+      <div className="mb-4 flex flex-wrap items-end gap-3">
         <div className="space-y-1.5">
           <Label>{t('filters.entityType')}</Label>
           <Select
@@ -192,20 +152,100 @@ export function AuditPage() {
         </Button>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={query.data?.items ?? []}
-        loading={query.isLoading}
-        error={query.isError ? query.error : undefined}
-        onRetry={() => query.refetch()}
-        empty={<EmptyState title={t('empty')} />}
-        pagination={{
-          limit: page.limit,
-          offset: page.offset,
-          total: query.data?.total ?? 0,
-          onChange: setPage,
-        }}
-      />
+      {query.isLoading ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="text-muted-foreground size-6 animate-spin" />
+        </div>
+      ) : query.isError ? (
+        <ErrorState error={query.error} onRetry={() => query.refetch()} />
+      ) : items.length === 0 ? (
+        <EmptyState title={t('empty')} />
+      ) : (
+        <>
+          <Card className="gap-0 py-1.5">
+            {items.map((e) => {
+              const { tone, Icon } = actionMeta(e.action)
+              return (
+                <div
+                  key={e.id}
+                  className="border-divider flex gap-3.5 border-b px-5 py-3.5 last:border-0"
+                >
+                  <span
+                    className={`flex size-8 shrink-0 items-center justify-center rounded-[9px] ${TONE_TILE[tone]}`}
+                  >
+                    <Icon className="size-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px]">
+                      <b>{e.user_name ?? t('none')}</b>{' '}
+                      <span className="text-[#5a6473]">
+                        {e.event_description ?? e.action}
+                      </span>{' '}
+                      <span className="text-brand font-mono text-[11.5px]">
+                        {e.entity_type} {shortId(e.entity_id)}
+                      </span>
+                    </div>
+                    <div className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px]">
+                      <span>{formatDateTime(e.occurred_at)}</span>
+                      {e.ip_address && (
+                        <span className="font-mono">IP {e.ip_address}</span>
+                      )}
+                      {e.request_id && (
+                        <span className="font-mono">{e.request_id}</span>
+                      )}
+                      {e.parent_type && (
+                        <span>
+                          ↳ {e.parent_type} {shortId(e.parent_id)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <Badge variant={tone} className="h-fit">
+                    {e.action}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="h-fit"
+                    aria-label={t('viewChanges')}
+                    onClick={() => setChangesOf(e)}
+                  >
+                    <Eye className="size-4" />
+                  </Button>
+                </div>
+              )
+            })}
+          </Card>
+
+          {(page.offset > 0 || hasMore) && (
+            <div className="mt-5 flex items-center justify-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page.offset === 0}
+                onClick={() =>
+                  setPage((p) => ({
+                    ...p,
+                    offset: Math.max(0, p.offset - p.limit),
+                  }))
+                }
+              >
+                {t('table.prev', { ns: 'common' })}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!hasMore}
+                onClick={() =>
+                  setPage((p) => ({ ...p, offset: p.offset + p.limit }))
+                }
+              >
+                {t('table.next', { ns: 'common' })}
+              </Button>
+            </div>
+          )}
+        </>
+      )}
 
       <Dialog open={!!changesOf} onOpenChange={(o) => !o && setChangesOf(null)}>
         <DialogContent className="sm:max-w-2xl">
