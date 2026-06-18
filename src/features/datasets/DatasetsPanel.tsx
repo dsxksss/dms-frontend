@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { PageHeader } from '@/components/page-header'
 import { EmptyState, ErrorState } from '@/components/states'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Button } from '@/components/ui/button'
@@ -30,7 +31,7 @@ import { cn } from '@/lib/utils'
 import type { Dataset } from '@/api/datasets'
 import { CreateDatasetDialog } from './CreateDatasetDialog'
 
-const COLS = 'grid-cols-[1.7fr_90px_70px]'
+const COLS = 'grid-cols-[1.6fr_80px_120px]'
 
 /** 项目内数据集列表（项目成员可见，Contributor+ 可写）。 */
 export function DatasetsPanel({ projectId }: { projectId: string }) {
@@ -67,11 +68,13 @@ export function DatasetsPanel({ projectId }: { projectId: string }) {
   )
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-[15px] font-bold">{t('title')}</h2>
-        {createBtn}
-      </div>
+    <div className="mx-auto max-w-[1200px] space-y-4">
+      <PageHeader
+        title={t('title')}
+        titleI18n={{ key: 'title', ns: 'datasets' }}
+        description={t('subtitle')}
+        actions={createBtn || undefined}
+      />
 
       {query.isLoading ? (
         <div className="flex justify-center py-16">
@@ -122,10 +125,16 @@ export function DatasetsPanel({ projectId }: { projectId: string }) {
                   <span>
                     <Badge variant="neutral">v{d.version}</Badge>
                   </span>
-                  <span className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+                  <span className="flex items-center justify-end gap-1.5">
+                    <span className="text-brand text-[12.5px] font-semibold">
+                      {t('row.open')} →
+                    </span>
                     {canWrite && (
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
+                        <DropdownMenuTrigger
+                          asChild
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Button variant="ghost" size="icon-sm">
                             <MoreHorizontal className="size-4" />
                           </Button>
