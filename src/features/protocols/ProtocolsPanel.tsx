@@ -105,7 +105,7 @@ export function ProtocolsPanel({ projectId }: { projectId: string }) {
                       </div>
                     </div>
                     {p.archived && (
-                      <Badge variant="secondary" className="shrink-0">
+                      <Badge variant="neutral" className="shrink-0">
                         {t('status.archived', { ns: 'projects' })}
                       </Badge>
                     )}

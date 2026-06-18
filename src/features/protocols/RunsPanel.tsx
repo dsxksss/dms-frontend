@@ -19,18 +19,13 @@ import {
 import { useProjectRole } from '@/hooks/use-projects'
 import { useProtocols, useRuns } from '@/hooks/use-protocols'
 import { roleAtLeast } from '@/lib/roles'
+import { statusTone } from '@/lib/tone'
 import { formatDateTime } from '@/lib/format'
 import type { Run, RunStatus } from '@/api/protocols'
 import { StartRunDialog } from './StartRunDialog'
 import { RunDetailDialog } from './RunDetailDialog'
 
 const STATUSES: RunStatus[] = ['draft', 'in_progress', 'completed', 'aborted']
-const STATUS_CLASS: Record<RunStatus, string> = {
-  draft: 'bg-muted text-muted-foreground',
-  in_progress: 'bg-brand/15 text-brand border-transparent',
-  completed: 'bg-success/15 text-success border-transparent',
-  aborted: 'bg-destructive/15 text-destructive border-transparent',
-}
 
 export function RunsPanel({ projectId }: { projectId: string }) {
   const { t } = useTranslation('protocols')
@@ -76,7 +71,7 @@ export function RunsPanel({ projectId }: { projectId: string }) {
         accessorKey: 'status',
         header: t('columns.status'),
         cell: ({ row }) => (
-          <Badge className={STATUS_CLASS[row.original.status]}>
+          <Badge variant={statusTone(row.original.status)}>
             {t(`status.${row.original.status}`)}
           </Badge>
         ),
