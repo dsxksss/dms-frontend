@@ -1,13 +1,15 @@
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Loader2, Plus, Trash2, Upload } from 'lucide-react'
+import { Loader2, Plus, Table2, Trash2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { RowList, Row } from '@/components/row-list'
 import {
   Dialog,
   DialogContent,
@@ -122,29 +124,33 @@ export function PlatformDatasetsPage() {
       ) : items.length === 0 ? (
         <EmptyState title={t('datasets.empty')} description={t('datasets.emptyDesc')} />
       ) : (
-        <ul className="divide-y rounded-lg border">
+        <RowList>
           {items.map((d) => (
-            <li key={d.id} className="flex items-center justify-between gap-3 px-4 py-3">
-              <div className="min-w-0">
-                <div className="font-medium">{d.name}</div>
-                <div className="text-muted-foreground truncate text-xs">
-                  {d.description || '—'} · v{d.version}
+            <Row key={d.id}>
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-[9px] bg-[#EFE9FB] text-[#6D5BD0]">
+                <Table2 className="size-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-bold">{d.name}</div>
+                <div className="text-muted-foreground truncate text-[11.5px]">
+                  {d.description || '—'}
                 </div>
               </div>
-              <div className="flex items-center gap-1">
+              <Badge variant="neutral">v{d.version}</Badge>
+              <div className="flex items-center gap-0.5">
                 <UploadButton datasetId={d.id} />
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="size-8"
+                  size="icon-sm"
                   onClick={() => setDelTarget(d)}
+                  aria-label={t('datasets.deleteTitle')}
                 >
                   <Trash2 className="text-destructive size-4" />
                 </Button>
               </div>
-            </li>
+            </Row>
           ))}
-        </ul>
+        </RowList>
       )}
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
