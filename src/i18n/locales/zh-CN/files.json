@@ -1,5 +1,7 @@
 {
   "title": "文件",
+  "subtitle": "对象存储 sha256 去重 · 分类扩展名白名单 · 保密文件细粒度授权。",
+  "filesUnit": "个文件",
   "category": {
     "all": "全部分类",
     "raw_data": "原始数据",

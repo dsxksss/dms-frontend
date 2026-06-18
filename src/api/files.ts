@@ -51,9 +51,16 @@ export interface FileGrant {
   user_id: string
 }
 
+export interface FilesSummary {
+  total: number
+  by_category: Array<{ category: FileCategory; count: number }>
+}
+
 const base = (projectId: string) => `/v1/projects/${projectId}/files`
 
 export const filesApi = {
+  summary: (projectId: string) =>
+    request<FilesSummary>(`${base(projectId)}/summary`),
   list: (
     projectId: string,
     params: { category?: string; folder?: string; limit?: number; offset?: number } = {},

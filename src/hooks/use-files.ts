@@ -5,6 +5,14 @@ const root = (projectId: string) => ['files', projectId] as const
 
 export const fileKeys = {
   list: (pid: string, params: unknown) => [...root(pid), 'list', params] as const,
+  summary: (pid: string) => [...root(pid), 'summary'] as const,
+}
+
+export function useFilesSummary(projectId: string) {
+  return useQuery({
+    queryKey: fileKeys.summary(projectId),
+    queryFn: () => filesApi.summary(projectId),
+  })
 }
 
 export function useFiles(

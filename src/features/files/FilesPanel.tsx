@@ -1,15 +1,23 @@
-import { useMemo, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Download, Lock, Loader2, MoreHorizontal, ShieldCheck, Trash2, Upload } from 'lucide-react'
+import {
+  Download,
+  Lock,
+  Loader2,
+  MoreHorizontal,
+  ShieldCheck,
+  Trash2,
+  Upload,
+} from 'lucide-react'
 import { toast } from 'sonner'
 
+import { PageHeader } from '@/components/page-header'
 import { DataTable } from '@/components/data-table'
 import { EmptyState } from '@/components/states'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import {
   Select,
@@ -28,6 +36,7 @@ import { useProjectRole } from '@/hooks/use-projects'
 import {
   useDeleteFile,
   useFiles,
+  useFilesSummary,
   useSetFileConfidential,
   useUploadFile,
 } from '@/hooks/use-files'
@@ -35,6 +44,7 @@ import { useToastError } from '@/hooks/use-toast-error'
 import { FileGrantsDialog } from './FileGrantsDialog'
 import { roleAtLeast } from '@/lib/roles'
 import { formatBytes } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import {
   ALLOWED_EXT,
   FILE_CATEGORIES,
@@ -43,6 +53,30 @@ import {
   type FileItem,
 } from '@/api/files'
 import { filesApi } from '@/api/files'
+
+/** 分类图标块配色（对齐原型 fileCats tints）。 */
+const CAT_TINT: Record<FileCategory, { bg: string; fg: string }> = {
+  raw_data: { bg: '#EAF0FF', fg: '#2F6BFF' },
+  structures: { bg: '#E7F6EC', fg: '#15803D' },
+  sequences: { bg: '#FEF4E6', fg: '#B45309' },
+  reports: { bg: '#F3EEFB', fg: '#7C3AED' },
+  datasets: { bg: '#FBEAF2', fg: '#BE185D' },
+  misc: { bg: '#EEF0F3', fg: '#64748B' },
+}
+
+function FolderIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+    >
+      <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7l-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z" />
+    </svg>
+  )
+}
 
 export function FilesPanel({ projectId }: { projectId: string }) {
   const { t } = useTranslation('files')
@@ -60,6 +94,10 @@ export function FilesPanel({ projectId }: { projectId: string }) {
     category: catFilter || undefined,
     ...page,
   })
+  const summary = useFilesSummary(projectId)
+  const counts = new Map(
+    summary.data?.by_category.map((c) => [c.category, c.count]) ?? [],
+  )
   const upload = useUploadFile(projectId)
   const del = useDeleteFile(projectId)
   const setConf = useSetFileConfidential(projectId)
@@ -72,7 +110,9 @@ export function FilesPanel({ projectId }: { projectId: string }) {
     if (!file) return
     const ext = extOf(file.name)
     if (!ALLOWED_EXT[uploadCat].includes(ext)) {
-      toast.error(t('invalidExt', { ext, category: t(`category.${uploadCat}`) }))
+      toast.error(
+        t('invalidExt', { ext, category: t(`category.${uploadCat}`) }),
+      )
       return
     }
     try {
@@ -96,103 +136,102 @@ export function FilesPanel({ projectId }: { projectId: string }) {
     }
   }
 
-  const columns = useMemo<ColumnDef<FileItem, unknown>[]>(
-    () => [
-      {
-        accessorKey: 'name',
-        header: t('columns.name'),
-        cell: ({ row }) => (
-          <span className="flex items-center gap-1.5">
-            <span className="font-medium">{row.original.name}</span>
-            {row.original.confidential && (
-              <Badge
-                variant="outline"
-                className="text-warning border-warning/40 gap-1"
-              >
-                <Lock className="size-3" />
-                {t('badge')}
-              </Badge>
-            )}
-          </span>
-        ),
-      },
-      {
-        accessorKey: 'category',
-        header: t('columns.category'),
-        cell: ({ row }) => (
-          <Badge variant="secondary">{t(`category.${row.original.category}`)}</Badge>
-        ),
-      },
-      {
-        accessorKey: 'size',
-        header: t('columns.size'),
-        cell: ({ row }) => (
-          <span className="tabular-nums">{formatBytes(row.original.size)}</span>
-        ),
-      },
-      {
-        accessorKey: 'content_type',
-        header: t('columns.type'),
-        cell: ({ row }) => (
-          <span className="text-muted-foreground font-mono text-xs">
-            {row.original.content_type || '-'}
-          </span>
-        ),
-      },
-      {
-        id: 'actions',
-        header: '',
-        cell: ({ row }) => {
-          const f = row.original
-          return (
-            <div className="flex justify-end">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="size-8">
-                    <MoreHorizontal className="size-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() =>
-                      filesApi.download(projectId, f.id, f.name).catch(toastError)
-                    }
-                  >
-                    <Download className="size-4" />
-                    {t('actions.download', { ns: 'common' })}
+  const columns: ColumnDef<FileItem, unknown>[] = [
+    {
+      accessorKey: 'name',
+      header: t('columns.name'),
+      cell: ({ row }) => (
+        <span className="flex items-center gap-1.5">
+          <span className="font-medium">{row.original.name}</span>
+          {row.original.confidential && (
+            <Badge
+              variant="outline"
+              className="text-warning border-warning/40 gap-1"
+            >
+              <Lock className="size-3" />
+              {t('badge')}
+            </Badge>
+          )}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'category',
+      header: t('columns.category'),
+      cell: ({ row }) => (
+        <Badge variant="secondary">
+          {t(`category.${row.original.category}`)}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: 'size',
+      header: t('columns.size'),
+      cell: ({ row }) => (
+        <span className="tabular-nums">{formatBytes(row.original.size)}</span>
+      ),
+    },
+    {
+      accessorKey: 'content_type',
+      header: t('columns.type'),
+      cell: ({ row }) => (
+        <span className="text-muted-foreground font-mono text-xs">
+          {row.original.content_type || '-'}
+        </span>
+      ),
+    },
+    {
+      id: 'actions',
+      header: '',
+      cell: ({ row }) => {
+        const f = row.original
+        return (
+          <div className="flex justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="size-8">
+                  <MoreHorizontal className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() =>
+                    filesApi.download(projectId, f.id, f.name).catch(toastError)
+                  }
+                >
+                  <Download className="size-4" />
+                  {t('actions.download', { ns: 'common' })}
+                </DropdownMenuItem>
+                {canManage && (
+                  <DropdownMenuItem onClick={() => toggleConfidential(f)}>
+                    <ShieldCheck className="size-4" />
+                    {f.confidential
+                      ? t('unsetConfidential')
+                      : t('setConfidential')}
                   </DropdownMenuItem>
-                  {canManage && (
-                    <DropdownMenuItem onClick={() => toggleConfidential(f)}>
-                      <ShieldCheck className="size-4" />
-                      {f.confidential
-                        ? t('unsetConfidential')
-                        : t('setConfidential')}
-                    </DropdownMenuItem>
-                  )}
-                  {canManage && f.confidential && (
-                    <DropdownMenuItem onClick={() => setGrantsTarget(f)}>
-                      <Lock className="size-4" />
-                      {t('grants.manage')}
-                    </DropdownMenuItem>
-                  )}
-                  {canWrite && (
-                    <DropdownMenuItem
-                      className="text-destructive"
-                      onClick={() => setDelTarget(f)}
-                    >
-                      <Trash2 className="size-4" />
-                      {t('actions.delete', { ns: 'common' })}
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )
-        },
+                )}
+                {canManage && f.confidential && (
+                  <DropdownMenuItem onClick={() => setGrantsTarget(f)}>
+                    <Lock className="size-4" />
+                    {t('grants.manage')}
+                  </DropdownMenuItem>
+                )}
+                {canWrite && (
+                  <DropdownMenuItem
+                    className="text-destructive"
+                    onClick={() => setDelTarget(f)}
+                  >
+                    <Trash2 className="size-4" />
+                    {t('actions.delete', { ns: 'common' })}
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )
       },
-    ],
-    [t, projectId, canWrite, canManage, toastError],
-  )
+    },
+  ]
 
   const onDelete = async () => {
     if (!delTarget) return
@@ -206,40 +245,18 @@ export function FilesPanel({ projectId }: { projectId: string }) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="space-y-1.5">
-          <Label>{t('columns.category')}</Label>
-          <Select
-            value={catFilter || 'all'}
-            onValueChange={(v) => {
-              setCatFilter(v === 'all' ? '' : v)
-              setPage((p) => ({ ...p, offset: 0 }))
-            }}
-          >
-            <SelectTrigger className="w-44">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('category.all')}</SelectItem>
-              {FILE_CATEGORIES.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {t(`category.${c}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {canWrite && (
-          <div className="flex items-end gap-2">
-            <div className="space-y-1.5">
-              <Label>{t('pickCategory')}</Label>
+    <div className="mx-auto max-w-[1100px] space-y-5">
+      <PageHeader
+        title={t('title')}
+        description={t('subtitle')}
+        actions={
+          canWrite && (
+            <div className="flex flex-wrap items-center gap-2">
               <Select
                 value={uploadCat}
                 onValueChange={(v) => setUploadCat(v as FileCategory)}
               >
-                <SelectTrigger className="w-44">
+                <SelectTrigger className="h-9 w-40 text-[12.5px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -250,38 +267,101 @@ export function FilesPanel({ projectId }: { projectId: string }) {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <label className="flex items-center gap-2 pb-2 text-sm">
-              <Switch
-                checked={uploadConfidential}
-                onCheckedChange={setUploadConfidential}
+              <label className="text-secondary-foreground flex items-center gap-1.5 text-[12.5px] font-medium">
+                <Switch
+                  checked={uploadConfidential}
+                  onCheckedChange={setUploadConfidential}
+                />
+                <Lock className="text-muted-foreground size-3.5" />
+                {t('confidential')}
+              </label>
+              <input
+                ref={fileRef}
+                type="file"
+                className="hidden"
+                onChange={onFile}
               />
-              <Lock className="text-muted-foreground size-3.5" />
-              {t('confidential')}
-            </label>
-            <input
-              ref={fileRef}
-              type="file"
-              className="hidden"
-              onChange={onFile}
-            />
-            <Button onClick={() => fileRef.current?.click()} disabled={upload.isPending}>
-              {upload.isPending ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Upload className="size-4" />
+              <Button
+                onClick={() => fileRef.current?.click()}
+                disabled={upload.isPending}
+              >
+                {upload.isPending ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Upload className="size-4" />
+                )}
+                {t('upload')}
+              </Button>
+            </div>
+          )
+        }
+      />
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {FILE_CATEGORIES.map((c) => {
+          const tint = CAT_TINT[c]
+          const active = catFilter === c
+          return (
+            <button
+              key={c}
+              type="button"
+              onClick={() => {
+                setCatFilter(active ? '' : c)
+                setPage((p) => ({ ...p, offset: 0 }))
+              }}
+              className={cn(
+                'bg-card focus-visible:ring-primary/20 flex flex-col gap-3 rounded-[14px] border p-4 text-left shadow-[0_1px_2px_rgba(20,40,80,0.04)] transition-all outline-none hover:shadow-[0_8px_24px_rgba(20,40,80,0.08)] focus-visible:ring-[3px]',
+                active
+                  ? 'border-brand ring-brand/30 ring-2'
+                  : 'hover:border-brand/40',
               )}
-              {t('upload')}
-            </Button>
-          </div>
-        )}
+            >
+              <div className="flex items-center gap-3">
+                <span
+                  className="flex size-9 shrink-0 items-center justify-center rounded-[9px]"
+                  style={{ background: tint.bg, color: tint.fg }}
+                >
+                  <FolderIcon className="size-[18px]" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[13.5px] font-bold">
+                    {t(`category.${c}`)}
+                  </div>
+                  <div className="text-muted-foreground truncate text-[11px] uppercase">
+                    {ALLOWED_EXT[c].slice(0, 4).join(' / ')}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-[24px] font-extrabold tabular-nums">
+                  {summary.isLoading ? '—' : (counts.get(c) ?? 0)}
+                </span>
+                <span className="text-muted-foreground text-[12px]">
+                  {t('filesUnit')}
+                </span>
+              </div>
+            </button>
+          )
+        })}
       </div>
 
-      {canWrite && (
-        <p className="text-muted-foreground text-xs">
-          {t('allowedExt', { exts: ALLOWED_EXT[uploadCat].join(', ') })}
-        </p>
-      )}
+      <div className="flex items-center gap-2">
+        <h2 className="text-[15px] font-bold">
+          {catFilter ? t(`category.${catFilter}`) : t('category.all')}
+        </h2>
+        {catFilter && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setCatFilter('')
+              setPage((p) => ({ ...p, offset: 0 }))
+            }}
+          >
+            {t('category.all')}
+          </Button>
+        )}
+      </div>
 
       <DataTable
         columns={columns}
