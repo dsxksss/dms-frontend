@@ -56,7 +56,57 @@ export interface FilesSummary {
   by_category: Array<{ category: FileCategory; count: number }>
 }
 
+/** 持久文件夹树节点：file_count=直属可见文件数，total_count=含子树。 */
+export interface FolderNode {
+  name: string
+  path: string
+  file_count: number
+  total_count: number
+  children: FolderNode[]
+}
+
+export interface FolderCategory {
+  category: FileCategory
+  file_count: number
+  total_count: number
+  folders: FolderNode[]
+}
+
+export interface FolderTree {
+  categories: FolderCategory[]
+}
+
 const base = (projectId: string) => `/v1/projects/${projectId}/files`
+const foldersBase = (projectId: string) => `/v1/projects/${projectId}/folders`
+
+/** 持久文件夹（空夹也留得住）：树/建/重命名·移动/删（非空需 recursive）。 */
+export const foldersApi = {
+  list: (projectId: string) => request<FolderTree>(foldersBase(projectId)),
+  create: (projectId: string, body: { category: string; path: string }) =>
+    request<void>(foldersBase(projectId), {
+      method: 'POST',
+      body,
+      responseType: 'void',
+    }),
+  rename: (
+    projectId: string,
+    body: { category: string; from_path: string; to_path: string },
+  ) =>
+    request<void>(foldersBase(projectId), {
+      method: 'PATCH',
+      body,
+      responseType: 'void',
+    }),
+  remove: (
+    projectId: string,
+    params: { category: string; path: string; recursive?: boolean },
+  ) =>
+    request<void>(foldersBase(projectId), {
+      method: 'DELETE',
+      query: { ...params },
+      responseType: 'void',
+    }),
+}
 
 export const filesApi = {
   summary: (projectId: string) =>
@@ -104,6 +154,15 @@ export const filesApi = {
     request<void>(`${base(projectId)}/${fileId}`, {
       method: 'DELETE',
       responseType: 'void',
+    }),
+  move: (
+    projectId: string,
+    fileId: string,
+    body: { folder: string; category?: string },
+  ) =>
+    request<FileItem>(`${base(projectId)}/${fileId}/move`, {
+      method: 'POST',
+      body,
     }),
   download: (projectId: string, fileId: string, name: string) =>
     download(`${base(projectId)}/${fileId}/content`, name),

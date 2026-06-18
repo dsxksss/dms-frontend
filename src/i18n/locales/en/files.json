@@ -42,5 +42,28 @@
     "empty": "No grants yet",
     "granted": "Granted",
     "revoked": "Revoked"
+  },
+  "folder": {
+    "tree": "Folders",
+    "new": "New folder",
+    "newSub": "New subfolder",
+    "namePlaceholder": "Folder name",
+    "rename": "Rename",
+    "renameTitle": "Rename folder",
+    "delete": "Delete folder",
+    "deleteEmpty": "Delete empty folder \"{{name}}\"?",
+    "deleteRecursive": "Delete folder \"{{name}}\" and its {{count}} file(s)? This cascades and removes everything inside.",
+    "created": "Folder created",
+    "renamed": "Folder renamed",
+    "deleted": "Folder deleted",
+    "move": "Move to…",
+    "moveTitle": "Move file",
+    "moveTo": "Destination folder",
+    "moved": "File moved",
+    "root": "Root",
+    "emptyHere": "No files in this folder",
+    "uploadHere": "Upload here",
+    "nameRequired": "Folder name is required",
+    "duplicateName": "A folder with this name already exists here"
   }
 }

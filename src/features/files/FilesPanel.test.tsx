@@ -38,6 +38,6 @@ describe('FilesPanel', () => {
     )
     renderWithProviders(<FilesPanel projectId="p1" />)
     expect(await screen.findByText('note.txt')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '上传文件' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '上传到此处' })).toBeInTheDocument()
   })
 })
