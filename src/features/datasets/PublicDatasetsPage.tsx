@@ -104,7 +104,11 @@ export function PublicDatasetsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t('public.title')} description={t('public.subtitle')} />
+      <PageHeader
+        title={t('public.title')}
+        titleI18n={{ key: 'public.title', ns: 'datasets' }}
+        description={t('public.subtitle')}
+      />
 
       {query.isLoading ? (
         <TableSkeleton rows={4} cols={2} />

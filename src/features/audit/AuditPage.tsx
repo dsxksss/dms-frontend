@@ -101,7 +101,11 @@ export function AuditPage() {
 
   return (
     <div className="mx-auto max-w-[920px]">
-      <PageHeader title={t('title')} description={t('subtitle')} />
+      <PageHeader
+        title={t('title')}
+        titleI18n={{ key: 'title', ns: 'audit' }}
+        description={t('subtitle')}
+      />
 
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <div className="space-y-1.5">

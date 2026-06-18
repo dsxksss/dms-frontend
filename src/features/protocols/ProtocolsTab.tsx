@@ -8,7 +8,11 @@ export function ProtocolsTab({ projectId }: { projectId: string }) {
   const { t } = useTranslation('protocols')
   return (
     <Tabs defaultValue="protocols" className="mx-auto max-w-[1200px] gap-4">
-      <PageHeader title={t('title')} description={t('subtitle')} />
+      <PageHeader
+        title={t('title')}
+        titleI18n={{ key: 'title', ns: 'protocols' }}
+        description={t('subtitle')}
+      />
       <TabsList>
         <TabsTrigger value="protocols">{t('tabs.protocols')}</TabsTrigger>
         <TabsTrigger value="runs">{t('tabs.runs')}</TabsTrigger>

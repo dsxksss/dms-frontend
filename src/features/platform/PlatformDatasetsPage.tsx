@@ -105,6 +105,7 @@ export function PlatformDatasetsPage() {
     <div className="space-y-4">
       <PageHeader
         title={t('datasets.title')}
+        titleI18n={{ key: 'datasets.title', ns: 'platform' }}
         description={t('datasets.desc')}
         actions={
           <Button onClick={() => setCreateOpen(true)}>

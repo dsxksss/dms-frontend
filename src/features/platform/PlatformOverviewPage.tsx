@@ -46,7 +46,11 @@ export function PlatformOverviewPage() {
 
   return (
     <div className="mx-auto max-w-[1180px] space-y-[18px]">
-      <PageHeader title={t('overview.title')} description={t('overview.desc')} />
+      <PageHeader
+        title={t('overview.title')}
+        titleI18n={{ key: 'overview.title', ns: 'platform' }}
+        description={t('overview.desc')}
+      />
 
       {stats.isError ? (
         <ErrorState error={stats.error} onRetry={() => stats.refetch()} />

@@ -51,6 +51,7 @@ export function PlatformSettingsPage() {
     <div className="space-y-4">
       <PageHeader
         title={t('settings.title')}
+        titleI18n={{ key: 'settings.title', ns: 'platform' }}
         description={t('settings.desc')}
         actions={
           <Button onClick={() => void save()} disabled={!dirty || update.isPending}>

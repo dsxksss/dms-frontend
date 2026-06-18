@@ -181,6 +181,7 @@ export function ProjectsListPage() {
     <div className="mx-auto max-w-[1180px]">
       <PageHeader
         title={t('title')}
+        titleI18n={{ key: 'title', ns: 'projects' }}
         description={t('subtitle')}
         actions={
           <>

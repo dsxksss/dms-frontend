@@ -8,7 +8,11 @@ export function RegistryTab({ projectId }: { projectId: string }) {
   const { t } = useTranslation('registry')
   return (
     <Tabs defaultValue="assets" className="mx-auto max-w-[1200px] gap-4">
-      <PageHeader title={t('title')} description={t('subtitle')} />
+      <PageHeader
+        title={t('title')}
+        titleI18n={{ key: 'title', ns: 'registry' }}
+        description={t('subtitle')}
+      />
       <TabsList>
         <TabsTrigger value="assets">{t('tabs.assets')}</TabsTrigger>
         <TabsTrigger value="data">{t('tabs.data')}</TabsTrigger>

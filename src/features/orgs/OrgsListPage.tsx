@@ -52,6 +52,7 @@ export function OrgsListPage() {
     <div className="mx-auto max-w-[1100px] space-y-6">
       <PageHeader
         title={t('title')}
+        titleI18n={{ key: 'title', ns: 'orgs' }}
         description={t('subtitle')}
         actions={
           <Can perm="org:write">

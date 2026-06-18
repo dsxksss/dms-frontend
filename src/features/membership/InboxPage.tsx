@@ -194,7 +194,11 @@ export function InboxPage() {
   const { t } = useTranslation('membership')
   return (
     <div className="mx-auto max-w-[760px]">
-      <PageHeader title={t('inbox.title')} description={t('inbox.subtitle')} />
+      <PageHeader
+        title={t('inbox.title')}
+        titleI18n={{ key: 'inbox.title', ns: 'membership' }}
+        description={t('inbox.subtitle')}
+      />
       <Tabs defaultValue="invitations" className="gap-4">
         <TabsList>
           <TabsTrigger value="invitations">{t('inbox.tabInvitations')}</TabsTrigger>

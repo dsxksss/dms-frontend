@@ -104,6 +104,7 @@ export function TenantsListPage() {
     <div className="mx-auto max-w-[1180px]">
       <PageHeader
         title={t('tenants.title')}
+        titleI18n={{ key: 'tenants.title', ns: 'platform' }}
         description={t('tenants.subtitle')}
         actions={
           <Button onClick={() => setCreateOpen(true)}>

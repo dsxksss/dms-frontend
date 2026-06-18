@@ -248,6 +248,7 @@ export function FilesPanel({ projectId }: { projectId: string }) {
     <div className="mx-auto max-w-[1100px] space-y-5">
       <PageHeader
         title={t('title')}
+        titleI18n={{ key: 'title', ns: 'files' }}
         description={t('subtitle')}
         actions={
           canWrite && (

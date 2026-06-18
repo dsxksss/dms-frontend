@@ -9,7 +9,10 @@ export function SettingsPage() {
   const { t } = useTranslation()
   return (
     <div className="space-y-6">
-      <PageHeader title={t('nav.settings')} />
+      <PageHeader
+        title={t('nav.settings')}
+        titleI18n={{ key: 'nav.settings', ns: 'common' }}
+      />
       <ProfileCard />
       <Card className="max-w-xl">
         <CardHeader>
