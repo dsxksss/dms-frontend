@@ -1,13 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Download } from 'lucide-react'
+import { Download, Loader2 } from 'lucide-react'
 
-import { DataTable } from '@/components/data-table'
-import { EmptyState } from '@/components/states'
+import { EmptyState, ErrorState } from '@/components/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
+import { UserAvatar } from '@/components/user-avatar'
 import { useToastError } from '@/hooks/use-toast-error'
 import { signaturesApi } from '@/api/signatures'
 import {
@@ -19,9 +19,10 @@ import {
 } from '@/components/ui/select'
 import { useSignatures } from '@/hooks/use-signatures'
 import { shortId, formatDateTime } from '@/lib/format'
-import type { Signature } from '@/api/signatures'
+import { cn } from '@/lib/utils'
 
 const TARGET_KINDS = ['run', 'dataset', 'entity', 'file', 'protocol']
+const COLS = 'grid-cols-[1.3fr_110px_190px_140px_110px]'
 
 export function SignaturesPanel({ projectId }: { projectId: string }) {
   const { t } = useTranslation('signatures')
@@ -33,64 +34,9 @@ export function SignaturesPanel({ projectId }: { projectId: string }) {
     ...page,
   })
 
-  const columns = useMemo<ColumnDef<Signature, unknown>[]>(
-    () => [
-      {
-        accessorKey: 'signer_name',
-        header: t('columns.signer'),
-        cell: ({ row }) => (
-          <span className="text-sm font-medium">{row.original.signer_name}</span>
-        ),
-      },
-      {
-        accessorKey: 'meaning',
-        header: t('columns.meaning'),
-        cell: ({ row }) => (
-          <Badge variant="secondary">{t(`meaning.${row.original.meaning}`)}</Badge>
-        ),
-      },
-      {
-        accessorKey: 'reason',
-        header: t('columns.reason'),
-        cell: ({ row }) => (
-          <span className="block max-w-[28ch] truncate text-sm" title={row.original.reason}>
-            {row.original.reason || '-'}
-          </span>
-        ),
-      },
-      {
-        id: 'target',
-        header: t('columns.target'),
-        cell: ({ row }) => (
-          <span className="flex items-center gap-1.5 text-sm">
-            <Badge variant="outline">
-              {t(`targetKind.${row.original.target_kind}`, row.original.target_kind)}
-            </Badge>
-            <span className="font-mono text-xs">{shortId(row.original.target_id)}</span>
-          </span>
-        ),
-      },
-      {
-        accessorKey: 'signed_at',
-        header: t('columns.signedAt'),
-        cell: ({ row }) => (
-          <span className="text-muted-foreground text-xs tabular-nums">
-            {formatDateTime(row.original.signed_at)}
-          </span>
-        ),
-      },
-      {
-        accessorKey: 'content_hash',
-        header: t('columns.hash'),
-        cell: ({ row }) => (
-          <span className="text-muted-foreground font-mono text-xs" title={row.original.content_hash}>
-            {row.original.content_hash.slice(0, 12)}
-          </span>
-        ),
-      },
-    ],
-    [t],
-  )
+  const items = query.data?.items ?? []
+  const total = query.data?.total ?? 0
+  const hasMore = page.offset + items.length < total
 
   return (
     <div className="space-y-4">
@@ -130,20 +76,105 @@ export function SignaturesPanel({ projectId }: { projectId: string }) {
         </Button>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={query.data?.items ?? []}
-        loading={query.isLoading}
-        error={query.isError ? query.error : undefined}
-        onRetry={() => query.refetch()}
-        empty={<EmptyState title={t('empty')} description={t('subtitle')} />}
-        pagination={{
-          limit: page.limit,
-          offset: page.offset,
-          total: query.data?.total ?? 0,
-          onChange: setPage,
-        }}
-      />
+      {query.isLoading ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="text-muted-foreground size-6 animate-spin" />
+        </div>
+      ) : query.isError ? (
+        <ErrorState error={query.error} onRetry={() => query.refetch()} />
+      ) : items.length === 0 ? (
+        <EmptyState title={t('empty')} description={t('subtitle')} />
+      ) : (
+        <>
+          <Card className="gap-0 overflow-hidden py-0">
+            <div className="overflow-x-auto">
+              <div className="min-w-[760px]">
+                <div
+                  className={cn(
+                    'bg-surface-2 text-muted-foreground grid gap-2 border-b px-[18px] py-2.5 text-[11px] font-semibold tracking-[0.04em] uppercase',
+                    COLS,
+                  )}
+                >
+                  <div>{t('columns.signer')}</div>
+                  <div>{t('columns.meaning')}</div>
+                  <div>{t('columns.target')}</div>
+                  <div>{t('columns.signedAt')}</div>
+                  <div>{t('columns.hash')}</div>
+                </div>
+                {items.map((s) => (
+                  <div
+                    key={s.id}
+                    className={cn(
+                      'border-divider grid items-center gap-2 border-b px-[18px] py-3 text-[13px] last:border-b-0',
+                      COLS,
+                    )}
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      <UserAvatar
+                        seed={s.signer_name}
+                        initials={s.signer_name}
+                        className="size-6"
+                      />
+                      <span className="min-w-0">
+                        <span className="block truncate font-semibold">
+                          {s.signer_name}
+                        </span>
+                        {s.reason && (
+                          <span className="text-muted-foreground block truncate text-[11px]">
+                            {s.reason}
+                          </span>
+                        )}
+                      </span>
+                    </span>
+                    <span>
+                      <Badge variant="purple">{t(`meaning.${s.meaning}`)}</Badge>
+                    </span>
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <Badge variant="neutral">
+                        {t(`targetKind.${s.target_kind}`, s.target_kind)}
+                      </Badge>
+                      <span className="text-brand truncate font-mono text-[11px]">
+                        {shortId(s.target_id)}
+                      </span>
+                    </span>
+                    <span className="text-muted-foreground text-[11px] tabular-nums">
+                      {formatDateTime(s.signed_at)}
+                    </span>
+                    <span
+                      className="text-muted-foreground truncate font-mono text-[11px]"
+                      title={s.content_hash}
+                    >
+                      {s.content_hash.slice(0, 12)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+          {(page.offset > 0 || hasMore) && (
+            <div className="flex items-center justify-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page.offset === 0}
+                onClick={() =>
+                  setPage((p) => ({ ...p, offset: Math.max(0, p.offset - p.limit) }))
+                }
+              >
+                {t('table.prev', { ns: 'common' })}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!hasMore}
+                onClick={() => setPage((p) => ({ ...p, offset: p.offset + p.limit }))}
+              >
+                {t('table.next', { ns: 'common' })}
+              </Button>
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }

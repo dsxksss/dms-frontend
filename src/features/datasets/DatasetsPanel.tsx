@@ -1,14 +1,21 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import type { ColumnDef } from '@tanstack/react-table'
-import { MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react'
+import {
+  Loader2,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Table2,
+  Trash2,
+} from 'lucide-react'
 import { toast } from 'sonner'
 
-import { DataTable } from '@/components/data-table'
-import { EmptyState } from '@/components/states'
+import { EmptyState, ErrorState } from '@/components/states'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,8 +26,11 @@ import { useDatasets, useDeleteDataset } from '@/hooks/use-datasets'
 import { useProjectRole } from '@/hooks/use-projects'
 import { roleAtLeast } from '@/lib/roles'
 import { useToastError } from '@/hooks/use-toast-error'
+import { cn } from '@/lib/utils'
 import type { Dataset } from '@/api/datasets'
 import { CreateDatasetDialog } from './CreateDatasetDialog'
+
+const COLS = 'grid-cols-[1.7fr_90px_70px]'
 
 /** 项目内数据集列表（项目成员可见，Contributor+ 可写）。 */
 export function DatasetsPanel({ projectId }: { projectId: string }) {
@@ -36,73 +46,7 @@ export function DatasetsPanel({ projectId }: { projectId: string }) {
   const [editTarget, setEditTarget] = useState<Dataset | null>(null)
   const [delTarget, setDelTarget] = useState<Dataset | null>(null)
 
-  const columns = useMemo<ColumnDef<Dataset, unknown>[]>(
-    () => [
-      {
-        accessorKey: 'name',
-        header: t('columns.name'),
-        cell: ({ row }) => (
-          <button
-            className="hover:text-brand text-left font-medium hover:underline"
-            onClick={() =>
-              navigate(`/projects/${projectId}/datasets/${row.original.id}`)
-            }
-          >
-            {row.original.name}
-          </button>
-        ),
-      },
-      {
-        accessorKey: 'description',
-        header: t('columns.description'),
-        cell: ({ row }) => (
-          <span className="text-muted-foreground text-sm">
-            {row.original.description || '—'}
-          </span>
-        ),
-      },
-      {
-        accessorKey: 'version',
-        header: t('columns.version'),
-        cell: ({ row }) => (
-          <span className="tabular-nums">{row.original.version}</span>
-        ),
-      },
-      {
-        id: 'actions',
-        header: '',
-        cell: ({ row }) => {
-          if (!canWrite) return null
-          const d = row.original
-          return (
-            <div className="flex justify-end">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="size-8">
-                    <MoreHorizontal className="size-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setEditTarget(d)}>
-                    <Pencil className="size-4" />
-                    {t('row.edit')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-destructive"
-                    onClick={() => setDelTarget(d)}
-                  >
-                    <Trash2 className="size-4" />
-                    {t('row.delete')}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )
-        },
-      },
-    ],
-    [t, navigate, projectId, canWrite],
-  )
+  const items = query.data ?? []
 
   const onDelete = async () => {
     if (!delTarget) return
@@ -115,39 +59,99 @@ export function DatasetsPanel({ projectId }: { projectId: string }) {
     }
   }
 
+  const createBtn = canWrite && (
+    <Button onClick={() => setCreateOpen(true)}>
+      <Plus className="size-4" />
+      {t('create.title')}
+    </Button>
+  )
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-medium">{t('title')}</h2>
-        {canWrite && (
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="size-4" />
-            {t('create.title')}
-          </Button>
-        )}
+        <h2 className="text-[15px] font-bold">{t('title')}</h2>
+        {createBtn}
       </div>
 
-      <DataTable
-        columns={columns}
-        data={query.data ?? []}
-        loading={query.isLoading}
-        error={query.isError ? query.error : undefined}
-        onRetry={() => query.refetch()}
-        empty={
-          <EmptyState
-            title={t('empty.title')}
-            description={t('empty.description')}
-            action={
-              canWrite ? (
-                <Button onClick={() => setCreateOpen(true)}>
-                  <Plus className="size-4" />
-                  {t('create.title')}
-                </Button>
-              ) : undefined
-            }
-          />
-        }
-      />
+      {query.isLoading ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="text-muted-foreground size-6 animate-spin" />
+        </div>
+      ) : query.isError ? (
+        <ErrorState error={query.error} onRetry={() => query.refetch()} />
+      ) : items.length === 0 ? (
+        <EmptyState
+          title={t('empty.title')}
+          description={t('empty.description')}
+          action={createBtn || undefined}
+        />
+      ) : (
+        <Card className="gap-0 overflow-hidden py-0">
+          <div className="overflow-x-auto">
+            <div className="min-w-[520px]">
+              <div
+                className={cn(
+                  'bg-surface-2 text-muted-foreground grid gap-2 border-b px-[18px] py-2.5 text-[11px] font-semibold tracking-[0.04em] uppercase',
+                  COLS,
+                )}
+              >
+                <div>{t('columns.name')}</div>
+                <div>{t('columns.version')}</div>
+                <div />
+              </div>
+              {items.map((d) => (
+                <div
+                  key={d.id}
+                  className={cn(
+                    'border-divider hover:bg-row-hover grid cursor-pointer items-center gap-2 border-b px-[18px] py-3 text-[13px] last:border-b-0',
+                    COLS,
+                  )}
+                  onClick={() => navigate(`/projects/${projectId}/datasets/${d.id}`)}
+                >
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span className="bg-accent text-brand flex size-8 shrink-0 items-center justify-center rounded-[9px]">
+                      <Table2 className="size-4" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate font-bold">{d.name}</span>
+                      <span className="text-muted-foreground block truncate text-[11.5px]">
+                        {d.description || '—'}
+                      </span>
+                    </span>
+                  </span>
+                  <span>
+                    <Badge variant="neutral">v{d.version}</Badge>
+                  </span>
+                  <span className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+                    {canWrite && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon-sm">
+                            <MoreHorizontal className="size-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setEditTarget(d)}>
+                            <Pencil className="size-4" />
+                            {t('row.edit')}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => setDelTarget(d)}
+                          >
+                            <Trash2 className="size-4" />
+                            {t('row.delete')}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
+      )}
 
       <CreateDatasetDialog
         projectId={projectId}

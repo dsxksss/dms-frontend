@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Play } from 'lucide-react'
+import { Loader2, Play } from 'lucide-react'
 
-import { DataTable } from '@/components/data-table'
-import { EmptyState } from '@/components/states'
+import { EmptyState, ErrorState } from '@/components/states'
 import { UserName } from '@/components/user-name'
+import { UserAvatar } from '@/components/user-avatar'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -21,11 +21,13 @@ import { useProtocols, useRuns } from '@/hooks/use-protocols'
 import { roleAtLeast } from '@/lib/roles'
 import { statusTone } from '@/lib/tone'
 import { formatDateTime } from '@/lib/format'
-import type { Run, RunStatus } from '@/api/protocols'
+import { cn } from '@/lib/utils'
+import type { RunStatus } from '@/api/protocols'
 import { StartRunDialog } from './StartRunDialog'
 import { RunDetailDialog } from './RunDetailDialog'
 
 const STATUSES: RunStatus[] = ['draft', 'in_progress', 'completed', 'aborted']
+const COLS = 'grid-cols-[1.4fr_1fr_170px_120px_130px]'
 
 export function RunsPanel({ projectId }: { projectId: string }) {
   const { t } = useTranslation('protocols')
@@ -44,54 +46,15 @@ export function RunsPanel({ projectId }: { projectId: string }) {
   const [startOpen, setStartOpen] = useState(false)
   const [openRun, setOpenRun] = useState<string | null>(null)
 
-  const columns = useMemo<ColumnDef<Run, unknown>[]>(
-    () => [
-      {
-        accessorKey: 'name',
-        header: t('columns.name'),
-        cell: ({ row }) => (
-          <button
-            className="hover:text-brand text-left font-medium hover:underline"
-            onClick={() => setOpenRun(row.original.id)}
-          >
-            {row.original.name}
-          </button>
-        ),
-      },
-      {
-        accessorKey: 'protocol_id',
-        header: t('columns.protocol'),
-        cell: ({ row }) => (
-          <span className="text-sm">
-            {protoName[row.original.protocol_id] ?? '-'}
-          </span>
-        ),
-      },
-      {
-        accessorKey: 'status',
-        header: t('columns.status'),
-        cell: ({ row }) => (
-          <Badge variant={statusTone(row.original.status)}>
-            {t(`status.${row.original.status}`)}
-          </Badge>
-        ),
-      },
-      {
-        accessorKey: 'performed_by',
-        header: t('columns.performedBy'),
-        cell: ({ row }) => <UserName id={row.original.performed_by} className="text-sm" />,
-      },
-      {
-        accessorKey: 'started_at',
-        header: t('columns.started'),
-        cell: ({ row }) => (
-          <span className="text-muted-foreground text-xs tabular-nums">
-            {formatDateTime(row.original.started_at)}
-          </span>
-        ),
-      },
-    ],
-    [t, protoName],
+  const items = query.data?.items ?? []
+  const total = query.data?.total ?? 0
+  const hasMore = page.offset + items.length < total
+
+  const startBtn = canContribute && (
+    <Button onClick={() => setStartOpen(true)}>
+      <Play className="size-4" />
+      {t('run.start')}
+    </Button>
   )
 
   return (
@@ -119,41 +82,95 @@ export function RunsPanel({ projectId }: { projectId: string }) {
             </SelectContent>
           </Select>
         </div>
-        {canContribute && (
-          <Button onClick={() => setStartOpen(true)}>
-            <Play className="size-4" />
-            {t('run.start')}
-          </Button>
-        )}
+        {startBtn}
       </div>
 
-      <DataTable
-        columns={columns}
-        data={query.data?.items ?? []}
-        loading={query.isLoading}
-        error={query.isError ? query.error : undefined}
-        onRetry={() => query.refetch()}
-        empty={
-          <EmptyState
-            title={t('run.empty')}
-            description={t('run.emptyDesc')}
-            action={
-              canContribute ? (
-                <Button onClick={() => setStartOpen(true)}>
-                  <Play className="size-4" />
-                  {t('run.start')}
-                </Button>
-              ) : undefined
-            }
-          />
-        }
-        pagination={{
-          limit: page.limit,
-          offset: page.offset,
-          total: query.data?.total ?? 0,
-          onChange: setPage,
-        }}
-      />
+      {query.isLoading ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="text-muted-foreground size-6 animate-spin" />
+        </div>
+      ) : query.isError ? (
+        <ErrorState error={query.error} onRetry={() => query.refetch()} />
+      ) : items.length === 0 ? (
+        <EmptyState
+          title={t('run.empty')}
+          description={t('run.emptyDesc')}
+          action={startBtn || undefined}
+        />
+      ) : (
+        <>
+          <Card className="gap-0 overflow-hidden py-0">
+            <div className="overflow-x-auto">
+              <div className="min-w-[740px]">
+                <div
+                  className={cn(
+                    'bg-surface-2 text-muted-foreground grid gap-2 border-b px-[18px] py-2.5 text-[11px] font-semibold tracking-[0.04em] uppercase',
+                    COLS,
+                  )}
+                >
+                  <div>{t('columns.name')}</div>
+                  <div>{t('columns.protocol')}</div>
+                  <div>{t('columns.performedBy')}</div>
+                  <div>{t('columns.status')}</div>
+                  <div>{t('columns.started')}</div>
+                </div>
+                {items.map((r) => (
+                  <div
+                    key={r.id}
+                    className={cn(
+                      'border-divider hover:bg-row-hover grid cursor-pointer items-center gap-2 border-b px-[18px] py-3 text-[13px] last:border-b-0',
+                      COLS,
+                    )}
+                    onClick={() => setOpenRun(r.id)}
+                  >
+                    <span className="truncate font-semibold">{r.name}</span>
+                    <span className="truncate text-[#5a6473]">
+                      {protoName[r.protocol_id] ?? '-'}
+                    </span>
+                    <span className="flex min-w-0 items-center gap-2">
+                      <UserAvatar seed={r.performed_by ?? '?'} className="size-6" />
+                      <UserName
+                        id={r.performed_by ?? ''}
+                        className="truncate text-[12.5px]"
+                      />
+                    </span>
+                    <span>
+                      <Badge variant={statusTone(r.status)}>
+                        {t(`status.${r.status}`)}
+                      </Badge>
+                    </span>
+                    <span className="text-muted-foreground text-[11px] tabular-nums">
+                      {formatDateTime(r.started_at)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+          {(page.offset > 0 || hasMore) && (
+            <div className="flex items-center justify-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page.offset === 0}
+                onClick={() =>
+                  setPage((p) => ({ ...p, offset: Math.max(0, p.offset - p.limit) }))
+                }
+              >
+                {t('table.prev', { ns: 'common' })}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!hasMore}
+                onClick={() => setPage((p) => ({ ...p, offset: p.offset + p.limit }))}
+              >
+                {t('table.next', { ns: 'common' })}
+              </Button>
+            </div>
+          )}
+        </>
+      )}
 
       <StartRunDialog
         projectId={projectId}
