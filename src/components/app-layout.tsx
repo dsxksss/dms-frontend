@@ -27,8 +27,10 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { BrandMark } from '@/components/brand-mark'
+import { NavLabel } from '@/components/nav-label'
 import { useAuth, hasPerm } from '@/auth/auth-context'
 import { useHasOrgs } from '@/hooks/use-orgs'
+import { useMyInvitations } from '@/hooks/use-membership'
 import { useSession } from '@/auth/session'
 import { SUPPORTED_LANGS } from '@/i18n/i18n'
 import { cn } from '@/lib/utils'
@@ -72,8 +74,10 @@ function useNavItems() {
 }
 
 function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const items = useNavItems()
+  const isZh = i18n.language.startsWith('zh')
+  const inviteCount = useMyInvitations().data?.length ?? 0
 
   return (
     <div className="flex h-full flex-col">
@@ -85,8 +89,13 @@ function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <nav className="flex-1 px-3 py-2">
-        <div className="text-muted-foreground px-3 pt-2 pb-1.5 text-[10.5px] font-bold tracking-[0.05em]">
+        <div className="text-muted-foreground px-3 pt-2 pb-1.5 text-[10.5px] font-bold tracking-[0.05em] uppercase">
           {t('nav.workspace')}
+          {isZh && (
+            <span className="ml-1 font-bold opacity-70">
+              {t('nav.workspace', { lng: 'en' })}
+            </span>
+          )}
         </div>
         {items.map((item) => (
           <NavLink
@@ -103,7 +112,15 @@ function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
             }
           >
             <item.icon className="size-[18px] shrink-0" />
-            {t(item.labelKey)}
+            <NavLabel
+              zh={t(item.labelKey)}
+              en={isZh ? t(item.labelKey, { lng: 'en' }) : undefined}
+            />
+            {item.to === '/inbox' && inviteCount > 0 && (
+              <span className="rounded-full bg-[#DC2626] px-[7px] py-px text-[10px] font-bold text-white tabular-nums">
+                {inviteCount}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>

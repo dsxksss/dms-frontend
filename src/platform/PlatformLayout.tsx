@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { BrandMark } from '@/components/brand-mark'
+import { NavLabel } from '@/components/nav-label'
 import { usePlatformAuth } from '@/platform/platform-auth'
 import { cn } from '@/lib/utils'
 
@@ -39,7 +40,8 @@ const NAV: NavItem[] = [
 ]
 
 function SidebarNav() {
-  const { t } = useTranslation('platform')
+  const { t, i18n } = useTranslation('platform')
+  const isZh = i18n.language.startsWith('zh')
   return (
     <aside className="hidden w-[236px] shrink-0 flex-col bg-[#161A2B] md:flex">
       <div className="flex items-center gap-2.5 px-4 pt-[18px] pb-3.5">
@@ -66,7 +68,10 @@ function SidebarNav() {
             }
           >
             <item.icon className="size-[18px] shrink-0" />
-            {t(item.labelKey)}
+            <NavLabel
+              zh={t(item.labelKey)}
+              en={isZh ? t(item.labelKey, { lng: 'en' }) : undefined}
+            />
           </NavLink>
         ))}
       </nav>

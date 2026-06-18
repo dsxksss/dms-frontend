@@ -29,6 +29,7 @@ import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { PageHeader } from '@/components/page-header'
+import { NavLabel } from '@/components/nav-label'
 import { EmptyState, ErrorState } from '@/components/states'
 import { Can } from '@/auth/Can'
 import { useProject, useProjectRole } from '@/hooks/use-projects'
@@ -69,7 +70,8 @@ function useProjectId() {
 
 function ProjectSidebarBody({ onNavigate }: { onNavigate?: () => void }) {
   const id = useProjectId()
-  const { t } = useTranslation('projects')
+  const { t, i18n } = useTranslation('projects')
+  const isZh = i18n.language.startsWith('zh')
   const project = useProject(id).data
   const role = useProjectRole(id)
   const tint = tintOf(id)
@@ -125,7 +127,10 @@ function ProjectSidebarBody({ onNavigate }: { onNavigate?: () => void }) {
             }
           >
             <s.icon className="size-[18px] shrink-0" />
-            {t(`tabs.${s.key}`)}
+            <NavLabel
+              zh={t(`tabs.${s.key}`)}
+              en={isZh ? t(`tabs.${s.key}`, { lng: 'en' }) : undefined}
+            />
           </NavLink>
         ))}
       </nav>
