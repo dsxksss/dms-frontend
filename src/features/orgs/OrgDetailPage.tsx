@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Loader2, Plus, Trash2, UserPlus } from 'lucide-react'
+import { ArrowLeft, Building2, Loader2, Plus, Trash2, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -9,7 +9,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
+import { RowList, Row } from '@/components/row-list'
+import { UserAvatar } from '@/components/user-avatar'
 import { roleTone } from '@/lib/tone'
+import { codeOf, tintOf } from '@/lib/tile'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -62,61 +65,61 @@ function MembersTab({ orgId }: { orgId: string }) {
   return (
     <div className="grid gap-8 lg:grid-cols-2">
       <div className="space-y-3">
-        <h2 className="font-medium">{t('members.title')}</h2>
+        <h2 className="text-[15px] font-bold">{t('members.title')}</h2>
         {members.isLoading ? (
           <TableSkeleton rows={3} cols={2} />
         ) : members.data && members.data.length > 0 ? (
-          <ul className="divide-y rounded-md border">
+          <RowList>
             {members.data.map((m) => (
-              <li
-                key={m.user_id}
-                className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
-              >
-                <span className="flex flex-col">
-                  <span>{m.display_name || m.email}</span>
-                  <span className="text-muted-foreground text-xs">{m.email}</span>
+              <Row key={m.user_id}>
+                <UserAvatar seed={m.user_id} initials={m.display_name || m.email} />
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate font-semibold">
+                    {m.display_name || m.email}
+                  </span>
+                  <span className="text-muted-foreground truncate text-[11px]">
+                    {m.email}
+                  </span>
                 </span>
-                <span className="flex items-center gap-2">
-                  {canManage ? (
-                    <Select
-                      value={m.role}
-                      onValueChange={async (role) => {
-                        try {
-                          await setRole.mutateAsync({ userId: m.user_id, role })
-                          toast.success(t('members.roleUpdated'))
-                        } catch (e) {
-                          toastError(e)
-                        }
-                      }}
-                    >
-                      <SelectTrigger size="sm" className="w-28">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ORG_ROLES.map((r) => (
-                          <SelectItem key={r} value={r}>
-                            {to(`orgRole.${r}`)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Badge variant={roleTone(m.role)}>{to(`orgRole.${m.role}`)}</Badge>
-                  )}
-                  {canManage && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-8"
-                      onClick={() => setRemoveId(m.user_id)}
-                    >
-                      <Trash2 className="text-destructive size-4" />
-                    </Button>
-                  )}
-                </span>
-              </li>
+                {canManage ? (
+                  <Select
+                    value={m.role}
+                    onValueChange={async (role) => {
+                      try {
+                        await setRole.mutateAsync({ userId: m.user_id, role })
+                        toast.success(t('members.roleUpdated'))
+                      } catch (e) {
+                        toastError(e)
+                      }
+                    }}
+                  >
+                    <SelectTrigger size="sm" className="w-28">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ORG_ROLES.map((r) => (
+                        <SelectItem key={r} value={r}>
+                          {to(`orgRole.${r}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Badge variant={roleTone(m.role)}>{to(`orgRole.${m.role}`)}</Badge>
+                )}
+                {canManage && (
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setRemoveId(m.user_id)}
+                    aria-label={t('members.removeTitle')}
+                  >
+                    <Trash2 className="text-destructive size-4" />
+                  </Button>
+                )}
+              </Row>
             ))}
-          </ul>
+          </RowList>
         ) : (
           <EmptyState title={t('members.empty')} />
         )}
@@ -196,7 +199,7 @@ function JoinRequestsTab({
   return (
     <div className="space-y-4">
       {canManage && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
+        <Card className="flex flex-row items-center justify-between gap-3 p-4">
           <div className="space-y-0.5">
             <Label htmlFor="org-discoverable">{t('org.discoverable')}</Label>
             <p className="text-muted-foreground text-xs">
@@ -208,29 +211,28 @@ function JoinRequestsTab({
             checked={on}
             onCheckedChange={toggleDiscoverable}
           />
-        </div>
+        </Card>
       )}
 
-      <h2 className="font-medium">{t('joinAdmin.title')}</h2>
+      <h2 className="text-[15px] font-bold">{t('joinAdmin.title')}</h2>
       {jr.isLoading ? (
         <TableSkeleton rows={2} cols={2} />
       ) : jr.data && jr.data.length > 0 ? (
-        <ul className="divide-y rounded-md border">
+        <RowList>
           {jr.data.map((r) => (
-            <li
-              key={r.id}
-              className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
-            >
-              <span className="flex flex-col">
-                <UserName id={r.user_id} className="text-sm" />
+            <Row key={r.id}>
+              <UserAvatar seed={r.user_id} />
+              <span className="flex min-w-0 flex-1 flex-col">
+                <UserName id={r.user_id} className="truncate font-semibold" />
                 {r.message && (
-                  <span className="text-muted-foreground text-xs">{r.message}</span>
+                  <span className="text-muted-foreground truncate text-[11px]">
+                    {r.message}
+                  </span>
                 )}
               </span>
               {canManage && (
-                <span className="flex gap-1">
+                <span className="flex gap-2">
                   <Button
-                    variant="outline"
                     size="sm"
                     onClick={async () => {
                       try {
@@ -244,7 +246,7 @@ function JoinRequestsTab({
                     {t('joinAdmin.approve')}
                   </Button>
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     onClick={async () => {
                       try {
@@ -259,9 +261,9 @@ function JoinRequestsTab({
                   </Button>
                 </span>
               )}
-            </li>
+            </Row>
           ))}
-        </ul>
+        </RowList>
       ) : (
         <EmptyState title={t('joinAdmin.empty')} />
       )}
@@ -294,7 +296,7 @@ function TeamsTab({ orgId }: { orgId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-2 rounded-lg border p-3">
+      <Card className="flex flex-row flex-wrap items-end gap-2 p-4">
         <div className="space-y-1.5">
           <Label>{t('teams.name')}</Label>
           <Input className="w-48" value={name} onChange={(e) => setName(e.target.value)} />
@@ -316,30 +318,40 @@ function TeamsTab({ orgId }: { orgId: string }) {
           )}
           {t('teams.create')}
         </Button>
-      </div>
+      </Card>
 
       {teams.isLoading ? (
         <TableSkeleton rows={2} cols={2} />
       ) : teams.data && teams.data.length > 0 ? (
-        <ul className="divide-y rounded-md border">
-          {teams.data.map((tm2) => (
-            <li
-              key={tm2.id}
-              className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
-            >
-              <span className="flex items-center gap-2">
-                <span className="font-medium">{tm2.name}</span>
-                <span className="text-muted-foreground font-mono text-xs">
-                  {tm2.slug}
+        <RowList>
+          {teams.data.map((tm2) => {
+            const tint = tintOf(tm2.id)
+            return (
+              <Row key={tm2.id}>
+                <span
+                  className="flex size-[30px] shrink-0 items-center justify-center rounded-[8px] text-[11px] font-extrabold"
+                  style={{ background: tint.bg, color: tint.fg }}
+                >
+                  {codeOf(tm2.name)}
                 </span>
-              </span>
-              <Button variant="ghost" size="sm" onClick={() => setMemberTeam(tm2.id)}>
-                <UserPlus className="size-4" />
-                {t('teams.addMember')}
-              </Button>
-            </li>
-          ))}
-        </ul>
+                <span className="flex min-w-0 flex-1 items-center gap-2">
+                  <span className="truncate font-semibold">{tm2.name}</span>
+                  <span className="text-muted-foreground font-mono text-[11px]">
+                    @{tm2.slug}
+                  </span>
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setMemberTeam(tm2.id)}
+                >
+                  <UserPlus className="size-4" />
+                  {t('teams.addMember')}
+                </Button>
+              </Row>
+            )
+          })}
+        </RowList>
       ) : (
         <EmptyState title={t('teams.empty')} />
       )}
@@ -530,22 +542,44 @@ export function OrgDetailPage() {
   const { id = '' } = useParams()
   const { t } = useTranslation('orgs')
   const navigate = useNavigate()
-  const orgs = useOrgs()
-  const org = orgs.data?.find((o) => o.id === id)
+  const org = useOrgs().data?.find((o) => o.id === id)
+  const memberCount = useOrgMembers(id).data?.length
+  const teamCount = useTeams(id).data?.length
+  const tint = tintOf(id)
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate('..', { relative: 'path' })}>
-          <ArrowLeft className="size-4" />
-        </Button>
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">{org?.name ?? id}</h1>
-          {org && (
-            <Badge variant="secondary" className="font-mono text-xs">
-              {org.slug}
-            </Badge>
-          )}
+    <div className="mx-auto max-w-[1100px]">
+      <button
+        onClick={() => navigate('..', { relative: 'path' })}
+        className="text-muted-foreground hover:text-foreground mb-1.5 inline-flex items-center gap-1 text-[12.5px]"
+      >
+        <ArrowLeft className="size-3.5" />
+        {t('title')}
+      </button>
+      <div className="mb-5 flex items-center gap-3">
+        <span
+          className="flex size-[42px] shrink-0 items-center justify-center rounded-[11px]"
+          style={{ background: tint.bg, color: tint.fg }}
+        >
+          <Building2 className="size-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-[22px] font-extrabold tracking-tight">
+            {org?.name ?? id}
+          </h1>
+          <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 text-[12px]">
+            {org && <span className="font-mono">@{org.slug}</span>}
+            {memberCount != null && (
+              <span>
+                · {memberCount} {t('tabs.members')}
+              </span>
+            )}
+            {teamCount != null && (
+              <span>
+                · {teamCount} {t('tabs.teams')}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
