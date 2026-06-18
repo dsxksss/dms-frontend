@@ -7,6 +7,7 @@ import {
   FlaskConical,
   FolderClosed,
   LayoutGrid,
+  Notebook,
   PenLine,
   Table2,
   Users,
@@ -41,6 +42,7 @@ import { ProtocolsTab } from '@/features/protocols/ProtocolsTab'
 import { SignaturesPanel } from '@/features/signatures/SignaturesPanel'
 import { FilesPanel } from '@/features/files/FilesPanel'
 import { MembersPanel } from '@/features/projects/MembersPanel'
+import { NotebookPanel } from '@/features/notebook/NotebookPanel'
 
 const NAV = [
   { seg: '', end: true, icon: <LayoutGrid />, zh: '概览', en: 'Overview' },
@@ -48,6 +50,7 @@ const NAV = [
   { seg: '/data', icon: <Table2 />, zh: '数据资产', en: 'Data Assets' },
   { seg: '/datasets', icon: <Database />, zh: '数据集', en: 'Datasets', count: 'datasets' },
   { seg: '/protocols', icon: <FlaskConical />, zh: '实验方案', en: 'ELN' },
+  { seg: '/notebook', icon: <Notebook />, zh: '实验记录本', en: 'Notebook' },
   { seg: '/files', icon: <FolderClosed />, zh: '文件', en: 'Files', count: 'files' },
   { seg: '/members', icon: <Users />, zh: '成员', en: 'Members', count: 'members' },
   { seg: '/signatures', icon: <PenLine />, zh: '签名', en: 'Signatures' },
@@ -152,6 +155,9 @@ export function ProjectDatasetsSection() {
 }
 export function ProjectProtocolsSection() {
   return <ProtocolsTab projectId={useProjectId()} />
+}
+export function ProjectNotebookSection() {
+  return <NotebookPanel projectId={useProjectId()} />
 }
 export function ProjectFilesSection() {
   return <FilesPanel projectId={useProjectId()} />
