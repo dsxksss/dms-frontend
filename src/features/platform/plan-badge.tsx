@@ -1,22 +1,12 @@
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
+import { planTone } from '@/lib/tone'
 
-/** plan 档位 → 徽章配色（中性底锁定，仅用单色深浅区分，不引入花哨色）。 */
-const PLAN_CLASS: Record<string, string> = {
-  demo: 'bg-muted text-muted-foreground',
-  standard: 'bg-brand/10 text-brand border-brand/20',
-  enterprise: 'bg-brand text-brand-foreground',
-  onprem: 'bg-foreground text-background',
-}
-
+/** plan 档位 → 徽章 tone（demo 中性 / standard 蓝 / enterprise 紫 / onprem 绿）。 */
 export function PlanBadge({ plan }: { plan: string }) {
   const { t } = useTranslation('platform')
   return (
-    <Badge
-      variant="outline"
-      className={cn('border-transparent', PLAN_CLASS[plan] ?? PLAN_CLASS.demo)}
-    >
+    <Badge variant={planTone(plan)}>
       {t(`plan.${plan}`, { defaultValue: plan })}
     </Badge>
   )

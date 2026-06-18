@@ -64,7 +64,8 @@
     "upload": "上传",
     "download": "下载",
     "back": "返回",
-    "more": "更多"
+    "more": "更多",
+    "open": "打开"
   },
   "theme": {
     "label": "主题",

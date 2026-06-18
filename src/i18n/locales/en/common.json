@@ -64,7 +64,8 @@
     "upload": "Upload",
     "download": "Download",
     "back": "Back",
-    "more": "More"
+    "more": "More",
+    "open": "Open"
   },
   "theme": {
     "label": "Theme",
