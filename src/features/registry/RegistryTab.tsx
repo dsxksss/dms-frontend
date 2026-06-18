@@ -2,7 +2,15 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueries } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { FileUp, MoreHorizontal, Pencil, Plus, Trash2, Wand2 } from 'lucide-react'
+import {
+  FileUp,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Settings2,
+  Trash2,
+  Wand2,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -29,24 +37,32 @@ import { EntityTypeDialog } from './EntityTypeDialog'
 import { ImportEntitiesDialog } from './ImportEntitiesDialog'
 import { EntityTypesPanel } from './EntityTypesPanel'
 
-type View = 'assets' | 'data' | 'types'
+const TYPES_TAB = '__types__'
 
-/** 数据资产主面板：药物资产 / 药物数据 / 类型 + 动态记录网格 + 详情抽屉。 */
-export function RegistryTab({ projectId }: { projectId: string }) {
+/** 注册表主面板，按 kind 复用：药物资产(asset) / 数据资产(template，模板类型+模板数据)。 */
+export function RegistryTab({
+  projectId,
+  kind,
+}: {
+  projectId: string
+  kind: TypeKind
+}) {
   const { t } = useTranslation('registry')
   const role = useProjectRole(projectId)
   const canCreate = roleAtLeast(role, 'contributor')
   const canManage = roleAtLeast(role, 'manager')
   const types = useEntityTypes(projectId)
-  const [view, setView] = useState<View>('assets')
-  const [typeId, setTypeId] = useState('')
+  const [tab, setTab] = useState<string>('')
   const [createTypeOpen, setCreateTypeOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
 
-  const kind: TypeKind = view === 'data' ? 'template' : 'asset'
+  const isAsset = kind === 'asset'
   const kindTypes = (types.data ?? []).filter((ty) => ty.kind === kind)
-  const activeType = kindTypes.find((ty) => ty.id === typeId) ?? kindTypes[0]
+  const showTypes = tab === TYPES_TAB
+  const activeType = showTypes
+    ? undefined
+    : (kindTypes.find((ty) => ty.id === tab) ?? kindTypes[0])
 
   const counts = useQueries({
     queries: kindTypes.map((ty) => ({
@@ -60,33 +76,27 @@ export function RegistryTab({ projectId }: { projectId: string }) {
   })
   const countOf = (i: number) => counts[i]?.data
 
-  const MAIN_TABS: { key: View; label: string }[] = [
-    { key: 'assets', label: t('tabs.assets') },
-    { key: 'data', label: t('tabs.data') },
-    { key: 'types', label: t('tabs.types') },
-  ]
-
   return (
     <div className="px-[26px] py-[22px]">
       <PageHeader
-        title={t('title')}
-        titleEn="Data Assets"
-        description={t('subtitle')}
+        title={isAsset ? t('tabs.assets') : t('title')}
+        titleEn={isAsset ? 'Drug Assets' : 'Data Assets'}
+        description={isAsset ? t('subtitle') : t('dataSubtitle')}
         size="md"
         actions={
           canManage && (
             <>
               <Button variant="outline" onClick={() => setCreateTypeOpen(true)}>
                 <Wand2 className="size-4" />
-                {t('types.createAsset')}
+                {isAsset ? t('types.createAsset') : t('types.createTemplate')}
               </Button>
-              {view !== 'types' && activeType && (
+              {!showTypes && activeType && isAsset && (
                 <Button variant="outline" onClick={() => setImportOpen(true)}>
                   <FileUp className="size-4" />
                   {t('import.button')}
                 </Button>
               )}
-              {view !== 'types' && activeType && canCreate && (
+              {!showTypes && activeType && canCreate && (
                 <Button onClick={() => setCreateOpen(true)}>
                   <Plus className="size-4" />
                   {t('entities.create')}
@@ -97,90 +107,90 @@ export function RegistryTab({ projectId }: { projectId: string }) {
         }
       />
 
-      {/* main view tabs */}
-      <div className="mb-4 flex items-center gap-1 border-b">
-        {MAIN_TABS.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setView(tab.key)}
-            className={cn(
-              '-mb-px border-b-2 px-3.5 py-2.5 text-[13px] font-semibold transition',
-              view === tab.key
-                ? 'border-brand text-brand'
-                : 'border-transparent text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* type sub-tabs + 类型管理 tab */}
+      <div className="mb-4 flex flex-wrap items-center gap-1.5 border-b">
+        {kindTypes.map((ty, i) => {
+          const on = !showTypes && activeType?.id === ty.id
+          return (
+            <button
+              key={ty.id}
+              type="button"
+              onClick={() => setTab(ty.id)}
+              className={cn(
+                '-mb-px flex items-center gap-2 border-b-2 px-3 py-2.5 text-[13px] font-semibold transition',
+                on
+                  ? 'border-brand text-brand'
+                  : 'border-transparent text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {ty.name}
+              <span
+                className={cn(
+                  'rounded-full px-1.5 py-px text-[11px]',
+                  on ? 'bg-accent text-brand' : 'bg-[#F0F2F6] text-muted-foreground',
+                )}
+              >
+                {countOf(i) ?? '·'}
+              </span>
+            </button>
+          )
+        })}
+        <button
+          type="button"
+          onClick={() => setTab(TYPES_TAB)}
+          className={cn(
+            '-mb-px ml-auto flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-[13px] font-semibold transition',
+            showTypes
+              ? 'border-brand text-brand'
+              : 'border-transparent text-muted-foreground hover:text-foreground',
+          )}
+        >
+          <Settings2 className="size-4" />
+          {t('tabs.types')}
+        </button>
       </div>
 
-      {view === 'types' ? (
-        <EntityTypesPanel projectId={projectId} />
+      {showTypes ? (
+        <EntityTypesPanel projectId={projectId} kindFilter={kind} />
       ) : kindTypes.length === 0 ? (
         <EmptyState
           title={t('types.empty')}
-          hint={view === 'data' ? t('entities.noTemplates') : t('entities.noAssetTypes')}
+          hint={isAsset ? t('entities.noAssetTypes') : t('entities.noTemplates')}
+          action={
+            canManage && (
+              <Button onClick={() => setCreateTypeOpen(true)}>
+                <Wand2 className="size-4" />
+                {isAsset ? t('types.createAsset') : t('types.createTemplate')}
+              </Button>
+            )
+          }
         />
-      ) : (
-        <>
-          {/* type sub-tabs with count pills */}
-          <div className="mb-4 flex flex-wrap items-center gap-1.5 border-b">
-            {kindTypes.map((ty, i) => {
-              const on = activeType?.id === ty.id
-              return (
-                <button
-                  key={ty.id}
-                  type="button"
-                  onClick={() => setTypeId(ty.id)}
-                  className={cn(
-                    '-mb-px flex items-center gap-2 border-b-2 px-3 py-2.5 text-[13px] font-semibold transition',
-                    on
-                      ? 'border-brand text-brand'
-                      : 'border-transparent text-muted-foreground hover:text-foreground',
-                  )}
-                >
-                  {ty.name}
-                  <span
-                    className={cn(
-                      'rounded-full px-1.5 py-px text-[11px]',
-                      on ? 'bg-accent text-brand' : 'bg-[#F0F2F6] text-muted-foreground',
-                    )}
-                  >
-                    {countOf(i) ?? '·'}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-
-          {activeType && (
-            <RecordsGrid
-              projectId={projectId}
-              kind={kind}
-              type={activeType}
-              canManage={canManage}
-            />
-          )}
-        </>
-      )}
+      ) : activeType ? (
+        <RecordsGrid
+          projectId={projectId}
+          kind={kind}
+          type={activeType}
+          canManage={canManage}
+        />
+      ) : null}
 
       {/* dialogs */}
       <EntityTypeDialog
         projectId={projectId}
-        kind="asset"
+        kind={kind}
         open={createTypeOpen}
         onOpenChange={setCreateTypeOpen}
       />
       {activeType && (
         <>
-          <ImportEntitiesDialog
-            projectId={projectId}
-            typeId={activeType.id}
-            open={importOpen}
-            onOpenChange={setImportOpen}
-          />
+          {isAsset && (
+            <ImportEntitiesDialog
+              projectId={projectId}
+              typeId={activeType.id}
+              open={importOpen}
+              onOpenChange={setImportOpen}
+            />
+          )}
           <EntityDialog
             projectId={projectId}
             kind={kind}

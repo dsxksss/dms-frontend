@@ -1,6 +1,7 @@
 {
   "title": "Data assets",
   "subtitle": "Dynamic schema · sensitive fields (structure / sequence / CDR) hidden by default, granted on demand.",
+  "dataSubtitle": "Data-template records · assay / measurement data organized by template type, bindable to drug assets.",
   "tabs": { "assets": "Assets", "data": "Data", "types": "Types" },
   "drawer": {
     "fields": "Fields",

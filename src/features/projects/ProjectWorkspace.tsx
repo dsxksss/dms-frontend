@@ -8,6 +8,7 @@ import {
   FolderClosed,
   LayoutGrid,
   PenLine,
+  Table2,
   Users,
 } from 'lucide-react'
 import {
@@ -43,7 +44,8 @@ import { MembersPanel } from '@/features/projects/MembersPanel'
 
 const NAV = [
   { seg: '', end: true, icon: <LayoutGrid />, zh: '概览', en: 'Overview' },
-  { seg: '/registry', icon: <Boxes />, zh: '数据资产', en: 'Assets', count: 'registry' },
+  { seg: '/registry', icon: <Boxes />, zh: '药物资产', en: 'Drug Assets' },
+  { seg: '/data', icon: <Table2 />, zh: '数据资产', en: 'Data Assets' },
   { seg: '/datasets', icon: <Database />, zh: '数据集', en: 'Datasets', count: 'datasets' },
   { seg: '/protocols', icon: <FlaskConical />, zh: '实验方案', en: 'ELN' },
   { seg: '/files', icon: <FolderClosed />, zh: '文件', en: 'Files', count: 'files' },
@@ -140,7 +142,10 @@ export function ProjectLayout() {
 /* ============ sections ============ */
 
 export function ProjectRegistrySection() {
-  return <RegistryTab projectId={useProjectId()} />
+  return <RegistryTab projectId={useProjectId()} kind="asset" />
+}
+export function ProjectDataSection() {
+  return <RegistryTab projectId={useProjectId()} kind="template" />
 }
 export function ProjectDatasetsSection() {
   return <DatasetsPanel projectId={useProjectId()} />

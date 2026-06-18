@@ -23,8 +23,14 @@ import { ResourceGrantsDialog } from '@/features/grants/ResourceGrantsDialog'
 import { EntityTypeDialog } from './EntityTypeDialog'
 import { FieldGrantsDialog } from './FieldGrantsDialog'
 
-/** 类型管理：药物资产类型 + 数据模版（卡片网格）。 */
-export function EntityTypesPanel({ projectId }: { projectId: string }) {
+/** 类型管理：药物资产类型 + 数据模版（卡片网格）。kindFilter 限定只管理一种。 */
+export function EntityTypesPanel({
+  projectId,
+  kindFilter,
+}: {
+  projectId: string
+  kindFilter?: TypeKind
+}) {
   const { t } = useTranslation('registry')
   const role = useProjectRole(projectId)
   const canManage = roleAtLeast(role, 'manager')
@@ -101,8 +107,10 @@ export function EntityTypesPanel({ projectId }: { projectId: string }) {
         <EmptyState title={t('types.empty')} hint={t('types.emptyDesc')} />
       ) : (
         <>
-          {section(t('types.assetTypes'), 'asset', assets)}
-          {section(t('types.dataTemplates'), 'template', templates)}
+          {(!kindFilter || kindFilter === 'asset') &&
+            section(t('types.assetTypes'), 'asset', assets)}
+          {(!kindFilter || kindFilter === 'template') &&
+            section(t('types.dataTemplates'), 'template', templates)}
         </>
       )}
 

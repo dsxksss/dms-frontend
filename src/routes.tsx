@@ -31,6 +31,10 @@ const ProjectRegistrySection = lazyPage(
   () => import('@/features/projects/ProjectWorkspace'),
   'ProjectRegistrySection',
 )
+const ProjectDataSection = lazyPage(
+  () => import('@/features/projects/ProjectWorkspace'),
+  'ProjectDataSection',
+)
 const ProjectProtocolsSection = lazyPage(
   () => import('@/features/projects/ProjectWorkspace'),
   'ProjectProtocolsSection',
@@ -139,6 +143,7 @@ export const router = createBrowserRouter([
         children: [
           { path: 'projects/:id', element: <ProjectOverviewSection /> },
           { path: 'projects/:id/registry', element: <ProjectRegistrySection /> },
+          { path: 'projects/:id/data', element: <ProjectDataSection /> },
           { path: 'projects/:id/protocols', element: <ProjectProtocolsSection /> },
           { path: 'projects/:id/datasets', element: <ProjectDatasetsSection /> },
           { path: 'projects/:id/datasets/:dsId', element: <DatasetDetailPage /> },
