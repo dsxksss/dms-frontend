@@ -4,60 +4,70 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * DMS 设计系统 — Linear-clean 数据驾驶舱
- * 中性底(zinc) + 单一强调色(--brand 冷蓝)，深/浅双主题在根锁定。
- * 单一圆角刻度(--radius)。所有 UI 颜色走语义 token，组件不写裸色值。
+ * Bio-Data OS 设计系统 — 药研数据资产平台
+ * 冷蓝主色(--brand #2F6BFF) + 浅底(#F4F7FC) + 白面板，对标 design_handoff_bio_data_os 原型。
+ * 控件圆角 9px / 卡片 14px / 模态 15px（由 --radius 11px 派生）。
+ * 所有 UI 颜色走语义 token；状态/角色色见 badge.tsx 的 tone 变体。
  */
 
 :root {
-  --radius: 0.5rem;
+  /* 11px 基准 → md(控件)=9px, sm(小标签)=7px, xl(卡片/模态)=15px */
+  --radius: 0.6875rem;
 
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.141 0.005 285.823);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.141 0.005 285.823);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.21 0.006 285.885);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.21 0.006 285.885);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.623 0.188 259.81);
+  --background: #f4f7fc; /* 应用背景 --bg */
+  --foreground: #1b2330; /* 主文字 --tx */
+  --card: #ffffff; /* 面板 --sur */
+  --card-foreground: #1b2330;
+  --popover: #ffffff;
+  --popover-foreground: #1b2330;
+  --primary: #2f6bff; /* 主色（按钮/激活/链接/ID） */
+  --primary-foreground: #ffffff;
+  --secondary: #ffffff; /* 次按钮=白底描边 */
+  --secondary-foreground: #5a6473;
+  --muted: #f1f3f7; /* 浅灰底 --bd2 */
+  --muted-foreground: #727d8d; /* 次文字 --mut */
+  --accent: #eaf0ff; /* 主色浅底 --priS（激活/hover） */
+  --accent-foreground: #2f6bff;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e9edf4; /* 边框 --bd */
+  --input: #e9edf4;
+  --ring: #2f6bff;
 
   /* 单一品牌强调色（冷蓝），全站锁定：链接 / 选中 / 活动态 */
-  --brand: oklch(0.623 0.188 259.81);
-  --brand-foreground: oklch(0.985 0 0);
+  --brand: #2f6bff;
+  --brand-foreground: #ffffff;
 
-  /* 状态语义色（仅用于状态，不当装饰） */
-  --success: oklch(0.627 0.17 149.21);
-  --warning: oklch(0.769 0.166 70.08);
+  /* 状态语义色文字（badge tone 使用具体配对） */
+  --success: #15803d;
+  --warning: #b45309;
 
-  --chart-1: oklch(0.623 0.188 259.81);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.769 0.166 70.08);
-  --chart-4: oklch(0.627 0.17 149.21);
-  --chart-5: oklch(0.645 0.246 16.439);
+  /* 附加表面：表头底 / 行 hover / 行分隔 */
+  --surface-2: #fafbfd;
+  --row-hover: #fbfcfe;
+  --divider: #f1f3f7;
 
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-primary: oklch(0.21 0.006 285.885);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.623 0.188 259.81);
+  --chart-1: #2f6bff;
+  --chart-2: #16a34a;
+  --chart-3: #c77b16;
+  --chart-4: #7c3aed;
+  --chart-5: #db2777;
 
-  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
-    Roboto, 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  /* 全局侧栏：白底（原型 ctxGlobal/ctxProject） */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1b2330;
+  --sidebar-primary: #2f6bff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eaf0ff;
+  --sidebar-accent-foreground: #2f6bff;
+  --sidebar-border: #e9edf4;
+  --sidebar-ring: #2f6bff;
+
+  --font-sans: 'Plus Jakarta Sans', 'Noto Sans SC', system-ui, -apple-system,
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei',
+    sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas,
+    monospace;
 }
 
 .dark {
@@ -67,8 +77,8 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.21 0.006 285.885);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.92 0.004 286.32);
-  --primary-foreground: oklch(0.21 0.006 285.885);
+  --primary: oklch(0.623 0.188 259.81);
+  --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.274 0.006 286.033);
@@ -132,6 +142,9 @@
   --color-brand-foreground: var(--brand-foreground);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-surface-2: var(--surface-2);
+  --color-row-hover: var(--row-hover);
+  --color-divider: var(--divider);
 
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);

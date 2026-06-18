@@ -1,8 +1,8 @@
 {
   "app": {
-    "name": "DMS Data Platform",
-    "shortName": "DMS",
-    "tagline": "Data asset management for drug R&D"
+    "name": "Bio-Data OS Platform",
+    "shortName": "Bio-Data OS",
+    "tagline": "The data asset platform for drug R&D"
   },
   "comingSoon": "Coming soon",
   "settings": {
@@ -24,7 +24,12 @@
     "organizations": "Organizations",
     "inbox": "Invitations",
     "audit": "Audit log",
-    "settings": "Settings"
+    "settings": "Settings",
+    "workspace": "Workspace",
+    "account": "Account",
+    "search": "Search…",
+    "menu": "Menu",
+    "notifications": "Notifications"
   },
   "resourceGrants": {
     "title": "Collaborators",

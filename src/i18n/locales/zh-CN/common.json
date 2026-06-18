@@ -1,8 +1,8 @@
 {
   "app": {
-    "name": "DMS 数据资产平台",
-    "shortName": "DMS",
-    "tagline": "药物研发的数据资产管理"
+    "name": "Bio-Data OS 药研数据资产平台",
+    "shortName": "Bio-Data OS",
+    "tagline": "药物研发的数据资产平台"
   },
   "comingSoon": "即将上线",
   "settings": {
@@ -24,7 +24,12 @@
     "organizations": "组织",
     "inbox": "邀请",
     "audit": "审计日志",
-    "settings": "设置"
+    "settings": "设置",
+    "workspace": "工作区",
+    "account": "账户",
+    "search": "搜索…",
+    "menu": "菜单",
+    "notifications": "通知"
   },
   "resourceGrants": {
     "title": "协作者",
