@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 
 import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
@@ -66,16 +67,20 @@ export function PlatformSettingsPage() {
       ) : query.isLoading ? (
         <Skeleton className="h-64 w-full" />
       ) : (
-        <div className="divide-y rounded-lg border">
-          {(query.data ?? []).map((s) => (
-            <SettingRow
+        <Card className="mx-auto max-w-[840px] gap-0 py-0">
+          {(query.data ?? []).map((s, i, arr) => (
+            <div
               key={s.key}
-              setting={s}
-              draftValue={s.key in draft ? draft[s.key] : undefined}
-              onChange={(v) => set(s.key, v)}
-            />
+              className={i < arr.length - 1 ? 'border-divider border-b' : ''}
+            >
+              <SettingRow
+                setting={s}
+                draftValue={s.key in draft ? draft[s.key] : undefined}
+                onChange={(v) => set(s.key, v)}
+              />
+            </div>
           ))}
-        </div>
+        </Card>
       )}
     </div>
   )
@@ -101,21 +106,22 @@ function SettingRow({
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-3">
       <div className="min-w-0 space-y-0.5">
-        <div className="flex items-center gap-2">
-          <Label className="font-medium">{setting.label}</Label>
-          {setting.apply === 'restart' && (
-            <Badge variant="outline" className="text-muted-foreground text-xs">
-              {t('settings.restart')}
-            </Badge>
-          )}
+        <div className="flex flex-wrap items-center gap-2">
+          <Label className="text-[13.5px] font-bold">{setting.label}</Label>
+          <Badge variant={setting.apply === 'restart' ? 'warning' : 'success'}>
+            {t(setting.apply === 'restart' ? 'settings.restart' : 'settings.live')}
+          </Badge>
           {!setting.editable && (
-            <Badge variant="outline" className="text-muted-foreground gap-1 text-xs">
+            <Badge variant="neutral" className="gap-1">
               <Lock className="size-3" />
               {t('settings.readonly')}
             </Badge>
           )}
         </div>
-        {desc && <p className="text-muted-foreground text-xs">{desc}</p>}
+        <div className="text-muted-foreground mt-1 font-mono text-[11px]">
+          {setting.key}
+        </div>
+        {desc && <p className="text-muted-foreground mt-0.5 text-xs">{desc}</p>}
       </div>
 
       <div className="w-72 shrink-0">

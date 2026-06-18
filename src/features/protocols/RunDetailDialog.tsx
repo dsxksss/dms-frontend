@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Loader2, PenLine, Plus, Trash2 } from 'lucide-react'
+import { AlertTriangle, Loader2, PenLine, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -10,6 +10,8 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
+import { RowList, Row } from '@/components/row-list'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -77,9 +79,9 @@ function RunLinksSection({
 
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-medium">{t('links.title')}</h3>
+      <h3 className="text-[13px] font-bold">{t('links.title')}</h3>
       {canEdit && (
-        <div className="space-y-2 rounded-md border p-3">
+        <Card className="gap-2 p-3">
           <div className="flex gap-2">
             <Select value={target} onValueChange={(v) => setTarget(v as LinkTarget)}>
               <SelectTrigger size="sm" className="w-36">
@@ -116,34 +118,34 @@ function RunLinksSection({
             )}
             {t('links.add')}
           </Button>
-        </div>
+        </Card>
       )}
       {links.data && links.data.length > 0 ? (
-        <ul className="divide-y rounded-md border">
+        <RowList>
           {links.data.map((l) => (
-            <li
-              key={l.id}
-              className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
-            >
-              <span className="flex items-center gap-2">
-                <Badge variant="secondary">{t(`links.${l.target_kind}`)}</Badge>
-                <span className="font-mono text-xs">{shortId(l.target_id)}</span>
+            <Row key={l.id}>
+              <Badge variant="info">{t(`links.${l.target_kind}`)}</Badge>
+              <span className="text-brand flex-1 font-mono text-xs font-semibold">
+                {shortId(l.target_id)}
               </span>
               {canEdit && (
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="size-8"
+                  size="icon-sm"
+                  aria-label={t('links.removed')}
                   onClick={() =>
-                    del.mutateAsync(l.id).then(() => toast.success(t('links.removed'))).catch(toastError)
+                    del
+                      .mutateAsync(l.id)
+                      .then(() => toast.success(t('links.removed')))
+                      .catch(toastError)
                   }
                 >
                   <Trash2 className="text-destructive size-4" />
                 </Button>
               )}
-            </li>
+            </Row>
           ))}
-        </ul>
+        </RowList>
       ) : (
         <p className="text-muted-foreground text-sm">{t('links.empty')}</p>
       )}
@@ -288,25 +290,38 @@ export function RunDetailDialog({
                   </Button>
                 </div>
                 {run.status === 'in_progress' && !hasApproved && (
-                  <p className="text-muted-foreground text-xs">
-                    {t('needApprovedToComplete', { ns: 'signatures' })}
-                  </p>
+                  <div className="flex gap-2.5 rounded-[12px] border border-[#F5E6C8] bg-[#FFFCF5] px-4 py-3">
+                    <AlertTriangle className="size-[18px] shrink-0 text-[#C77B16]" />
+                    <div>
+                      <div className="text-[12.5px] font-bold text-[#92600A]">
+                        {t('compliance', { ns: 'signatures' })}
+                      </div>
+                      <div className="mt-1 text-[12px] leading-[1.55] text-[#7a5a10]">
+                        {t('complianceDesc', { ns: 'signatures' })}
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
 
             {/* results per step */}
             <div className="space-y-4">
-              <Label className="text-sm font-medium">{t('run.results')}</Label>
-              {run.steps.map((s) => (
-                <div key={s.name} className="rounded-md border p-3">
-                  <div className="mb-2">
-                    <div className="font-medium">{s.name}</div>
-                    {s.description && (
-                      <div className="text-muted-foreground text-xs">
-                        {s.description}
-                      </div>
-                    )}
+              <Label className="text-[13px] font-bold">{t('run.results')}</Label>
+              {run.steps.map((s, idx) => (
+                <Card key={s.name} className="gap-0 p-4">
+                  <div className="mb-3 flex items-center gap-2.5">
+                    <span className="bg-accent text-brand flex size-[22px] shrink-0 items-center justify-center rounded-full text-[11px] font-bold">
+                      {idx + 1}
+                    </span>
+                    <div>
+                      <div className="text-[13px] font-bold">{s.name}</div>
+                      {s.description && (
+                        <div className="text-muted-foreground text-xs">
+                          {s.description}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   {s.fields.length === 0 ? (
                     <p className="text-muted-foreground text-xs">—</p>
@@ -326,7 +341,7 @@ export function RunDetailDialog({
                       />
                     </fieldset>
                   )}
-                </div>
+                </Card>
               ))}
               {editable && (
                 <Button onClick={saveResults} disabled={updateResults.isPending}>
@@ -343,7 +358,7 @@ export function RunDetailDialog({
             {/* e-signatures (21 CFR Part 11) */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium">
+                <h3 className="text-[13px] font-bold">
                   {t('onTarget', { ns: 'signatures' })}
                 </h3>
                 {canContribute && (

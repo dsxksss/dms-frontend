@@ -42,5 +42,7 @@
   "onTarget": "本对象的签名",
   "none": "暂无签名",
   "export": "导出 CSV",
-  "needApprovedToComplete": "完成前需对本 Run 做 approved 电子签名"
+  "needApprovedToComplete": "完成前需对本 Run 做 approved 电子签名",
+  "compliance": "合规要求",
+  "complianceDesc": "流转到「已完成」前，本 Run 须具备 approved 电子签名（21 CFR Part 11 §11.200，签署时重新认证密码）。"
 }

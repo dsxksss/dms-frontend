@@ -49,6 +49,7 @@
     "save": "保存",
     "saved": "已保存",
     "restart": "需重部署",
+    "live": "即时生效",
     "readonly": "只读",
     "fields": {
       "signup.tenant_enabled": "开启后，访客可在登录页自助开通新企业；关闭则企业只能由平台管理员在此后台开通（推荐云端关闭）。",

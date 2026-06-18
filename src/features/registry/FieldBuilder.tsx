@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 import { FIELD_TYPES } from '@/lib/field-types'
 import type { FieldDefInput, FieldType } from '@/api/registry'
 
@@ -50,16 +51,24 @@ export function FieldBuilder({
       </div>
 
       {value.length === 0 ? (
-        <p className="text-muted-foreground rounded-md border border-dashed px-3 py-6 text-center text-sm">
+        <p className="text-muted-foreground rounded-[9px] border border-dashed px-3 py-6 text-center text-sm">
           {t('fieldBuilder.empty')}
         </p>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
+          <div className="text-muted-foreground grid grid-cols-[1.4fr_1fr_52px_52px_52px_30px] gap-2 px-1 text-[11px] font-bold">
+            <div>{t('fieldBuilder.name')}</div>
+            <div>{t('fieldBuilder.type')}</div>
+            <div className="text-center">{t('fieldBuilder.required')}</div>
+            <div className="text-center">{t('fieldBuilder.unique')}</div>
+            <div className="text-center">{t('fieldBuilder.sensitive')}</div>
+            <div />
+          </div>
           {value.map((f, i) => (
-            <div key={i} className="rounded-md border p-3">
-              <div className="flex flex-wrap items-center gap-2">
+            <div key={i}>
+              <div className="grid grid-cols-[1.4fr_1fr_52px_52px_52px_30px] items-center gap-2">
                 <Input
-                  className="w-40"
+                  className="h-9"
                   placeholder={t('fieldBuilder.name')}
                   value={f.name}
                   onChange={(e) => update(i, { name: e.target.value })}
@@ -68,7 +77,7 @@ export function FieldBuilder({
                   value={f.type}
                   onValueChange={(v) => update(i, { type: v as FieldType })}
                 >
-                  <SelectTrigger size="sm" className="w-36">
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -79,38 +88,32 @@ export function FieldBuilder({
                     ))}
                   </SelectContent>
                 </Select>
-
-                <label className="flex items-center gap-1.5 text-sm">
-                  <Checkbox
+                <div className="flex justify-center">
+                  <Switch
                     checked={f.required}
-                    onCheckedChange={(c) => update(i, { required: !!c })}
+                    onCheckedChange={(c) => update(i, { required: c })}
                   />
-                  {t('fieldBuilder.required')}
-                </label>
-                <label className="flex items-center gap-1.5 text-sm">
-                  <Checkbox
+                </div>
+                <div className="flex justify-center">
+                  <Switch
                     checked={f.unique}
-                    onCheckedChange={(c) => update(i, { unique: !!c })}
+                    onCheckedChange={(c) => update(i, { unique: c })}
                   />
-                  {t('fieldBuilder.unique')}
-                </label>
-                <label className="flex items-center gap-1.5 text-sm">
-                  <Checkbox
+                </div>
+                <div className="flex justify-center">
+                  <Switch
                     checked={f.sensitive}
-                    onCheckedChange={(c) => update(i, { sensitive: !!c })}
+                    className={cn(f.sensitive && 'data-[state=checked]:bg-[#E0492C]')}
+                    onCheckedChange={(c) => update(i, { sensitive: c })}
                   />
-                  {t('fieldBuilder.sensitive')}
-                </label>
-
-                <Button
+                </div>
+                <button
                   type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="ml-auto size-8"
+                  className="text-muted-foreground hover:text-destructive flex size-7 items-center justify-center"
                   onClick={() => remove(i)}
                 >
-                  <Trash2 className="text-destructive size-4" />
-                </Button>
+                  <Trash2 className="size-4" />
+                </button>
               </div>
 
               {f.type === 'enum' && (

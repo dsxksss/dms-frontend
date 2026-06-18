@@ -49,6 +49,7 @@
     "save": "Save",
     "saved": "Saved",
     "restart": "Needs redeploy",
+    "live": "Live",
     "readonly": "Read-only",
     "fields": {
       "signup.tenant_enabled": "When on, visitors can self-provision a new company from the sign-in page; when off, companies can only be provisioned by platform admins here (recommended off for cloud).",
