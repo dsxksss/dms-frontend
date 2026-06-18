@@ -9,6 +9,11 @@
   },
   "status": { "active": "活跃", "archived": "已归档" },
   "filter": { "includeArchived": "显示已归档" },
+  "card": {
+    "orgProject": "组织项目",
+    "personalProject": "个人项目",
+    "open": "打开项目"
+  },
   "create": {
     "title": "新建项目",
     "name": "名称",

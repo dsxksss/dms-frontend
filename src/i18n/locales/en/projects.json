@@ -9,6 +9,11 @@
   },
   "status": { "active": "Active", "archived": "Archived" },
   "filter": { "includeArchived": "Show archived" },
+  "card": {
+    "orgProject": "Org project",
+    "personalProject": "Personal project",
+    "open": "Open project"
+  },
   "create": {
     "title": "New project",
     "name": "Name",
