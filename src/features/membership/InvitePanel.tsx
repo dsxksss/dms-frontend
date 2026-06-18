@@ -5,7 +5,10 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { roleTone } from '@/lib/tone'
+import { Card } from '@/components/ui/card'
+import { RowList, Row } from '@/components/row-list'
+import { UserAvatar } from '@/components/user-avatar'
+import { roleTone, statusTone } from '@/lib/tone'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
@@ -91,7 +94,7 @@ export function InvitePanel({
   return (
     <div className="space-y-4">
       {canInvite && (
-        <div className="space-y-3 rounded-lg border p-3">
+        <Card className="gap-3 p-4">
           <Label>{t('invite.title')}</Label>
           <UserPicker value={users} onChange={setUsers} />
           <div className="flex flex-wrap items-end gap-2">
@@ -124,38 +127,39 @@ export function InvitePanel({
             )}
             {t('invite.send')}
           </Button>
-        </div>
+        </Card>
       )}
 
       <div className="space-y-2">
-        <h3 className="text-sm font-medium">{t('invite.pending')}</h3>
+        <h3 className="text-[15px] font-bold">{t('invite.pending')}</h3>
         {isLoading ? (
           <TableSkeleton rows={2} cols={2} />
         ) : invitations.length > 0 ? (
-          <ul className="divide-y rounded-md border">
+          <RowList>
             {invitations.map((inv) => (
-              <li
-                key={inv.id}
-                className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
-              >
-                <span className="flex items-center gap-2">
-                  <UserName id={inv.invitee_user_id} className="text-sm" />
-                  <Badge variant={roleTone(inv.role)}>{roleLabel(inv.role)}</Badge>
-                  <span className="text-muted-foreground text-xs">{inv.status}</span>
+              <Row key={inv.id}>
+                <UserAvatar seed={inv.invitee_user_id} />
+                <span className="min-w-0 flex-1">
+                  <UserName
+                    id={inv.invitee_user_id}
+                    className="truncate text-[13px] font-semibold"
+                  />
                 </span>
+                <Badge variant={roleTone(inv.role)}>{roleLabel(inv.role)}</Badge>
+                <Badge variant={statusTone(inv.status)}>{inv.status}</Badge>
                 {canInvite && (
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="size-8"
+                    size="icon-sm"
                     onClick={() => setRevokeId(inv.id)}
+                    aria-label={t('invite.revokeTitle')}
                   >
                     <Trash2 className="text-destructive size-4" />
                   </Button>
                 )}
-              </li>
+              </Row>
             ))}
-          </ul>
+          </RowList>
         ) : (
           <p className="text-muted-foreground text-sm">{t('invite.noPending')}</p>
         )}

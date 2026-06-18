@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { RowList, Row } from '@/components/row-list'
 import {
   Select,
   SelectContent,
@@ -122,33 +123,28 @@ export function EntityRelationsDialog({
 
           {/* relations list */}
           <div className="space-y-2">
-            <h3 className="text-sm font-medium">{t('relations.title')}</h3>
+            <h3 className="text-[13px] font-bold">{t('relations.title')}</h3>
             {relations.isLoading ? (
               <TableSkeleton rows={2} cols={2} />
             ) : relations.data && relations.data.length > 0 ? (
-              <ul className="divide-y rounded-md border">
+              <RowList>
                 {relations.data.map((r) => (
-                  <li
-                    key={r.id}
-                    className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Badge variant="secondary">{t(`relations.${r.kind}`, r.kind)}</Badge>
-                      <span className="font-mono text-xs">
-                        {shortId(r.to_entity)}
-                      </span>
+                  <Row key={r.id}>
+                    <Badge variant="info">{t(`relations.${r.kind}`, r.kind)}</Badge>
+                    <span className="text-brand flex-1 font-mono text-xs font-semibold">
+                      {shortId(r.to_entity)}
                     </span>
                     <Button
                       variant="ghost"
-                      size="icon"
-                      className="size-8"
+                      size="icon-sm"
                       onClick={() => onRemove(r.id)}
+                      aria-label={t('relations.removed')}
                     >
                       <Trash2 className="text-destructive size-4" />
                     </Button>
-                  </li>
+                  </Row>
                 ))}
-              </ul>
+              </RowList>
             ) : (
               <p className="text-muted-foreground text-sm">
                 {t('relations.empty')}
@@ -158,7 +154,7 @@ export function EntityRelationsDialog({
 
           {/* component tree */}
           <div className="space-y-2">
-            <h3 className="text-sm font-medium">{t('tree.title')}</h3>
+            <h3 className="text-[13px] font-bold">{t('tree.title')}</h3>
             <p className="text-muted-foreground text-xs">{t('tree.desc')}</p>
             {tree.isLoading ? (
               <TableSkeleton rows={2} cols={1} />
@@ -173,24 +169,23 @@ export function EntityRelationsDialog({
 
           {/* lineage (derived_from) */}
           <div className="space-y-2">
-            <h3 className="text-sm font-medium">{t('lineage.title')}</h3>
+            <h3 className="text-[13px] font-bold">{t('lineage.title')}</h3>
             <p className="text-muted-foreground text-xs">{t('lineage.desc')}</p>
             {lineage.isLoading ? (
               <TableSkeleton rows={2} cols={1} />
             ) : lineage.data && lineage.data.length > 0 ? (
-              <ul className="divide-y rounded-md border">
+              <RowList>
                 {lineage.data.map((n) => (
-                  <li
-                    key={n.id}
-                    className="flex items-center gap-2 px-3 py-2 text-sm"
-                  >
-                    <span className="font-mono text-xs">{shortId(n.id)}</span>
-                    <Badge variant="secondary" className="text-xs">
+                  <Row key={n.id}>
+                    <span className="text-brand font-mono text-xs font-semibold">
+                      {shortId(n.id)}
+                    </span>
+                    <Badge variant="neutral">
                       {typeMap[n.type_id] ?? shortId(n.type_id)}
                     </Badge>
-                  </li>
+                  </Row>
                 ))}
-              </ul>
+              </RowList>
             ) : (
               <p className="text-muted-foreground text-sm">{t('lineage.empty')}</p>
             )}

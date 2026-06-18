@@ -10,6 +10,9 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { Card } from '@/components/ui/card'
+import { RowList, Row } from '@/components/row-list'
+import { UserAvatar } from '@/components/user-avatar'
 import { TableSkeleton } from '@/components/states'
 import { UserName } from '@/components/user-name'
 import { UserPicker } from '@/features/membership/UserPicker'
@@ -73,7 +76,7 @@ export function FileGrantsDialog({
         <div className="space-y-4">
           <p className="text-muted-foreground text-sm">{t('grants.desc')}</p>
 
-          <div className="space-y-2 rounded-lg border p-3">
+          <Card className="gap-2 p-4">
             <Label>{t('grants.title')}</Label>
             <UserPicker value={users} onChange={setUsers} max={1} />
             <Button onClick={onGrant} disabled={!users[0] || grant.isPending}>
@@ -84,29 +87,32 @@ export function FileGrantsDialog({
               )}
               {t('grants.manage')}
             </Button>
-          </div>
+          </Card>
 
           {grants.isLoading ? (
             <TableSkeleton rows={2} cols={1} />
           ) : grants.data && grants.data.length > 0 ? (
-            <ul className="divide-y rounded-md border">
+            <RowList>
               {grants.data.map((g) => (
-                <li
-                  key={g.id}
-                  className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
-                >
-                  <UserName id={g.user_id} />
+                <Row key={g.id}>
+                  <UserAvatar seed={g.user_id} />
+                  <span className="min-w-0 flex-1">
+                    <UserName
+                      id={g.user_id}
+                      className="truncate text-[13px] font-semibold"
+                    />
+                  </span>
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="size-8"
+                    size="icon-sm"
                     onClick={() => onRevoke(g.user_id)}
+                    aria-label={t('grants.revoked')}
                   >
                     <Trash2 className="text-destructive size-4" />
                   </Button>
-                </li>
+                </Row>
               ))}
-            </ul>
+            </RowList>
           ) : (
             <p className="text-muted-foreground text-sm">{t('grants.empty')}</p>
           )}

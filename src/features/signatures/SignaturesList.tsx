@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
+import { RowList, Row } from '@/components/row-list'
+import { UserAvatar } from '@/components/user-avatar'
 import { TableSkeleton } from '@/components/states'
 import { useSignatures } from '@/hooks/use-signatures'
 import { formatDateTime } from '@/lib/format'
@@ -26,23 +28,24 @@ export function SignaturesList({
     return <p className="text-muted-foreground text-sm">{t('none')}</p>
 
   return (
-    <ul className="divide-y rounded-md border">
+    <RowList>
       {items.map((s) => (
-        <li key={s.id} className="flex items-start justify-between gap-3 px-3 py-2">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 text-sm">
-              <Badge variant="secondary">{t(`meaning.${s.meaning}`)}</Badge>
-              <span className="font-medium">{s.signer_name}</span>
+        <Row key={s.id} className="items-start">
+          <UserAvatar seed={s.signer_name} initials={s.signer_name} />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="purple">{t(`meaning.${s.meaning}`)}</Badge>
+              <span className="font-semibold">{s.signer_name}</span>
             </div>
             {s.reason && (
               <p className="text-muted-foreground mt-0.5 text-xs">{s.reason}</p>
             )}
           </div>
-          <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
+          <span className="text-muted-foreground shrink-0 text-[11px] tabular-nums">
             {formatDateTime(s.signed_at)}
           </span>
-        </li>
+        </Row>
       ))}
-    </ul>
+    </RowList>
   )
 }

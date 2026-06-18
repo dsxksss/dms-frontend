@@ -6,6 +6,9 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
+import { Card } from '@/components/ui/card'
+import { RowList, Row } from '@/components/row-list'
+import { UserAvatar } from '@/components/user-avatar'
 import {
   Select,
   SelectContent,
@@ -81,7 +84,7 @@ export function ResourceGrantsPanel({
     <div className="space-y-4">
       <p className="text-muted-foreground text-sm">{t('resourceGrants.desc')}</p>
 
-      <div className="space-y-3 rounded-lg border p-3">
+      <Card className="gap-3 p-4">
         <div className="space-y-1.5">
           <Label>{t('resourceGrants.user')}</Label>
           <UserPicker value={users} onChange={setUsers} max={1} />
@@ -111,34 +114,35 @@ export function ResourceGrantsPanel({
             {t('resourceGrants.add')}
           </Button>
         </div>
-      </div>
+      </Card>
 
       {list.isLoading ? (
         <TableSkeleton rows={2} cols={2} />
       ) : list.data && list.data.length > 0 ? (
-        <ul className="divide-y rounded-md border">
+        <RowList>
           {list.data.map((g) => (
-            <li
-              key={g.id}
-              className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
-            >
-              <span className="flex items-center gap-2">
-                <UserName id={g.user_id} className="text-sm" />
-                <Badge variant="secondary">
-                  {t(`resourceGrants.actions.${g.action}`)}
-                </Badge>
+            <Row key={g.id}>
+              <UserAvatar seed={g.user_id} />
+              <span className="min-w-0 flex-1">
+                <UserName
+                  id={g.user_id}
+                  className="truncate text-[13px] font-semibold"
+                />
               </span>
+              <Badge variant="info">
+                {t(`resourceGrants.actions.${g.action}`)}
+              </Badge>
               <Button
                 variant="ghost"
-                size="icon"
-                className="size-8"
+                size="icon-sm"
                 onClick={() => onRevoke(g.user_id, g.action)}
+                aria-label={t('resourceGrants.revoked')}
               >
                 <Trash2 className="text-destructive size-4" />
               </Button>
-            </li>
+            </Row>
           ))}
-        </ul>
+        </RowList>
       ) : (
         <p className="text-muted-foreground text-sm">{t('resourceGrants.empty')}</p>
       )}

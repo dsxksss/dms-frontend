@@ -3,10 +3,14 @@ import { useTranslation } from 'react-i18next'
 import { Loader2, Plus, Share2, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { Building2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
+import { RowList, Row } from '@/components/row-list'
 import { roleTone } from '@/lib/tone'
+import { tintOf } from '@/lib/tile'
 import {
   Select,
   SelectContent,
@@ -73,15 +77,15 @@ export function SharesPanel({ projectId }: { projectId: string }) {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="flex items-center gap-2 font-medium">
+        <h2 className="flex items-center gap-2 text-[15px] font-bold">
           <Share2 className="size-4" />
           {t('shares.title')}
         </h2>
-        <p className="text-muted-foreground text-sm">{t('shares.desc')}</p>
+        <p className="text-muted-foreground text-[13px]">{t('shares.desc')}</p>
       </div>
 
       {canManage && (
-        <div className="flex flex-wrap items-end gap-2 rounded-lg border p-3">
+        <Card className="flex flex-row flex-wrap items-end gap-2 p-4">
           <div className="space-y-1.5">
             <Label>{t('shares.org')}</Label>
             <Select value={org} onValueChange={setOrg}>
@@ -124,35 +128,41 @@ export function SharesPanel({ projectId }: { projectId: string }) {
             )}
             {t('shares.add')}
           </Button>
-        </div>
+        </Card>
       )}
 
       {shares.isLoading ? (
         <TableSkeleton rows={2} cols={2} />
       ) : shares.data && shares.data.length > 0 ? (
-        <ul className="divide-y rounded-md border">
-          {shares.data.map((s) => (
-            <li
-              key={s.id}
-              className="flex items-center justify-between gap-2 px-4 py-3 text-sm"
-            >
-              <span className="flex items-center gap-2">
-                <span className="font-medium">{orgName(s.org_id)}</span>
-                <Badge variant={roleTone(s.role)}>{t(`roles.${s.role}`)}</Badge>
-              </span>
-              {canManage && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8"
-                  onClick={() => setRemoveTarget(s)}
+        <RowList>
+          {shares.data.map((s) => {
+            const tint = tintOf(s.org_id ?? 'all')
+            return (
+              <Row key={s.id}>
+                <span
+                  className="flex size-[30px] shrink-0 items-center justify-center rounded-[8px]"
+                  style={{ background: tint.bg, color: tint.fg }}
                 >
-                  <Trash2 className="text-destructive size-4" />
-                </Button>
-              )}
-            </li>
-          ))}
-        </ul>
+                  <Building2 className="size-4" />
+                </span>
+                <span className="min-w-0 flex-1 truncate font-semibold">
+                  {orgName(s.org_id)}
+                </span>
+                <Badge variant={roleTone(s.role)}>{t(`roles.${s.role}`)}</Badge>
+                {canManage && (
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setRemoveTarget(s)}
+                    aria-label={t('shares.removeTitle')}
+                  >
+                    <Trash2 className="text-destructive size-4" />
+                  </Button>
+                )}
+              </Row>
+            )
+          })}
+        </RowList>
       ) : (
         <EmptyState title={t('shares.empty')} />
       )}
