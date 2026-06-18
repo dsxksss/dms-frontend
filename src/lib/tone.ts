@@ -59,6 +59,21 @@ export function roleTone(role?: string | null): Tone {
   }
 }
 
+/** 数据集列角色 → tone（id 蓝 / feature 绿 / label 品红 / ignore 中性）。 */
+export function columnRoleTone(role?: string | null): Tone {
+  switch ((role ?? '').toLowerCase()) {
+    case 'id':
+      return 'info'
+    case 'feature':
+      return 'success'
+    case 'label':
+      return 'pink'
+    case 'ignore':
+    default:
+      return 'neutral'
+  }
+}
+
 /** 订阅档位 → tone。 */
 export function planTone(plan?: string | null): Tone {
   switch ((plan ?? '').toLowerCase()) {

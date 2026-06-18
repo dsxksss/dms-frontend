@@ -1,20 +1,30 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
+import { ArrowLeft, Download, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { EmptyState, ErrorState } from '@/components/states'
 import { ConfirmDialog } from '@/components/confirm-dialog'
-import { useDataset, useDeleteDataset } from '@/hooks/use-datasets'
+import {
+  useDataset,
+  useDatasetVersions,
+  useDeleteDataset,
+} from '@/hooks/use-datasets'
 import { useProjectRole } from '@/hooks/use-projects'
 import { roleAtLeast } from '@/lib/roles'
 import { useToastError } from '@/hooks/use-toast-error'
-import { shortId } from '@/lib/format'
 import { ResourceGrantsPanel } from '@/features/grants/ResourceGrantsPanel'
+import { datasetsApi } from '@/api/datasets'
 import { CreateDatasetDialog } from './CreateDatasetDialog'
 import { DatasetVersionsPanel } from './DatasetVersionsPanel'
 import { DatasetPreviewPanel } from './DatasetPreviewPanel'
@@ -27,6 +37,7 @@ export function DatasetDetailPage() {
   const canManage = roleAtLeast(role, 'contributor')
   const canGrant = roleAtLeast(role, 'manager')
   const query = useDataset(projectId, dsId)
+  const versions = useDatasetVersions(projectId, dsId)
   const del = useDeleteDataset(projectId)
   const toastError = useToastError()
   const [editOpen, setEditOpen] = useState(false)
@@ -47,6 +58,26 @@ export function DatasetDetailPage() {
   }
   const dataset = query.data
   if (!dataset) return <EmptyState title={t('empty.title')} />
+
+  // 最新版本（最大 version_no）：用于表头列模式 + 元信息（v / 行 / 列）。
+  const current = [...(versions.data ?? [])].sort(
+    (a, b) => b.version_no - a.version_no,
+  )[0]
+
+  const metaParts = [
+    dataset.description || null,
+    current ? `v${current.version_no}` : null,
+    current ? `${current.row_count.toLocaleString()} ${t('preview.rows')}` : null,
+    current ? `${current.columns.length} ${t('preview.cols')}` : null,
+  ].filter(Boolean)
+
+  const doExport = async (format: 'csv' | 'parquet') => {
+    try {
+      await datasetsApi.exportDownload(projectId, dsId, format)
+    } catch (e) {
+      toastError(e)
+    }
+  }
 
   const onDelete = async () => {
     try {
@@ -73,28 +104,47 @@ export function DatasetDetailPage() {
             {dataset.name}
           </h1>
           <p className="text-muted-foreground text-[12.5px]">
-            {dataset.description ? `${dataset.description} · ` : ''}v
-            {dataset.version}
+            {metaParts.join(' · ')}
           </p>
         </div>
-        {canManage && (
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setEditOpen(true)}>
-              <Pencil className="size-4" />
-              {t('row.edit')}
-            </Button>
-            <Button variant="outline" size="icon" onClick={() => setDelOpen(true)}>
-              <Trash2 className="text-destructive size-4" />
-            </Button>
-          </div>
-        )}
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => doExport('csv')}>
+            <Download className="size-4" />
+            {t('preview.exportCsv')}
+          </Button>
+          <Button onClick={() => doExport('parquet')}>
+            <Download className="size-4" />
+            {t('preview.exportParquet')}
+          </Button>
+          {canManage && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <MoreHorizontal className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setEditOpen(true)}>
+                  <Pencil className="size-4" />
+                  {t('row.edit')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-destructive"
+                  onClick={() => setDelOpen(true)}
+                >
+                  <Trash2 className="size-4" />
+                  {t('row.delete')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
 
-      <Tabs defaultValue="versions" className="gap-4">
+      <Tabs defaultValue="preview" className="gap-4">
         <TabsList>
-          <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
-          <TabsTrigger value="versions">{t('tabs.versions')}</TabsTrigger>
           <TabsTrigger value="preview">{t('tabs.preview')}</TabsTrigger>
+          <TabsTrigger value="versions">{t('tabs.versions')}</TabsTrigger>
           {canGrant && (
             <TabsTrigger value="collab">
               {t('resourceGrants.title', { ns: 'common' })}
@@ -102,29 +152,22 @@ export function DatasetDetailPage() {
           )}
         </TabsList>
 
-        <TabsContent value="overview" className="pt-4">
-          <dl className="grid max-w-xl grid-cols-[8rem_1fr] gap-y-3 text-sm">
-            <dt className="text-muted-foreground">{t('overview.id')}</dt>
-            <dd className="font-mono">{shortId(dataset.id)}</dd>
-            <dt className="text-muted-foreground">{t('overview.version')}</dt>
-            <dd className="tabular-nums">{dataset.version}</dd>
-            <dt className="text-muted-foreground">{t('overview.description')}</dt>
-            <dd>{dataset.description || t('overview.none')}</dd>
-          </dl>
+        <TabsContent value="preview">
+          <DatasetPreviewPanel
+            projectId={projectId}
+            datasetId={dsId}
+            schema={current?.columns}
+          />
         </TabsContent>
-
-        <TabsContent value="versions" className="pt-4">
+        <TabsContent value="versions">
           <DatasetVersionsPanel
             projectId={projectId}
             datasetId={dsId}
             canManage={canManage}
           />
         </TabsContent>
-        <TabsContent value="preview" className="pt-4">
-          <DatasetPreviewPanel projectId={projectId} datasetId={dsId} />
-        </TabsContent>
         {canGrant && (
-          <TabsContent value="collab" className="pt-4">
+          <TabsContent value="collab">
             <ResourceGrantsPanel resourceType="dataset" resourceId={dsId} />
           </TabsContent>
         )}

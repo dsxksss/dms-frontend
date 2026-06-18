@@ -89,7 +89,11 @@
     "exportCsv": "Export CSV",
     "exportParquet": "Export Parquet",
     "empty": "No data. Upload a version first.",
-    "noVersion": "Upload a version first"
+    "noVersion": "Upload a version first",
+    "columnRoles": "Column roles",
+    "footer": "Showing {{shown}} / {{total}} rows · click a header to sort · column roles feed the AI training pipeline.",
+    "rows": "rows",
+    "cols": "cols"
   },
   "links": {
     "title": "Linked data assets",

@@ -1,17 +1,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Download, Search } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableBody,
@@ -24,18 +15,23 @@ import { Pagination } from '@/components/pagination'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
 import { useDatasetPreview } from '@/hooks/use-datasets'
 import { useDebounce } from '@/hooks/use-debounce'
-import { useToastError } from '@/hooks/use-toast-error'
-import { datasetsApi } from '@/api/datasets'
+import { columnRoleTone } from '@/lib/tone'
+import { cn } from '@/lib/utils'
+import type { ColumnRole, ColumnSchema } from '@/api/datasets'
+
+const ROLE_LEGEND: ColumnRole[] = ['id', 'feature', 'label', 'ignore']
 
 export function DatasetPreviewPanel({
   projectId,
   datasetId,
+  schema = [],
 }: {
   projectId: string
   datasetId: string
+  /** 当前版本列模式（name→role/type），用于在表头标注角色与类型。 */
+  schema?: ColumnSchema[]
 }) {
   const { t } = useTranslation('datasets')
-  const toastError = useToastError()
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState<string>('')
   const [desc, setDesc] = useState(false)
@@ -50,64 +46,40 @@ export function DatasetPreviewPanel({
   }
   const query = useDatasetPreview(projectId, datasetId, params)
   const cols = query.data?.columns ?? []
+  const schemaMap = new Map(schema.map((c) => [c.name, c]))
 
-  const doExport = async (format: 'csv' | 'parquet') => {
-    try {
-      await datasetsApi.exportDownload(projectId, datasetId, format)
-    } catch (e) {
-      toastError(e)
+  const onSort = (col: string) => {
+    if (sort === col) setDesc((d) => !d)
+    else {
+      setSort(col)
+      setDesc(false)
     }
+    setPage((p) => ({ ...p, offset: 0 }))
   }
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="dssearch">{t('preview.title')}</Label>
-          <div className="relative">
-            <Search className="text-muted-foreground absolute top-2.5 left-2.5 size-4" />
-            <Input
-              id="dssearch"
-              className="w-56 pl-8"
-              placeholder={t('preview.search')}
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value)
-                setPage((p) => ({ ...p, offset: 0 }))
-              }}
-            />
-          </div>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <div className="relative">
+          <Search className="text-muted-foreground absolute top-2.5 left-3 size-[15px]" />
+          <Input
+            className="w-60 pl-9"
+            placeholder={t('preview.search')}
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              setPage((p) => ({ ...p, offset: 0 }))
+            }}
+          />
         </div>
-        <div className="space-y-1.5">
-          <Label>{t('preview.sortBy')}</Label>
-          <Select value={sort} onValueChange={(v) => setSort(v === '__none' ? '' : v)}>
-            <SelectTrigger className="w-44">
-              <SelectValue placeholder="—" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none">—</SelectItem>
-              {cols.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <label className="flex items-center gap-2 pb-2 text-sm">
-          <Switch checked={desc} onCheckedChange={setDesc} />
-          {t('preview.desc')}
-        </label>
-        <div className="ml-auto flex gap-2 pb-0.5">
-          <Button variant="outline" size="sm" onClick={() => doExport('csv')}>
-            <Download className="size-4" />
-            {t('preview.exportCsv')}
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => doExport('parquet')}>
-            <Download className="size-4" />
-            {t('preview.exportParquet')}
-          </Button>
-        </div>
+        <span className="text-muted-foreground text-[12px]">
+          {t('preview.columnRoles')}：
+        </span>
+        {ROLE_LEGEND.map((r) => (
+          <Badge key={r} variant={columnRoleTone(r)}>
+            {t(`columnRole.${r}`)}
+          </Badge>
+        ))}
       </div>
 
       {query.isLoading ? (
@@ -116,29 +88,75 @@ export function DatasetPreviewPanel({
         <ErrorState error={query.error} onRetry={() => query.refetch()} />
       ) : query.data && query.data.rows.length > 0 ? (
         <>
-          <div className="overflow-x-auto rounded-lg border">
+          <div className="bg-card overflow-x-auto rounded-[14px] border shadow-[0_1px_2px_rgba(20,40,80,0.04)]">
             <Table>
               <TableHeader>
-                <TableRow>
-                  {cols.map((c) => (
-                    <TableHead key={c} className="whitespace-nowrap">
-                      {c}
-                    </TableHead>
-                  ))}
+                <TableRow className="bg-surface-2 hover:bg-surface-2">
+                  {cols.map((c) => {
+                    const s = schemaMap.get(c)
+                    return (
+                      <TableHead
+                        key={c}
+                        onClick={() => onSort(c)}
+                        className="hover:bg-muted/40 h-auto cursor-pointer py-2.5 align-top whitespace-nowrap select-none"
+                      >
+                        <div className="flex items-center gap-1">
+                          <span className="text-foreground text-[12px] font-semibold normal-case">
+                            {c}
+                          </span>
+                          {sort === c && (
+                            <span className="text-brand text-[10px]">
+                              {desc ? '▼' : '▲'}
+                            </span>
+                          )}
+                        </div>
+                        {s && (
+                          <div className="mt-1.5 flex items-center gap-1.5">
+                            <Badge
+                              variant={columnRoleTone(s.role)}
+                              className="px-1.5 py-0.5 text-[10px]"
+                            >
+                              {t(`columnRole.${s.role}`)}
+                            </Badge>
+                            <span className="text-muted-foreground text-[10px]">
+                              {s.type}
+                            </span>
+                          </div>
+                        )}
+                      </TableHead>
+                    )
+                  })}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {query.data.rows.map((row, i) => (
-                  <TableRow key={i}>
-                    {row.map((cell, j) => (
-                      <TableCell key={j} className="tabular-nums whitespace-nowrap">
-                        {cell}
-                      </TableCell>
-                    ))}
+                  <TableRow key={i} className={cn(i % 2 === 1 && 'bg-row-hover')}>
+                    {row.map((cell, j) => {
+                      const isId = schemaMap.get(cols[j])?.role === 'id'
+                      return (
+                        <TableCell
+                          key={j}
+                          className={cn(
+                            'tabular-nums whitespace-nowrap',
+                            isId
+                              ? 'text-brand font-mono text-[12px] font-semibold'
+                              : 'text-[12.5px]',
+                          )}
+                        >
+                          {cell}
+                        </TableCell>
+                      )
+                    })}
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+          </div>
+          <div className="text-muted-foreground text-[12px]">
+            {t('preview.footer', {
+              shown: query.data.rows.length,
+              total: query.data.total,
+            })}
           </div>
           <Pagination
             limit={page.limit}

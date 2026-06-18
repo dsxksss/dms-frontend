@@ -89,7 +89,11 @@
     "exportCsv": "导出 CSV",
     "exportParquet": "导出 Parquet",
     "empty": "暂无数据，请先上传版本。",
-    "noVersion": "请先上传一个版本"
+    "noVersion": "请先上传一个版本",
+    "columnRoles": "列角色",
+    "footer": "显示 {{shown}} / {{total}} 行 · 点击列头排序 · 列角色用于 AI 训练管线。",
+    "rows": "行",
+    "cols": "列"
   },
   "links": {
     "title": "关联的数据资产",
