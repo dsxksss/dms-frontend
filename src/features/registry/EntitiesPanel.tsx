@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, GitBranch, Loader2, Lock, MoreHorizontal, Pencil, Plus, Trash2, Upload, X } from 'lucide-react'
+import { Check, GitBranch, Loader2, MoreHorizontal, Pencil, Plus, Trash2, Upload, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { EmptyState, ErrorState } from '@/components/states'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import {
   DropdownMenu,
@@ -26,16 +25,11 @@ import { EntityDialog } from './EntityDialog'
 import { EntityRelationsDialog } from './EntityRelationsDialog'
 import { ImportEntitiesDialog } from './ImportEntitiesDialog'
 import { AssetDrawer } from './AssetDrawer'
+import { MaskedValue } from './MaskedValue'
 
 function Cell({ field, data }: { field: FieldDef; data: Record<string, unknown> }) {
-  const { t } = useTranslation('registry')
   if (isHiddenSensitive(field, data)) {
-    return (
-      <Badge variant="lock" className="rounded-[7px]">
-        <Lock className="size-3" />
-        {t('entities.hidden')}
-      </Badge>
-    )
+    return <MaskedValue className="text-[12px]" />
   }
   const val = data[field.name]
   if (val === undefined || val === null || val === '')

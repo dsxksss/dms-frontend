@@ -19,6 +19,7 @@ import { statusTone } from '@/lib/tone'
 import { shortId, formatDateTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { ComponentTreeView } from './ComponentTreeView'
+import { MaskedValue } from './MaskedValue'
 import type { EntityType, FieldDef } from '@/api/registry'
 
 function fieldValue(field: FieldDef, value: unknown) {
@@ -227,10 +228,7 @@ export function AssetDrawer({
                       </div>
                       <div className="min-w-0 flex-1 text-[13px] font-medium">
                         {masked ? (
-                          <Badge variant="lock" className="rounded-[7px]">
-                            <Lock className="size-3" />
-                            {t('entities.hidden')}
-                          </Badge>
+                          <MaskedValue className="text-[12.5px]" />
                         ) : (
                           fieldValue(f, values[f.name])
                         )}
