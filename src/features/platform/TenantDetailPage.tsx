@@ -26,6 +26,7 @@ import {
 } from '@/hooks/use-platform'
 import { useToastError } from '@/hooks/use-toast-error'
 import { formatBytes, formatDateTime } from '@/lib/format'
+import { codeOf, tintOf } from '@/lib/tile'
 import type { UpdateTenantBody } from '@/platform/api'
 import { PlanBadge } from './plan-badge'
 import { TenantSettingsCard } from './TenantSettingsCard'
@@ -131,28 +132,38 @@ export function TenantDetailPage() {
     ? formatBytes(Number(form?.storage_bytes))
     : ''
 
+  const tint = tintOf(d.id)
+
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-[1180px] space-y-6">
       <div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mb-2 -ml-2"
+        <button
           onClick={() => navigate('..', { relative: 'path' })}
+          className="text-muted-foreground hover:text-foreground mb-1.5 inline-flex items-center gap-1 text-[12.5px]"
         >
-          <ArrowLeft className="size-4" />
+          <ArrowLeft className="size-3.5" />
           {t('tenants.back')}
-        </Button>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-xl font-semibold tracking-tight">{d.name}</h1>
-          <PlanBadge plan={d.plan} />
-          <Badge variant={d.active ? 'success' : 'neutral'}>
-            {t(d.active ? 'tenants.active' : 'tenants.suspended')}
-          </Badge>
+        </button>
+        <div className="flex items-center gap-3">
+          <span
+            className="flex size-[42px] shrink-0 items-center justify-center rounded-[11px] text-[14px] font-extrabold"
+            style={{ background: tint.bg, color: tint.fg }}
+          >
+            {codeOf(d.name)}
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-[22px] font-extrabold tracking-tight">{d.name}</h1>
+              <PlanBadge plan={d.plan} />
+              <Badge variant={d.active ? 'success' : 'neutral'}>
+                {t(d.active ? 'tenants.active' : 'tenants.suspended')}
+              </Badge>
+            </div>
+            <p className="text-muted-foreground mt-0.5 font-mono text-[11.5px]">
+              @{d.slug} · {formatDateTime(d.created_at)}
+            </p>
+          </div>
         </div>
-        <p className="text-muted-foreground mt-1 font-mono text-xs">
-          {d.slug} · {formatDateTime(d.created_at)}
-        </p>
       </div>
 
       {/* 用量 vs 配额 */}

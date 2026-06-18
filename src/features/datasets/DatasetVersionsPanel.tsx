@@ -20,6 +20,7 @@ import {
 } from '@/hooks/use-datasets'
 import { useToastError } from '@/hooks/use-toast-error'
 import { formatBytes } from '@/lib/format'
+import { columnRoleTone } from '@/lib/tone'
 import type { ColumnRole, DatasetVersion } from '@/api/datasets'
 
 const ROLES: ColumnRole[] = ['feature', 'label', 'id', 'ignore']
@@ -55,8 +56,8 @@ function VersionCard({
     <Card>
       <CardHeader className="pb-2">
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <Badge>v{version.version_no}</Badge>
-          <Badge variant="secondary">{version.format}</Badge>
+          <Badge variant="info">v{version.version_no}</Badge>
+          <Badge variant="neutral">{version.format}</Badge>
           <span className="text-muted-foreground tabular-nums">
             {t('versions.rows')}: {version.row_count}
           </span>
@@ -70,8 +71,14 @@ function VersionCard({
         <div className="grid gap-2 sm:grid-cols-2">
           {version.columns.map((c) => (
             <div key={c.name} className="flex items-center gap-2">
+              <Badge
+                variant={columnRoleTone(draft[c.name])}
+                className="w-[52px] shrink-0 justify-center"
+              >
+                {t(`columnRole.${draft[c.name]}`)}
+              </Badge>
               <span
-                className="w-28 truncate font-mono text-xs"
+                className="min-w-0 flex-1 truncate font-mono text-xs"
                 title={`${c.name} (${c.type})`}
               >
                 {c.name}
@@ -81,7 +88,7 @@ function VersionCard({
                 onValueChange={(v) => setDraft((d) => ({ ...d, [c.name]: v }))}
                 disabled={!canManage}
               >
-                <SelectTrigger size="sm" className="flex-1">
+                <SelectTrigger size="sm" className="w-[120px] shrink-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -144,7 +151,7 @@ export function DatasetVersionsPanel({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-medium">{t('versions.title')}</h2>
+        <h2 className="text-[15px] font-bold">{t('versions.title')}</h2>
         {canManage && (
           <>
             <input
