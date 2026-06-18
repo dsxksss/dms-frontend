@@ -44,7 +44,8 @@
     "revoked": "Revoked"
   },
   "folder": {
-    "tree": "Folders",
+    "tree": "Explorer",
+    "collapseAll": "Collapse all",
     "new": "New folder",
     "newSub": "New subfolder",
     "namePlaceholder": "Folder name",

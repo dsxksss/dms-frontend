@@ -44,7 +44,8 @@
     "revoked": "已撤销"
   },
   "folder": {
-    "tree": "文件夹",
+    "tree": "资源管理器",
+    "collapseAll": "全部折叠",
     "new": "新建文件夹",
     "newSub": "新建子文件夹",
     "namePlaceholder": "文件夹名",
