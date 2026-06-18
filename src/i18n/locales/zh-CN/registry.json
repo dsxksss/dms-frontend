@@ -1,4 +1,6 @@
 {
+  "title": "数据资产",
+  "subtitle": "动态 Schema · 敏感字段（结构 / 序列 / CDR）默认隐藏，按需授权。",
   "tabs": { "assets": "药物资产", "data": "药物数据", "types": "类型" },
   "types": {
     "title": "类型管理",

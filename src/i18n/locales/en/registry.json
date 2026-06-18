@@ -1,4 +1,6 @@
 {
+  "title": "Data assets",
+  "subtitle": "Dynamic schema · sensitive fields (structure / sequence / CDR) hidden by default, granted on demand.",
   "tabs": { "assets": "Assets", "data": "Data", "types": "Types" },
   "types": {
     "title": "Type management",

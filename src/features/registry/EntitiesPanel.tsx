@@ -9,14 +9,6 @@ import { EmptyState } from '@/components/states'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +20,7 @@ import { useDeleteRecord, useRecords, useEntityTypes } from '@/hooks/use-registr
 import { useToastError } from '@/hooks/use-toast-error'
 import { roleAtLeast } from '@/lib/roles'
 import { shortId } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import { isHiddenSensitive } from '@/lib/field-types'
 import type { Entity, EntityType, FieldDef, TypeKind } from '@/api/registry'
 import { EntityDialog } from './EntityDialog'
@@ -38,7 +31,7 @@ function Cell({ field, data }: { field: FieldDef; data: Record<string, unknown> 
   const { t } = useTranslation('registry')
   if (isHiddenSensitive(field, data)) {
     return (
-      <Badge variant="outline" className="text-muted-foreground gap-1">
+      <Badge variant="lock" className="rounded-[7px]">
         <Lock className="size-3" />
         {t('entities.hidden')}
       </Badge>
@@ -111,7 +104,9 @@ export function RecordsPanel({
           id: 'id',
           header: 'ID',
           cell: ({ row }) => (
-            <span className="font-mono text-xs">{shortId(row.original.id)}</span>
+            <span className="text-brand font-mono text-xs font-semibold">
+              {shortId(row.original.id)}
+            </span>
           ),
         },
         ...fieldCols,
@@ -194,37 +189,33 @@ export function RecordsPanel({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="space-y-1.5">
-          <Label>{t('entities.selectType')}</Label>
-          <Select
-            value={typeId}
-            onValueChange={(v) => {
-              setTypeId(v)
+      <div className="flex flex-wrap items-center gap-1.5 border-b">
+        {types.map((ty) => (
+          <button
+            key={ty.id}
+            onClick={() => {
+              setTypeId(ty.id)
               setPage({ limit: 20, offset: 0 })
             }}
+            className={cn(
+              '-mb-px border-b-2 px-3 py-2.5 text-[13px] font-semibold whitespace-nowrap transition-colors',
+              typeId === ty.id
+                ? 'border-brand text-brand'
+                : 'text-muted-foreground hover:text-foreground border-transparent',
+            )}
           >
-            <SelectTrigger className="w-56">
-              <SelectValue placeholder={t('entities.selectType')} />
-            </SelectTrigger>
-            <SelectContent>
-              {types.map((ty) => (
-                <SelectItem key={ty.id} value={ty.id}>
-                  {ty.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+            {ty.name}
+          </button>
+        ))}
         {canEdit && selectedType && (
-          <div className="flex gap-2">
+          <div className="ml-auto flex gap-2 pb-1.5">
             {isAsset && (
-              <Button variant="outline" onClick={() => setImportOpen(true)}>
+              <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
                 <Upload className="size-4" />
                 {t('import.button')}
               </Button>
             )}
-            <Button onClick={() => setCreateOpen(true)}>
+            <Button size="sm" onClick={() => setCreateOpen(true)}>
               <Plus className="size-4" />
               {t('entities.create')}
             </Button>
