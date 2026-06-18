@@ -28,7 +28,7 @@
   },
   "empty": {
     "title": "还没有项目",
-    "description": "创建第一个项目来组织文件、Registry 与数据集。"
+    "description": "创建第一个项目来组织文件、数据资产与数据集。"
   },
   "delete": {
     "title": "删除项目？",
@@ -53,7 +53,7 @@
   "tabs": {
     "overview": "概览",
     "members": "成员",
-    "registry": "注册表",
+    "registry": "数据资产",
     "datasets": "数据集",
     "files": "文件",
     "protocols": "实验方案",

@@ -28,7 +28,7 @@
   "row": { "open": "Open", "edit": "Edit", "delete": "Delete" },
   "empty": {
     "title": "No datasets yet",
-    "description": "Create a dataset, upload a CSV/Excel version, then preview, export and link to registry entities."
+    "description": "Create a dataset, upload a CSV/Excel version, then preview and export."
   },
   "delete": {
     "title": "Delete dataset?",
@@ -92,7 +92,7 @@
     "noVersion": "Upload a version first"
   },
   "links": {
-    "title": "Linked registry entities",
+    "title": "Linked data assets",
     "add": "Add link",
     "project": "Project",
     "kind": "Kind",

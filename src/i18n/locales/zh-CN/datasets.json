@@ -28,7 +28,7 @@
   "row": { "open": "打开", "edit": "编辑", "delete": "删除" },
   "empty": {
     "title": "还没有数据集",
-    "description": "创建数据集并上传 CSV/Excel 版本，预览、导出、关联 Registry 实体。"
+    "description": "创建数据集并上传 CSV/Excel 版本，预览、导出。"
   },
   "delete": {
     "title": "删除数据集？",
@@ -92,7 +92,7 @@
     "noVersion": "请先上传一个版本"
   },
   "links": {
-    "title": "关联的 Registry 实体",
+    "title": "关联的数据资产",
     "add": "新增关联",
     "project": "项目",
     "kind": "关系",

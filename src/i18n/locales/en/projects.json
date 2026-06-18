@@ -28,7 +28,7 @@
   },
   "empty": {
     "title": "No projects yet",
-    "description": "Create your first project to organize files, registry and datasets."
+    "description": "Create your first project to organize files, data assets and datasets."
   },
   "delete": {
     "title": "Delete project?",
@@ -53,7 +53,7 @@
   "tabs": {
     "overview": "Overview",
     "members": "Members",
-    "registry": "Registry",
+    "registry": "Data assets",
     "datasets": "Datasets",
     "files": "Files",
     "protocols": "Protocols",
