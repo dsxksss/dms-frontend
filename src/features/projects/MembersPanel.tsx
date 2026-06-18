@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Trash2 } from 'lucide-react'
+import { Trash2, User } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
 import { useAuth } from '@/auth/auth-context'
@@ -16,6 +17,8 @@ import {
 } from '@/hooks/use-membership'
 import { useToastError } from '@/hooks/use-toast-error'
 import { PROJECT_ROLES, roleAtLeast } from '@/lib/roles'
+import { roleTone } from '@/lib/tone'
+import { tintOf } from '@/lib/tile'
 import { UserName } from '@/components/user-name'
 import type { Member } from '@/api/projects'
 import { InvitePanel } from '@/features/membership/InvitePanel'
@@ -48,42 +51,49 @@ export function MembersPanel({ projectId }: { projectId: string }) {
   return (
     <div className="grid gap-8 lg:grid-cols-2">
       <div className="space-y-3">
-        <h2 className="font-medium">{t('members.title')}</h2>
+        <h2 className="text-[15px] font-bold">{t('members.title')}</h2>
         {members.isLoading ? (
           <TableSkeleton rows={3} cols={2} />
         ) : members.isError ? (
           <ErrorState error={members.error} onRetry={() => members.refetch()} />
         ) : members.data && members.data.length > 0 ? (
-          <ul className="divide-y rounded-md border">
-            {members.data.map((m) => (
-              <li
+          <Card className="gap-0 py-0">
+            {members.data.map((m, i) => (
+              <div
                 key={m.user_id}
-                className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
+                className={
+                  'flex items-center gap-3 px-4 py-3 ' +
+                  (i < members.data.length - 1 ? 'border-divider border-b' : '')
+                }
               >
-                <span className="flex items-center gap-2">
-                  <UserName id={m.user_id} className="text-sm" />
+                <span
+                  className="flex size-[30px] shrink-0 items-center justify-center rounded-full text-white"
+                  style={{ background: tintOf(m.user_id).fg }}
+                >
+                  <User className="size-4" />
+                </span>
+                <span className="flex min-w-0 flex-1 items-center gap-2">
+                  <UserName id={m.user_id} className="truncate text-[13px] font-semibold" />
                   {me?.user_id === m.user_id && (
-                    <span className="text-muted-foreground text-xs">
+                    <span className="text-muted-foreground text-[11px]">
                       {t('members.you')}
                     </span>
                   )}
                 </span>
-                <span className="flex items-center gap-2">
-                  <Badge variant="secondary">{tp(`roles.${m.role}`)}</Badge>
-                  {canManage && me?.user_id !== m.user_id && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-8"
-                      onClick={() => setRemoveTarget(m)}
-                    >
-                      <Trash2 className="text-destructive size-4" />
-                    </Button>
-                  )}
-                </span>
-              </li>
+                <Badge variant={roleTone(m.role)}>{tp(`roles.${m.role}`)}</Badge>
+                {canManage && me?.user_id !== m.user_id && (
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setRemoveTarget(m)}
+                    aria-label={t('members.removeTitle')}
+                  >
+                    <Trash2 className="text-destructive size-4" />
+                  </Button>
+                )}
+              </div>
             ))}
-          </ul>
+          </Card>
         ) : (
           <EmptyState title={t('members.empty')} />
         )}
