@@ -1,12 +1,12 @@
-import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -15,61 +15,50 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { toast } from 'sonner'
-import type { Project } from '@/api/projects'
-import { useCreateProject, useUpdateProject } from '@/hooks/use-projects'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useCreateProject } from '@/hooks/use-projects'
+import { useOrgs } from '@/hooks/use-orgs'
 import { useToastError } from '@/hooks/use-toast-error'
 
+const PERSONAL = 'personal'
+
+/** 新建项目对话框：名称 + 描述 + 归属（个人 / 某组织）。 */
 export function CreateProjectDialog({
   open,
   onOpenChange,
-  project,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  project?: Project | null
 }) {
   const { t } = useTranslation('projects')
-  const isEdit = !!project
+  const navigate = useNavigate()
   const create = useCreateProject()
-  const update = useUpdateProject(project?.id ?? '')
+  const orgs = useOrgs()
   const toastError = useToastError()
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [org, setOrg] = useState(PERSONAL)
 
-  const schema = z.object({
-    name: z.string().min(1, t('create.nameRequired')),
-    description: z.string(),
-  })
-  type Values = z.infer<typeof schema>
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<Values>({
-    resolver: zodResolver(schema),
-    defaultValues: { name: '', description: '' },
-  })
-
-  useEffect(() => {
-    if (open) {
-      reset({
-        name: project?.name ?? '',
-        description: project?.description ?? '',
-      })
-    }
-  }, [open, project, reset])
-
-  const onSubmit = async (values: Values) => {
+  const submit = async () => {
+    if (!name.trim()) return
     try {
-      if (isEdit && project) {
-        await update.mutateAsync({ ...values, version: project.version })
-        toast.success(t('toast.updated'))
-      } else {
-        await create.mutateAsync(values)
-        toast.success(t('toast.created'))
-      }
+      const project = await create.mutateAsync({
+        name: name.trim(),
+        description: description.trim() || undefined,
+        organization_id: org === PERSONAL ? undefined : org,
+      })
+      toast.success(t('toast.created'))
       onOpenChange(false)
+      setName('')
+      setDescription('')
+      setOrg(PERSONAL)
+      navigate(`/projects/${project.id}`)
     } catch (e) {
       toastError(e)
     }
@@ -77,39 +66,58 @@ export function CreateProjectDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[460px]">
         <DialogHeader>
-          <DialogTitle>{isEdit ? t('edit.title') : t('create.title')}</DialogTitle>
+          <DialogTitle>{t('create.title')}</DialogTitle>
+          <DialogDescription>{t('subtitle')}</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">{t('create.name')}</Label>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="p-name">{t('create.name')}</Label>
             <Input
-              id="name"
-              autoFocus
+              id="p-name"
               placeholder={t('create.namePlaceholder')}
-              aria-invalid={!!errors.name}
-              {...register('name')}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
             />
-            {errors.name && (
-              <p className="text-destructive text-sm">{errors.name.message}</p>
-            )}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="description">{t('create.description')}</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="p-desc">{t('create.description')}</Label>
             <Textarea
-              id="description"
+              id="p-desc"
+              rows={3}
               placeholder={t('create.descriptionPlaceholder')}
-              {...register('description')}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
             />
           </div>
-          <DialogFooter>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-              {isEdit ? t('actions.save', { ns: 'common' }) : t('create.submit')}
-            </Button>
-          </DialogFooter>
-        </form>
+          <div className="space-y-1.5">
+            <Label>{t('columns.organization')}</Label>
+            <Select value={org} onValueChange={setOrg}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={PERSONAL}>{t('card.personalProject')}</SelectItem>
+                {(orgs.data ?? []).map((o) => (
+                  <SelectItem key={o.id} value={o.id}>
+                    {o.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t('actions.cancel', { ns: 'common', defaultValue: '取消' })}
+          </Button>
+          <Button onClick={submit} disabled={!name.trim() || create.isPending}>
+            {create.isPending && <Loader2 className="size-4 animate-spin" />}
+            {t('create.submit')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

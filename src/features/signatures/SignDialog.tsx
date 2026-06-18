@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Loader2, PenLine } from 'lucide-react'
 import { toast } from 'sonner'
+import { Loader2, PenLine } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -14,8 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useSign } from '@/hooks/use-signatures'
-import { useToastError } from '@/hooks/use-toast-error'
-import { sha256Hex } from '@/lib/sha256'
+import { isAppError } from '@/lib/errors'
 import { cn } from '@/lib/utils'
 import type { SignatureMeaning } from '@/api/signatures'
 
@@ -26,48 +26,62 @@ const MEANINGS: SignatureMeaning[] = [
   'responsibility',
 ]
 
-/** 对 targetKind/targetId 进行电子签名；content 为「所见内容」，提交时算 sha256。 */
+/** 就「所见内容」算 sha256（事后核对内容未被篡改，Part 11 §11.70）。 */
+async function contentHashOf(kind: string, id: string, name: string) {
+  const canonical = `${kind}:${id}:${name}`
+  const buf = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(canonical),
+  )
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+/** 电子签名 MODAL（21 CFR Part 11 §11.200）：含义 + 重新认证密码 + 理由。 */
 export function SignDialog({
   projectId,
-  targetKind,
-  targetId,
-  content,
   open,
   onOpenChange,
+  target,
 }: {
   projectId: string
-  targetKind: string
-  targetId: string
-  content: string
   open: boolean
-  onOpenChange: (o: boolean) => void
+  onOpenChange: (open: boolean) => void
+  target: { kind: string; id: string; name: string }
 }) {
   const { t } = useTranslation('signatures')
   const sign = useSign(projectId)
-  const toastError = useToastError()
   const [meaning, setMeaning] = useState<SignatureMeaning>('approved')
   const [reason, setReason] = useState('')
   const [password, setPassword] = useState('')
-  const [err, setErr] = useState<{ reason?: boolean; password?: boolean }>({})
+  const [error, setError] = useState<string | null>(null)
 
+  // 打开时重置表单与错误。
   useEffect(() => {
     if (open) {
       setMeaning('approved')
       setReason('')
       setPassword('')
-      setErr({})
+      setError(null)
     }
   }, [open])
 
   const submit = async () => {
-    const e = { reason: !reason.trim(), password: !password }
-    setErr(e)
-    if (e.reason || e.password) return
+    setError(null)
+    if (!password) {
+      setError(t('sign.passwordRequired'))
+      return
+    }
     try {
-      const content_hash = await sha256Hex(content)
+      const content_hash = await contentHashOf(
+        target.kind,
+        target.id,
+        target.name,
+      )
       await sign.mutateAsync({
-        target_kind: targetKind,
-        target_id: targetId,
+        target_kind: target.kind,
+        target_id: target.id,
         meaning,
         reason: reason.trim(),
         content_hash,
@@ -75,81 +89,93 @@ export function SignDialog({
       })
       toast.success(t('sign.signed'))
       onOpenChange(false)
-    } catch (ex) {
-      toastError(ex)
+    } catch (e) {
+      // 403 = 重新认证失败（密码错误）。
+      if (isAppError(e) && e.status === 403) {
+        setError(t('sign.wrongPassword'))
+      } else {
+        setError(isAppError(e) && e.detail ? e.detail : t('sign.title'))
+      }
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[460px]">
         <DialogHeader>
-          <div className="flex items-center gap-3">
-            <span className="bg-accent text-brand flex size-11 shrink-0 items-center justify-center rounded-[12px]">
-              <PenLine className="size-5" />
+          <DialogTitle className="flex items-center gap-2.5">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-[9px] bg-accent text-brand">
+              <PenLine className="size-4" />
             </span>
-            <div>
-              <DialogTitle>{t('sign.title')}</DialogTitle>
-              <p className="text-muted-foreground mt-0.5 text-[11.5px]">
-                21 CFR Part 11 · §11.200
-              </p>
-            </div>
-          </div>
+            {t('sign.title')}
+            <span className="mono text-[11px] font-semibold text-muted-foreground">
+              21 CFR Part 11 §11.200
+            </span>
+          </DialogTitle>
+          <DialogDescription>{target.name}</DialogDescription>
         </DialogHeader>
+
         <div className="space-y-4">
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label>{t('sign.meaning')}</Label>
             <div className="flex flex-wrap gap-2">
-              {MEANINGS.map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setMeaning(m)}
-                  className={cn(
-                    'rounded-[9px] border px-3 py-1.5 text-[12.5px] font-semibold transition-colors',
-                    meaning === m
-                      ? 'border-brand bg-accent text-brand'
-                      : 'text-secondary-foreground hover:bg-background',
-                  )}
-                >
-                  {t(`meaning.${m}`)}
-                </button>
-              ))}
+              {MEANINGS.map((m) => {
+                const active = meaning === m
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setMeaning(m)}
+                    className={cn(
+                      'rounded-full border px-3 py-1.5 text-[12px] font-semibold transition-colors',
+                      active
+                        ? 'border-brand bg-accent text-brand'
+                        : 'border-divider text-muted-foreground hover:border-[#dbe1ea]',
+                    )}
+                  >
+                    {t(`meaning.${m}`)}
+                  </button>
+                )
+              })}
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="sig-reason">{t('sign.reason')}</Label>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="sign-reason">{t('sign.reason')}</Label>
             <Textarea
-              id="sig-reason"
+              id="sign-reason"
               placeholder={t('sign.reasonPlaceholder')}
               value={reason}
-              aria-invalid={err.reason}
               onChange={(e) => setReason(e.target.value)}
+              rows={2}
             />
-            {err.reason && (
-              <p className="text-destructive text-sm">{t('sign.reasonRequired')}</p>
-            )}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="sig-pw">{t('sign.password')}</Label>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="sign-pw">{t('sign.password')}</Label>
             <Input
-              id="sig-pw"
+              id="sign-pw"
               type="password"
               autoComplete="current-password"
               value={password}
-              aria-invalid={err.password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <p className="text-muted-foreground text-xs">{t('sign.passwordHint')}</p>
-            {err.password && (
-              <p className="text-destructive text-sm">
-                {t('sign.passwordRequired')}
+            <p className="text-[11px] text-muted-foreground">
+              {t('sign.passwordHint')}
+            </p>
+            {error && (
+              <p className="text-[11.5px] font-semibold text-destructive">
+                {error}
               </p>
             )}
           </div>
         </div>
+
         <DialogFooter>
-          <Button onClick={submit} disabled={sign.isPending}>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t('actions.cancel', { ns: 'common', defaultValue: '取消' })}
+          </Button>
+          <Button onClick={submit} disabled={!password || sign.isPending}>
             {sign.isPending && <Loader2 className="size-4 animate-spin" />}
             {t('sign.submit')}
           </Button>

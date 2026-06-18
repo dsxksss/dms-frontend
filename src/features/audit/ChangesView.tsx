@@ -1,84 +1,86 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import type { AuditEntry } from '@/api/audit'
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v)
-}
+type Pair = { before: unknown; after: unknown }
 
-/** 把任意值渲染成可读文本（对象/数组退化为紧凑 JSON）。 */
-function fmt(v: unknown): string {
-  if (v === null || v === undefined) return '—'
-  if (typeof v === 'object') return JSON.stringify(v)
-  return String(v)
-}
-
-interface Row {
-  field: string
-  before?: unknown
-  after: unknown
-  paired: boolean
-}
-
-/** 把审计 changes 归一为「字段 / 前 / 后」行。 */
-function toRows(changes: unknown): Row[] | null {
-  if (!isRecord(changes)) return null
-  const entries = Object.entries(changes)
-  if (entries.length === 0) return []
-  return entries.map(([field, val]) => {
-    if (isRecord(val) && ('old' in val || 'new' in val)) {
-      return { field, before: val.old, after: val.new, paired: true }
-    }
-    return { field, after: val, paired: false }
-  })
-}
-
-/** 审计变更的可读视图：表格化的字段级前后对比，附折叠的原始 JSON。 */
-export function ChangesView({ changes }: { changes: unknown }) {
-  const { t } = useTranslation('audit')
-  const rows = toRows(changes)
-
-  if (!rows || rows.length === 0) {
-    return <p className="text-muted-foreground text-sm">{t('changes.none')}</p>
+/** 把 changes 解析成 字段 → {前, 后}。兼容 [from,to] / {before,after} / {from,to}。 */
+function parseChanges(changes: unknown): Record<string, Pair> | null {
+  if (!changes || typeof changes !== 'object') return null
+  const obj = changes as Record<string, unknown>
+  const out: Record<string, Pair> = {}
+  for (const [k, v] of Object.entries(obj)) {
+    if (Array.isArray(v) && v.length === 2) out[k] = { before: v[0], after: v[1] }
+    else if (v && typeof v === 'object') {
+      const r = v as Record<string, unknown>
+      if ('before' in r || 'after' in r) out[k] = { before: r.before, after: r.after }
+      else if ('from' in r || 'to' in r) out[k] = { before: r.from, after: r.to }
+      else out[k] = { before: undefined, after: v }
+    } else out[k] = { before: undefined, after: v }
   }
+  return Object.keys(out).length ? out : null
+}
+
+const fmt = (v: unknown) =>
+  v === undefined || v === null
+    ? '—'
+    : typeof v === 'object'
+      ? JSON.stringify(v)
+      : String(v)
+
+export function ChangesView({ entry }: { entry: AuditEntry }) {
+  const { t } = useTranslation('audit')
+  const [open, setOpen] = useState(false)
+  const parsed = parseChanges(entry.changes)
+  if (!parsed) return null
 
   return (
-    <div className="space-y-3">
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t('changes.field')}</TableHead>
-              <TableHead>{t('changes.before')}</TableHead>
-              <TableHead>{t('changes.after')}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((r) => (
-              <TableRow key={r.field} className="hover:bg-transparent">
-                <TableCell className="font-medium">{r.field}</TableCell>
-                <TableCell className="text-muted-foreground">
-                  {r.paired ? fmt(r.before) : '—'}
-                </TableCell>
-                <TableCell className="tabular-nums">{fmt(r.after)}</TableCell>
-              </TableRow>
+    <>
+      <button
+        type="button"
+        className="font-semibold text-brand"
+        onClick={() => setOpen(true)}
+      >
+        {t('viewChanges')}
+      </button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>{t('changesTitle')}</DialogTitle>
+          </DialogHeader>
+          <div className="overflow-hidden rounded-[11px] border">
+            <div className="grid grid-cols-[1fr_1.2fr_1.2fr] border-b bg-surface-2 px-3 py-2">
+              <span className="th">{t('changes.field')}</span>
+              <span className="th">{t('changes.before')}</span>
+              <span className="th">{t('changes.after')}</span>
+            </div>
+            {Object.entries(parsed).map(([field, pair]) => (
+              <div
+                key={field}
+                className="grid grid-cols-[1fr_1.2fr_1.2fr] items-start gap-2 border-b border-divider px-3 py-2 text-[12.5px] last:border-b-0"
+              >
+                <span className="font-semibold">{field}</span>
+                <span className="mono break-all text-muted-foreground line-through decoration-[#d4948a]/60">
+                  {fmt(pair.before)}
+                </span>
+                <span className="mono break-all">{fmt(pair.after)}</span>
+              </div>
             ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      <details className="text-muted-foreground text-xs">
-        <summary className="cursor-pointer select-none">{t('changes.raw')}</summary>
-        <pre className="bg-muted mt-2 max-h-[40vh] overflow-auto rounded-md p-3">
-          {JSON.stringify(changes, null, 2)}
-        </pre>
-      </details>
-    </div>
+          </div>
+          <details className="text-[12px] text-muted-foreground">
+            <summary className="cursor-pointer">{t('changes.raw')}</summary>
+            <pre className="mono mt-2 max-h-60 overflow-auto rounded-md bg-surface-2 p-3 text-[11px]">
+              {JSON.stringify(entry.changes, null, 2)}
+            </pre>
+          </details>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

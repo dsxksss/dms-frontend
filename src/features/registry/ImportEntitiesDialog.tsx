@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Loader2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
+import { Loader2, Upload } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -22,59 +22,47 @@ import {
 } from '@/components/ui/select'
 import { useImportEntities } from '@/hooks/use-registry'
 import { useToastError } from '@/hooks/use-toast-error'
-import type { EntityType, ImportReport } from '@/api/registry'
 
+/** 批量导入实体（CSV / FASTA）。typeId = 目标药物资产类型。 */
 export function ImportEntitiesDialog({
   projectId,
-  type,
+  typeId,
   open,
   onOpenChange,
 }: {
   projectId: string
-  type: EntityType
+  typeId: string
   open: boolean
-  onOpenChange: (o: boolean) => void
+  onOpenChange: (open: boolean) => void
 }) {
   const { t } = useTranslation('registry')
-  const imp = useImportEntities(projectId, type.id)
+  const importer = useImportEntities(projectId, typeId)
   const toastError = useToastError()
   const fileRef = useRef<HTMLInputElement>(null)
-
   const [format, setFormat] = useState<'csv' | 'fasta'>('csv')
-  const [content, setContent] = useState('')
+  const [body, setBody] = useState('')
   const [nameField, setNameField] = useState('')
   const [seqField, setSeqField] = useState('')
-  const [report, setReport] = useState<ImportReport | null>(null)
 
-  useEffect(() => {
-    if (open) {
-      setContent('')
-      setReport(null)
-    }
-  }, [open])
-
-  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
-    setContent(await file.text())
-    if (file.name.toLowerCase().match(/\.(fa|fasta|fastq|fq)$/)) setFormat('fasta')
+  const onFile = async (file?: File) => {
+    if (file) setBody(await file.text())
   }
 
   const submit = async () => {
-    if (!content.trim()) {
-      toast.error(t('import.empty'))
-      return
-    }
+    if (!body.trim()) return
     try {
-      const r = await imp.mutateAsync({
-        body: content,
+      const report = await importer.mutateAsync({
+        body,
         format,
-        name_field: format === 'fasta' && nameField ? nameField : undefined,
-        seq_field: format === 'fasta' && seqField ? seqField : undefined,
+        name_field: nameField || undefined,
+        seq_field: seqField || undefined,
       })
-      setReport(r)
-      toast.success(t('import.created', { count: r.created }))
+      toast.success(t('import.created', { count: report.created }))
+      if (report.failed.length) {
+        toast.error(t('import.failedCount', { count: report.failed.length }))
+      }
+      onOpenChange(false)
+      setBody('')
     } catch (e) {
       toastError(e)
     }
@@ -82,31 +70,25 @@ export function ImportEntitiesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="sm:max-w-[560px]">
         <DialogHeader>
-          <DialogTitle>
-            {t('import.title')} · {type.name}
-          </DialogTitle>
+          <DialogTitle>{t('import.title')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="flex items-end gap-2">
-            <div className="space-y-1.5">
-              <Label>{t('import.format')}</Label>
-              <Select value={format} onValueChange={(v) => setFormat(v as 'csv' | 'fasta')}>
-                <SelectTrigger className="w-56">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="csv">{t('import.csv')}</SelectItem>
-                  <SelectItem value="fasta">{t('import.fasta')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <input ref={fileRef} type="file" className="hidden" onChange={onFile} />
-            <Button variant="outline" onClick={() => fileRef.current?.click()}>
-              <Upload className="size-4" />
-              {t('import.pickFile')}
-            </Button>
+          <div className="space-y-1.5">
+            <Label>{t('import.format')}</Label>
+            <Select
+              value={format}
+              onValueChange={(v) => setFormat(v as 'csv' | 'fasta')}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="csv">{t('import.csv')}</SelectItem>
+                <SelectItem value="fasta">{t('import.fasta')}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {format === 'fasta' && (
@@ -118,7 +100,6 @@ export function ImportEntitiesDialog({
                   value={nameField}
                   onChange={(e) => setNameField(e.target.value)}
                 />
-                <p className="text-muted-foreground text-xs">{t('import.nameFieldHint')}</p>
               </div>
               <div className="space-y-1.5">
                 <Label>{t('import.seqField')}</Label>
@@ -127,46 +108,45 @@ export function ImportEntitiesDialog({
                   value={seqField}
                   onChange={(e) => setSeqField(e.target.value)}
                 />
-                <p className="text-muted-foreground text-xs">{t('import.seqFieldHint')}</p>
               </div>
             </div>
           )}
 
           <div className="space-y-1.5">
-            <Label htmlFor="import-content">{t('import.content')}</Label>
+            <div className="flex items-center justify-between">
+              <Label>{t('import.content')}</Label>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => fileRef.current?.click()}
+              >
+                <Upload className="size-4" />
+                {t('import.pickFile')}
+              </Button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".csv,.fasta,.fa,.txt"
+                hidden
+                onChange={(e) => onFile(e.target.files?.[0])}
+              />
+            </div>
             <Textarea
-              id="import-content"
-              className="h-40 font-mono text-xs"
+              rows={8}
+              className="mono text-[12px]"
               placeholder={t('import.contentPlaceholder')}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
             />
           </div>
-
-          {report && (
-            <div className="space-y-2 rounded-md border p-3 text-sm">
-              <p className="text-success font-medium">
-                {t('import.created', { count: report.created })}
-              </p>
-              {report.failed.length > 0 && (
-                <>
-                  <p className="text-destructive font-medium">
-                    {t('import.failedCount', { count: report.failed.length })}
-                  </p>
-                  <ul className="text-muted-foreground max-h-32 space-y-0.5 overflow-auto text-xs">
-                    {report.failed.map((f, i) => (
-                      <li key={i}>{t('import.rowError', { row: f.row, error: f.error })}</li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </div>
-          )}
         </div>
         <DialogFooter>
-          <Button onClick={submit} disabled={imp.isPending}>
-            {imp.isPending && <Loader2 className="size-4 animate-spin" />}
-            {imp.isPending ? t('import.importing') : t('import.submit')}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t('actions.cancel', { ns: 'common', defaultValue: '取消' })}
+          </Button>
+          <Button onClick={submit} disabled={!body.trim() || importer.isPending}>
+            {importer.isPending && <Loader2 className="size-4 animate-spin" />}
+            {t('import.submit')}
           </Button>
         </DialogFooter>
       </DialogContent>

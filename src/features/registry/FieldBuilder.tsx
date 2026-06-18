@@ -11,8 +11,21 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
-import { FIELD_TYPES } from '@/lib/field-types'
 import type { FieldDefInput, FieldType } from '@/api/registry'
+
+const ALL_TYPES: FieldType[] = [
+  'string',
+  'text',
+  'integer',
+  'number',
+  'boolean',
+  'date',
+  'datetime',
+  'enum',
+  'sequence',
+  'structure',
+  'reference',
+]
 
 const emptyField = (): FieldDefInput => ({
   name: '',
@@ -23,14 +36,16 @@ const emptyField = (): FieldDefInput => ({
   options: [],
 })
 
+const GRID = 'grid-cols-[1.4fr_1fr_52px_52px_52px_30px]'
+
+/** Schema builder 字段编辑器：开关网格（必填/唯一/敏感），敏感开关为红色。 */
 export function FieldBuilder({
   value,
   onChange,
-  allowedTypes = FIELD_TYPES,
+  allowedTypes = ALL_TYPES,
 }: {
   value: FieldDefInput[]
   onChange: (fields: FieldDefInput[]) => void
-  /** 限制可选字段类型（数据模版仅标量，禁 reference/structure）。 */
   allowedTypes?: readonly FieldType[]
 }) {
   const { t } = useTranslation('registry')
@@ -41,22 +56,36 @@ export function FieldBuilder({
   const add = () => onChange([...value, emptyField()])
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
+    <div className="space-y-2.5">
+      <div className="flex items-center">
         <span className="text-[13px] font-bold">{t('fieldBuilder.title')}</span>
-        <Button type="button" variant="outline" size="sm" onClick={add}>
+        <span className="ml-2 text-[11.5px] text-muted-foreground">
+          {t('subtitle')}
+        </span>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="ml-auto"
+          onClick={add}
+        >
           <Plus className="size-4" />
           {t('fieldBuilder.add')}
         </Button>
       </div>
 
       {value.length === 0 ? (
-        <p className="text-muted-foreground rounded-[9px] border border-dashed px-3 py-6 text-center text-sm">
+        <p className="rounded-[9px] border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
           {t('fieldBuilder.empty')}
         </p>
       ) : (
         <div className="space-y-2.5">
-          <div className="text-muted-foreground grid grid-cols-[1.4fr_1fr_52px_52px_52px_30px] gap-2 px-1 text-[11px] font-bold">
+          <div
+            className={cn(
+              'grid gap-2 px-1 text-[11px] font-bold text-muted-foreground',
+              GRID,
+            )}
+          >
             <div>{t('fieldBuilder.name')}</div>
             <div>{t('fieldBuilder.type')}</div>
             <div className="text-center">{t('fieldBuilder.required')}</div>
@@ -66,7 +95,7 @@ export function FieldBuilder({
           </div>
           {value.map((f, i) => (
             <div key={i}>
-              <div className="grid grid-cols-[1.4fr_1fr_52px_52px_52px_30px] items-center gap-2">
+              <div className={cn('grid items-center gap-2', GRID)}>
                 <Input
                   className="h-9"
                   placeholder={t('fieldBuilder.name')}
@@ -103,13 +132,15 @@ export function FieldBuilder({
                 <div className="flex justify-center">
                   <Switch
                     checked={f.sensitive}
-                    className={cn(f.sensitive && 'data-[state=checked]:bg-[#E0492C]')}
+                    className={cn(
+                      f.sensitive && 'data-[state=checked]:bg-[#E0492C]',
+                    )}
                     onCheckedChange={(c) => update(i, { sensitive: c })}
                   />
                 </div>
                 <button
                   type="button"
-                  className="text-muted-foreground hover:text-destructive flex size-7 items-center justify-center"
+                  className="flex size-7 items-center justify-center text-muted-foreground hover:text-destructive"
                   onClick={() => remove(i)}
                 >
                   <Trash2 className="size-4" />

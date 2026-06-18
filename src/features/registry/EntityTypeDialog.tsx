@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -19,211 +20,152 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  useCreateType,
-  useUpdateType,
-  useEntityTypes,
-} from '@/hooks/use-registry'
+import { useCreateType, useEntityTypes, useUpdateType } from '@/hooks/use-registry'
 import { useToastError } from '@/hooks/use-toast-error'
-import { autoSlug } from '@/lib/slug'
-import {
-  SCALAR_FIELD_TYPES,
-  type EntityType,
-  type FieldDefInput,
-  type TypeKind,
-} from '@/api/registry'
+import { slugify } from '@/lib/slug'
+import { SCALAR_FIELD_TYPES } from '@/api/registry'
+import type { EntityType, FieldDefInput, TypeKind } from '@/api/registry'
 import { FieldBuilder } from './FieldBuilder'
 
-const NONE = '__none'
+const NONE = '__none__'
 
+/** Schema builder：定义资产类型 / 数据模版（key + 名称 + 字段）。 */
 export function EntityTypeDialog({
   projectId,
-  kind: kindProp = 'asset',
+  kind,
   open,
   onOpenChange,
   type,
 }: {
   projectId: string
-  /** 创建时的类型种类；编辑时以 type.kind 为准。 */
-  kind?: TypeKind
+  kind: TypeKind
   open: boolean
-  onOpenChange: (o: boolean) => void
+  onOpenChange: (open: boolean) => void
   type?: EntityType | null
 }) {
   const { t } = useTranslation('registry')
-  const isEdit = !!type
-  const kind: TypeKind = type?.kind ?? kindProp
+  const editing = !!type
   const create = useCreateType(projectId, kind)
   const update = useUpdateType(projectId, kind, type?.id ?? '')
+  const types = useEntityTypes(projectId)
+  const assetTypes = (types.data ?? []).filter((ty) => ty.kind === 'asset')
   const toastError = useToastError()
-
-  // 数据模版可绑定/拷贝某资产类型。
-  const allTypes = useEntityTypes(projectId)
-  const assetTypes = (allTypes.data ?? []).filter((ty) => ty.kind === 'asset')
 
   const [key, setKey] = useState('')
   const [name, setName] = useState('')
   const [fields, setFields] = useState<FieldDefInput[]>([])
-  const [boundAsset, setBoundAsset] = useState(NONE)
-  const [fromAsset, setFromAsset] = useState(NONE)
-  const [errors, setErrors] = useState<{ name?: string }>({})
-  const [submitting, setSubmitting] = useState(false)
+  const [bound, setBound] = useState(NONE)
 
   useEffect(() => {
     if (open) {
       setKey(type?.key ?? '')
       setName(type?.name ?? '')
-      setFields(type?.fields ?? [])
-      setBoundAsset(type?.bound_asset_type_id ?? NONE)
-      setFromAsset(NONE)
-      setErrors({})
+      setFields(
+        (type?.fields ?? []).map((f) => ({
+          name: f.name,
+          type: f.type,
+          required: f.required,
+          unique: f.unique,
+          sensitive: f.sensitive,
+          options: f.options ?? [],
+        })),
+      )
+      setBound(type?.bound_asset_type_id ?? NONE)
     }
   }, [open, type])
 
   const submit = async () => {
-    if (!name.trim()) {
-      setErrors({ name: t('types.nameRequired') })
-      return
-    }
-    setSubmitting(true)
+    if (!name.trim()) return
     try {
-      if (isEdit && type) {
-        await update.mutateAsync({ name, fields, version: type.version })
+      if (editing) {
+        await update.mutateAsync({ name: name.trim(), fields, version: type!.version })
         toast.success(t('types.updated'))
       } else {
         await create.mutateAsync({
-          key: key.trim() || autoSlug(name, kind === 'asset' ? 'asset' : 'tpl'),
-          name,
+          key: key.trim() || slugify(name),
+          name: name.trim(),
           fields,
-          ...(kind === 'template' && boundAsset !== NONE
-            ? { bound_asset_type_id: boundAsset }
-            : {}),
-          ...(kind === 'template' && fromAsset !== NONE
-            ? { from_asset_type_id: fromAsset }
-            : {}),
+          bound_asset_type_id:
+            kind === 'template' && bound !== NONE ? bound : undefined,
         })
         toast.success(t('types.created'))
       }
       onOpenChange(false)
     } catch (e) {
       toastError(e)
-    } finally {
-      setSubmitting(false)
     }
   }
 
-  const titleKey = isEdit
-    ? 'types.edit'
-    : kind === 'asset'
-      ? 'types.createAsset'
-      : 'types.createTemplate'
+  const pending = create.isPending || update.isPending
+  const allowed = kind === 'template' ? SCALAR_FIELD_TYPES : undefined
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="sm:max-w-[680px]">
         <DialogHeader>
-          <DialogTitle>{t(titleKey)}</DialogTitle>
+          <DialogTitle>
+            {kind === 'asset'
+              ? t('types.createAsset')
+              : t('types.createTemplate')}{' '}
+            <span className="text-[14px] font-semibold text-muted-foreground">
+              Schema builder
+            </span>
+          </DialogTitle>
+          <DialogDescription>{t('subtitle')}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {!isEdit && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="tname">{t('types.name')}</Label>
-                <Input
-                  id="tname"
-                  autoFocus
-                  placeholder={t('types.namePlaceholder')}
-                  value={name}
-                  aria-invalid={!!errors.name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-                {errors.name && (
-                  <p className="text-destructive text-sm">{errors.name}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="tkey">{t('types.key')}</Label>
-                <Input
-                  id="tkey"
-                  placeholder={t('types.keyAuto')}
-                  value={key}
-                  onChange={(e) => setKey(e.target.value)}
-                />
-              </div>
-            </div>
-          )}
-          {isEdit && (
-            <div className="space-y-2">
-              <Label htmlFor="tname">{t('types.name')}</Label>
+        <div className="max-h-[60vh] space-y-5 overflow-auto py-1">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-[12px] text-[#5a6473]">{t('types.key')}</Label>
               <Input
-                id="tname"
-                autoFocus
+                placeholder={t('types.keyPlaceholder')}
+                value={key}
+                disabled={editing}
+                onChange={(e) => setKey(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[12px] text-[#5a6473]">{t('types.name')}</Label>
+              <Input
+                placeholder={t('types.namePlaceholder')}
                 value={name}
-                aria-invalid={!!errors.name}
                 onChange={(e) => setName(e.target.value)}
               />
-              {errors.name && (
-                <p className="text-destructive text-sm">{errors.name}</p>
-              )}
+            </div>
+          </div>
+
+          {kind === 'template' && !editing && (
+            <div className="space-y-1.5">
+              <Label className="text-[12px] text-[#5a6473]">
+                {t('types.boundAsset')}
+              </Label>
+              <Select value={bound} onValueChange={setBound}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE}>{t('types.boundNone')}</SelectItem>
+                  {assetTypes.map((ty) => (
+                    <SelectItem key={ty.id} value={ty.id}>
+                      {ty.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
 
-          {/* 数据模版专属：绑定/拷贝资产类型 */}
-          {kind === 'template' && !isEdit && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>{t('types.boundAsset')}</Label>
-                <Select value={boundAsset} onValueChange={setBoundAsset}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NONE}>{t('types.boundNone')}</SelectItem>
-                    {assetTypes.map((ty) => (
-                      <SelectItem key={ty.id} value={ty.id}>
-                        {ty.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-muted-foreground text-xs">
-                  {t('types.boundHint')}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label>{t('types.fromAsset')}</Label>
-                <Select value={fromAsset} onValueChange={setFromAsset}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NONE}>{t('types.fromNone')}</SelectItem>
-                    {assetTypes.map((ty) => (
-                      <SelectItem key={ty.id} value={ty.id}>
-                        {ty.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-muted-foreground text-xs">
-                  {t('types.fromHint')}
-                </p>
-              </div>
-            </div>
-          )}
-
-          <FieldBuilder
-            value={fields}
-            onChange={setFields}
-            allowedTypes={kind === 'template' ? SCALAR_FIELD_TYPES : undefined}
-          />
+          <FieldBuilder value={fields} onChange={setFields} allowedTypes={allowed} />
         </div>
 
         <DialogFooter>
-          <Button onClick={submit} disabled={submitting}>
-            {submitting && <Loader2 className="size-4 animate-spin" />}
-            {isEdit ? t('actions.save', { ns: 'common' }) : t(titleKey)}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t('actions.cancel', { ns: 'common', defaultValue: '取消' })}
+          </Button>
+          <Button onClick={submit} disabled={!name.trim() || pending}>
+            {pending && <Loader2 className="size-4 animate-spin" />}
+            {editing ? t('types.edit') : t('types.create')}
           </Button>
         </DialogFooter>
       </DialogContent>

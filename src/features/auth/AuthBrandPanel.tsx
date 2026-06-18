@@ -1,42 +1,47 @@
 import { useTranslation } from 'react-i18next'
 
-/** 登录 / 注册共用的左侧品牌面板（紫蓝渐变 + 品牌 + 卖点 pills）。 */
+/** 登录 / 注册左侧品牌面板（渐变 + 标语 + 能力胶囊）。窄屏隐藏。 */
 export function AuthBrandPanel() {
   const { t } = useTranslation('auth')
-  const { t: tc } = useTranslation('common')
   const pills = ['schema', 'perms', 'lineage', 'rls'] as const
-
   return (
-    <div className="relative hidden flex-col justify-between overflow-hidden bg-[linear-gradient(150deg,#2F6BFF_0%,#5B3FE0_55%,#7C3AED_100%)] p-12 text-white lg:flex lg:flex-1">
-      <div className="relative z-10 flex items-center gap-3">
-        <div className="flex size-[34px] items-center justify-center rounded-[9px] bg-white/15">
+    <div
+      className="relative hidden flex-1 flex-col justify-between overflow-hidden px-[52px] py-[46px] text-white md:flex"
+      style={{
+        background:
+          'linear-gradient(150deg,#2F6BFF 0%,#5B3FE0 55%,#7C3AED 100%)',
+      }}
+    >
+      <div className="relative z-10 flex items-center gap-2.5">
+        <div className="flex size-[34px] items-center justify-center rounded-[9px] bg-white/[0.16]">
           <svg
-            className="size-5"
+            width="20"
+            height="20"
             viewBox="0 0 24 24"
             fill="none"
             stroke="#fff"
-            strokeWidth={2.2}
+            strokeWidth="2.2"
             strokeLinecap="round"
           >
             <path d="M9 3h6M9 3v5l-4.5 8A2.5 2.5 0 0 0 6.8 20h10.4a2.5 2.5 0 0 0 2.3-3.6L15 8V3" />
             <path d="M7.5 14h9" />
           </svg>
         </div>
-        <div className="text-[18px] font-extrabold">{tc('app.shortName')}</div>
+        <div className="text-[18px] font-extrabold">Bio-Data OS</div>
       </div>
 
       <div className="relative z-10 max-w-[440px]">
-        <h1 className="text-[34px] leading-[1.25] font-extrabold tracking-tight">
+        <div className="text-[34px] font-extrabold leading-[1.25] tracking-[-0.01em]">
           {t('login.brandHeadline')}
-        </h1>
-        <p className="mt-[18px] text-[15px] leading-[1.7] opacity-[0.86]">
+        </div>
+        <div className="mt-[18px] text-[15px] leading-[1.7] opacity-[0.86]">
           {t('login.brandSubtitle')}
-        </p>
-        <div className="mt-[26px] flex flex-wrap gap-2.5">
+        </div>
+        <div className="mt-[26px] flex flex-wrap gap-[9px]">
           {pills.map((p) => (
             <span
               key={p}
-              className="rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold"
+              className="rounded-full bg-white/[0.14] px-3 py-1.5 text-[12px] font-semibold"
             >
               {t(`login.pills.${p}`)}
             </span>
@@ -48,8 +53,8 @@ export function AuthBrandPanel() {
         {t('login.brandFootnote')}
       </div>
 
-      <div className="absolute -right-24 -bottom-24 size-80 rounded-full bg-white/[0.07]" />
-      <div className="absolute top-24 right-16 size-40 rounded-full bg-white/5" />
+      <div className="absolute -right-[90px] -bottom-[90px] size-[320px] rounded-full bg-white/[0.07]" />
+      <div className="absolute top-[90px] right-[60px] size-[160px] rounded-full bg-white/[0.05]" />
     </div>
   )
 }

@@ -2,12 +2,33 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { FieldBuilder } from '@/features/registry/FieldBuilder'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { SCALAR_FIELD_TYPES, type FieldDef, type FieldType } from '@/api/registry'
 import type { ProtocolStep } from '@/api/protocols'
-import type { FieldDefInput } from '@/api/registry'
 
-const emptyStep = (): ProtocolStep => ({ name: '', description: '', fields: [] })
+/** 结果字段缺省（步骤结果只用标量；其余标志位填默认值）。 */
+function newField(): FieldDef {
+  return {
+    name: '',
+    type: 'string',
+    required: false,
+    unique: false,
+    sensitive: false,
+    options: [],
+  }
+}
 
+function newStep(): ProtocolStep {
+  return { name: '', description: '', fields: [] }
+}
+
+/** 方案步骤编辑器：增删步骤；每步含名称 + 若干结果字段（名/类型）。 */
 export function StepBuilder({
   value,
   onChange,
@@ -17,65 +38,109 @@ export function StepBuilder({
 }) {
   const { t } = useTranslation('protocols')
 
-  const update = (i: number, patch: Partial<ProtocolStep>) =>
+  const patchStep = (i: number, patch: Partial<ProtocolStep>) =>
     onChange(value.map((s, idx) => (idx === i ? { ...s, ...patch } : s)))
-  const remove = (i: number) => onChange(value.filter((_, idx) => idx !== i))
-  const add = () => onChange([...value, emptyStep()])
+
+  const patchField = (si: number, fi: number, patch: Partial<FieldDef>) =>
+    patchStep(si, {
+      fields: value[si].fields.map((f, idx) =>
+        idx === fi ? { ...f, ...patch } : f,
+      ),
+    })
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="text-[13px] font-bold">{t('steps.title')}</span>
-        <Button type="button" variant="outline" size="sm" onClick={add}>
-          <Plus className="size-4" />
-          {t('steps.add')}
-        </Button>
-      </div>
-
-      {value.length === 0 ? (
-        <p className="text-muted-foreground rounded-md border border-dashed px-3 py-6 text-center text-sm">
+    <div className="space-y-3">
+      {value.length === 0 && (
+        <p className="rounded-lg border border-dashed border-divider px-3 py-4 text-center text-[12px] text-muted-foreground">
           {t('steps.empty')}
         </p>
-      ) : (
-        <div className="space-y-3">
-          {value.map((s, i) => (
-            <div key={i} className="space-y-3 rounded-md border p-3">
-              <div className="flex items-start gap-2">
-                <span className="bg-muted mt-1 flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-medium tabular-nums">
-                  {i + 1}
-                </span>
-                <div className="flex-1 space-y-2">
-                  <Input
-                    placeholder={t('steps.namePlaceholder')}
-                    value={s.name}
-                    onChange={(e) => update(i, { name: e.target.value })}
-                  />
-                  <Input
-                    placeholder={t('steps.description')}
-                    value={s.description}
-                    onChange={(e) => update(i, { description: e.target.value })}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-8"
-                  onClick={() => remove(i)}
+      )}
+
+      {value.map((step, si) => (
+        <div
+          key={si}
+          className="rounded-[11px] border border-divider bg-surface-2 p-3"
+        >
+          <div className="flex items-center gap-2">
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-accent text-[12px] font-bold text-brand">
+              {si + 1}
+            </span>
+            <Input
+              className="h-8 bg-card"
+              placeholder={t('steps.namePlaceholder')}
+              value={step.name}
+              onChange={(e) => patchStep(si, { name: e.target.value })}
+            />
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => onChange(value.filter((_, idx) => idx !== si))}
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          </div>
+
+          <div className="mt-2.5 space-y-2 pl-8">
+            {step.fields.map((f, fi) => (
+              <div key={fi} className="flex items-center gap-2">
+                <Input
+                  className="h-8 bg-card"
+                  placeholder={t('steps.name')}
+                  value={f.name}
+                  onChange={(e) => patchField(si, fi, { name: e.target.value })}
+                />
+                <Select
+                  value={f.type}
+                  onValueChange={(val) =>
+                    patchField(si, fi, { type: val as FieldType })
+                  }
                 >
-                  <Trash2 className="text-destructive size-4" />
+                  <SelectTrigger size="sm" className="h-8 w-[124px] bg-card">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SCALAR_FIELD_TYPES.map((ft) => (
+                      <SelectItem key={ft} value={ft}>
+                        {ft}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() =>
+                    patchStep(si, {
+                      fields: step.fields.filter((_, idx) => idx !== fi),
+                    })
+                  }
+                >
+                  <Trash2 className="size-4" />
                 </Button>
               </div>
-              <div className="border-t pt-3">
-                <FieldBuilder
-                  value={s.fields as FieldDefInput[]}
-                  onChange={(fields) => update(i, { fields })}
-                />
-              </div>
-            </div>
-          ))}
+            ))}
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={() =>
+                patchStep(si, { fields: [...step.fields, newField()] })
+              }
+            >
+              <Plus className="size-3" />
+              {t('steps.add')}
+            </Button>
+          </div>
         </div>
-      )}
+      ))}
+
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => onChange([...value, newStep()])}
+      >
+        <Plus className="size-3.5" />
+        {t('steps.add')}
+      </Button>
     </div>
   )
 }

@@ -1,84 +1,90 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Loader2, X } from 'lucide-react'
+import { Check, Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
+import { UserAvatar } from '@/components/user-avatar'
+import { cn } from '@/lib/utils'
 import { useDebounce } from '@/hooks/use-debounce'
 import { useUserSearch } from '@/hooks/use-membership'
-import type { UserCard } from '@/api/membership'
 
-/** 用户目录多选：按姓名/邮箱搜索，点选加入；选中以 chip 展示。 */
+/**
+ * 可复用的「目录用户多选」：搜索框 + 结果列表（头像/姓名/邮箱 + 勾选）。
+ * 选中态为受控 string[]（用户 id），由父组件持有并通过 onChange 回写。
+ */
 export function UserPicker({
-  value,
+  selected,
   onChange,
-  max,
 }: {
-  value: UserCard[]
-  onChange: (users: UserCard[]) => void
-  /** 最多可选人数；max=1 时点选即替换（单选）。 */
-  max?: number
+  selected: string[]
+  onChange: (ids: string[]) => void
 }) {
   const { t } = useTranslation('membership')
-  const [q, setQ] = useState('')
-  const debounced = useDebounce(q, 250)
-  const search = useUserSearch(debounced)
-  const results = (search.data ?? []).filter(
-    (u) => !value.some((v) => v.id === u.id),
-  )
+  const [search, setSearch] = useState('')
+  const debounced = useDebounce(search, 300)
+  const results = useUserSearch(debounced)
+  const rows = results.data ?? []
 
-  const add = (u: UserCard) => {
-    onChange(max === 1 ? [u] : [...value, u])
-    setQ('')
+  const toggle = (id: string) => {
+    onChange(
+      selected.includes(id)
+        ? selected.filter((x) => x !== id)
+        : [...selected, id],
+    )
   }
-  const remove = (id: string) => onChange(value.filter((u) => u.id !== id))
 
   return (
     <div className="space-y-2">
       <div className="relative">
+        <Search className="absolute top-2.5 left-3 size-[15px] text-muted-foreground" />
         <Input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
+          className="pl-9"
           placeholder={t('userPicker.placeholder')}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
         />
-        {search.isFetching && (
-          <Loader2 className="text-muted-foreground absolute top-2.5 right-2.5 size-4 animate-spin" />
+      </div>
+      <div className="max-h-[252px] min-h-[120px] overflow-auto">
+        {rows.map((u) => {
+          const on = selected.includes(u.id)
+          return (
+            <button
+              type="button"
+              key={u.id}
+              onClick={() => toggle(u.id)}
+              className="flex w-full items-center gap-2.5 rounded-[9px] px-1.5 py-2 text-left hover:bg-surface-2"
+            >
+              <UserAvatar
+                name={u.display_name || u.email}
+                seed={u.id}
+                size={32}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[13px] font-semibold">
+                  {u.display_name || u.email.split('@')[0]}
+                </div>
+                <div className="truncate text-[11.5px] text-muted-foreground">
+                  {u.email}
+                </div>
+              </div>
+              <span
+                className={cn(
+                  'flex size-5 items-center justify-center rounded-md border',
+                  on ? 'border-brand bg-brand text-white' : 'border-[#c7cdd8]',
+                )}
+              >
+                {on && <Check className="size-3" />}
+              </span>
+            </button>
+          )
+        })}
+        {rows.length === 0 && (
+          <p className="py-8 text-center text-[12.5px] text-muted-foreground">
+            {debounced.trim()
+              ? t('userPicker.empty')
+              : t('userPicker.hint')}
+          </p>
         )}
       </div>
-
-      {debounced.trim().length >= 1 && (
-        <div className="max-h-48 overflow-auto rounded-md border">
-          {results.length === 0 ? (
-            <p className="text-muted-foreground px-3 py-3 text-sm">
-              {t('userPicker.empty')}
-            </p>
-          ) : (
-            results.map((u) => (
-              <button
-                key={u.id}
-                type="button"
-                onClick={() => add(u)}
-                className="hover:bg-accent flex w-full flex-col items-start px-3 py-2 text-left text-sm"
-              >
-                <span className="font-medium">{u.display_name || u.email}</span>
-                <span className="text-muted-foreground text-xs">{u.email}</span>
-              </button>
-            ))
-          )}
-        </div>
-      )}
-
-      {value.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {value.map((u) => (
-            <Badge key={u.id} variant="secondary" className="gap-1">
-              {u.display_name || u.email}
-              <button type="button" onClick={() => remove(u.id)}>
-                <X className="size-3" />
-              </button>
-            </Badge>
-          ))}
-        </div>
-      )}
     </div>
   )
 }

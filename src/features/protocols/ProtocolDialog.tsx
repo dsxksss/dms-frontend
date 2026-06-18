@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -15,9 +16,11 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useCreateProtocol, useUpdateProtocol } from '@/hooks/use-protocols'
 import { useToastError } from '@/hooks/use-toast-error'
+import { autoSlug } from '@/lib/slug'
 import type { Protocol, ProtocolStep } from '@/api/protocols'
 import { StepBuilder } from './StepBuilder'
 
+/** 新建 / 编辑方案：名称 + 描述 + 步骤。key 由名称自动派生（用户无需手填）。 */
 export function ProtocolDialog({
   projectId,
   open,
@@ -26,108 +29,99 @@ export function ProtocolDialog({
 }: {
   projectId: string
   open: boolean
-  onOpenChange: (o: boolean) => void
-  protocol?: Protocol | null
+  onOpenChange: (open: boolean) => void
+  protocol?: Protocol
 }) {
   const { t } = useTranslation('protocols')
+  const toastError = useToastError()
   const isEdit = !!protocol
   const create = useCreateProtocol(projectId)
   const update = useUpdateProtocol(projectId, protocol?.id ?? '')
-  const toastError = useToastError()
-
-  const [key, setKey] = useState('')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [steps, setSteps] = useState<ProtocolStep[]>([])
-  const [errors, setErrors] = useState<{ key?: string; name?: string }>({})
-  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (open) {
-      setKey(protocol?.key ?? '')
       setName(protocol?.name ?? '')
       setDescription(protocol?.description ?? '')
       setSteps(protocol?.steps ?? [])
-      setErrors({})
     }
   }, [open, protocol])
 
-  const submit = async () => {
-    const errs: typeof errors = {}
-    if (!isEdit && !key.trim()) errs.key = t('protocol.keyRequired')
-    if (!name.trim()) errs.name = t('protocol.nameRequired')
-    setErrors(errs)
-    if (Object.keys(errs).length) return
+  const pending = create.isPending || update.isPending
 
-    setSubmitting(true)
+  const submit = async () => {
+    if (!name.trim()) return
     try {
       if (isEdit && protocol) {
-        await update.mutateAsync({ name, description, steps, version: protocol.version })
+        await update.mutateAsync({
+          name: name.trim(),
+          description: description.trim(),
+          steps,
+          version: protocol.version,
+        })
         toast.success(t('protocol.updated'))
       } else {
-        await create.mutateAsync({ key, name, description, steps })
+        await create.mutateAsync({
+          key: autoSlug(name, 'proto'),
+          name: name.trim(),
+          description: description.trim() || undefined,
+          steps,
+        })
         toast.success(t('protocol.created'))
       }
       onOpenChange(false)
     } catch (e) {
       toastError(e)
-    } finally {
-      setSubmitting(false)
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="max-h-[88vh] gap-4 overflow-y-auto sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>
             {isEdit ? t('protocol.edit') : t('protocol.create')}
           </DialogTitle>
+          <DialogDescription>{t('subtitle')}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {!isEdit && (
-            <div className="space-y-2">
-              <Label htmlFor="pkey">{t('protocol.key')}</Label>
-              <Input
-                id="pkey"
-                autoFocus
-                placeholder={t('protocol.keyPlaceholder')}
-                value={key}
-                aria-invalid={!!errors.key}
-                onChange={(e) => setKey(e.target.value)}
-              />
-              {errors.key && <p className="text-destructive text-sm">{errors.key}</p>}
-            </div>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="pname">{t('protocol.name')}</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="proto-name">{t('protocol.name')}</Label>
             <Input
-              id="pname"
-              autoFocus={isEdit}
+              id="proto-name"
               placeholder={t('protocol.namePlaceholder')}
               value={name}
-              aria-invalid={!!errors.name}
               onChange={(e) => setName(e.target.value)}
+              autoFocus
             />
-            {errors.name && <p className="text-destructive text-sm">{errors.name}</p>}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="pdesc">{t('protocol.description')}</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="proto-desc">{t('protocol.description')}</Label>
             <Textarea
-              id="pdesc"
+              id="proto-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              rows={2}
             />
           </div>
-
-          <StepBuilder value={steps} onChange={setSteps} />
+          <div className="space-y-1.5">
+            <Label>{t('steps.title')}</Label>
+            <StepBuilder value={steps} onChange={setSteps} />
+          </div>
         </div>
 
         <DialogFooter>
-          <Button onClick={submit} disabled={submitting}>
-            {submitting && <Loader2 className="size-4 animate-spin" />}
-            {isEdit ? t('actions.save', { ns: 'common' }) : t('protocol.create')}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t('actions.cancel', { ns: 'common', defaultValue: '取消' })}
+          </Button>
+          <Button onClick={submit} disabled={!name.trim() || pending}>
+            {pending && <Loader2 className="size-4 animate-spin" />}
+            {isEdit
+              ? t('actions.save', { ns: 'common', defaultValue: '保存' })
+              : t('protocol.create')}
           </Button>
         </DialogFooter>
       </DialogContent>

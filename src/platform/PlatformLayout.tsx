@@ -1,172 +1,137 @@
-import { Suspense, type ComponentType } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
+import { Suspense } from 'react'
+import { Outlet, useLocation } from 'react-router-dom'
 import {
-  Bell,
   Building2,
-  ChevronsUpDown,
   Database,
   Gauge,
   Loader2,
   LogOut,
   Settings,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import {
+  Sidebar,
+  SidebarFooter,
+  SidebarNav,
+  SidebarNavItem,
+} from '@/components/sidebar'
+import { Topbar, type Crumb } from '@/components/topbar'
+import { PlatformMark } from '@/components/brand-mark'
+import { BiLabel, useIsZh } from '@/components/bilingual'
+import { UserAvatar } from '@/components/user-avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { BrandMark } from '@/components/brand-mark'
-import { NavLabel } from '@/components/nav-label'
 import { usePlatformAuth } from '@/platform/platform-auth'
-import { cn } from '@/lib/utils'
 
-interface NavItem {
-  to: string
-  labelKey: string
-  icon: ComponentType<{ className?: string }>
-  end?: boolean
-}
+const NAV = [
+  { to: '/system', end: true, icon: <Gauge />, zh: '概览', en: 'Overview' },
+  { to: '/system/tenants', icon: <Building2 />, zh: '企业', en: 'Tenants' },
+  { to: '/system/datasets', icon: <Database />, zh: '系统数据集', en: 'System Datasets' },
+  { to: '/system/settings', icon: <Settings />, zh: '全局配置', en: 'Settings' },
+] as const
 
-const NAV: NavItem[] = [
-  { to: '/system', labelKey: 'nav.overview', icon: Gauge, end: true },
-  { to: '/system/tenants', labelKey: 'nav.tenants', icon: Building2 },
-  { to: '/system/datasets', labelKey: 'nav.datasets', icon: Database },
-  { to: '/system/settings', labelKey: 'nav.settings', icon: Settings },
-]
+function PlatformSidebar() {
+  const isZh = useIsZh()
+  const { me, logout } = usePlatformAuth()
+  const name = me?.display_name ?? me?.email ?? (isZh ? '超管' : 'Admin')
 
-function SidebarNav() {
-  const { t, i18n } = useTranslation('platform')
-  const isZh = i18n.language.startsWith('zh')
   return (
-    <aside className="hidden w-[236px] shrink-0 flex-col bg-[#161A2B] md:flex">
+    <Sidebar dark>
       <div className="flex items-center gap-2.5 px-4 pt-[18px] pb-3.5">
-        <BrandMark variant="platform" className="size-[30px]" />
-        <div>
-          <div className="text-[14px] font-extrabold text-white">{t('title')}</div>
-          <div className="text-[10px] text-[#8990B5]">Platform Console</div>
+        <PlatformMark size={30} />
+        <div className="leading-tight">
+          <div className="text-[14px] font-extrabold text-white">
+            {isZh ? '平台控制台' : 'Platform Console'}
+          </div>
+          {isZh && <div className="text-[10px] text-[#8990B5]">Platform Console</div>}
         </div>
       </div>
 
-      <nav className="flex-1 px-3 py-2">
-        {NAV.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-2.5 rounded-[9px] px-2.5 py-2 text-[13.5px] transition-colors',
-                isActive
-                  ? 'bg-[#6D5BD0] font-bold text-white'
-                  : 'font-medium text-[#9AA0C4] hover:bg-white/5 hover:text-white',
-              )
-            }
+      <SidebarNav>
+        {NAV.map((n) => (
+          <SidebarNavItem
+            key={n.to}
+            to={n.to}
+            end={'end' in n ? n.end : undefined}
+            icon={n.icon}
+            dark
           >
-            <item.icon className="size-[18px] shrink-0" />
-            <NavLabel
-              zh={t(item.labelKey)}
-              en={isZh ? t(item.labelKey, { lng: 'en' }) : undefined}
-            />
-          </NavLink>
+            <BiLabel zh={n.zh} en={n.en} />
+          </SidebarNavItem>
         ))}
-      </nav>
+      </SidebarNav>
 
-      <PlatformAccountMenu />
-    </aside>
+      <SidebarFooter dark>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex w-full items-center gap-2.5 text-left outline-none">
+              <UserAvatar name={name} color="#6D5BD0" size={30} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[12.5px] font-bold text-white">
+                  {name}
+                </div>
+                <div className="truncate text-[10.5px] text-[#8990B5]">
+                  {me?.email ?? ''}
+                </div>
+              </div>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" side="top" className="w-56">
+            <DropdownMenuItem disabled className="flex-col items-start gap-0">
+              <span className="text-[12px] font-semibold">{name}</span>
+              <span className="font-mono text-[11px] text-muted-foreground">
+                {me?.email}
+              </span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={() => void logout()}
+            >
+              <LogOut className="size-4" />
+              {isZh ? '退出控制台' : 'Sign out'}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarFooter>
+    </Sidebar>
   )
 }
 
-function PlatformAccountMenu() {
-  const { t } = useTranslation('platform')
-  const { me, logout } = usePlatformAuth()
-  const name = me?.display_name ?? me?.email ?? t('account')
-  const initials = (me?.display_name ?? me?.email ?? 'P').slice(0, 2).toUpperCase()
-
-  return (
-    <div className="border-t border-white/8 p-3">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className="flex w-full items-center gap-2.5 rounded-[9px] px-1.5 py-1.5 text-left transition-colors hover:bg-white/5">
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#6D5BD0] text-[10.5px] font-bold text-white">
-              {initials}
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-[12.5px] font-bold text-white">
-                {name}
-              </span>
-              <span className="block truncate text-[10.5px] text-[#8990B5]">
-                {me?.email ?? ''}
-              </span>
-            </span>
-            <ChevronsUpDown className="size-3.5 shrink-0 text-[#8990B5]" />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" side="top" className="w-56">
-          <DropdownMenuLabel className="flex flex-col">
-            <span>{me?.display_name ?? t('account')}</span>
-            <span className="text-muted-foreground truncate font-mono text-xs">
-              {me?.email}
-            </span>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => void logout()}>
-            <LogOut className="size-4" />
-            {t('logout')}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  )
-}
-
-function Topbar() {
-  const { t } = useTranslation('platform')
+/** 平台控制台外壳：深色侧栏 + 顶栏 + 内容（原型 ctxPlatform）。 */
+export function PlatformLayout() {
   const { pathname } = useLocation()
+  const isZh = useIsZh()
   const current = [...NAV]
     .reverse()
-    .find((i) => (i.end ? pathname === i.to : pathname.startsWith(i.to)))
+    .find((n) =>
+      'end' in n && n.end ? pathname === n.to : pathname.startsWith(n.to),
+    )
+  const crumbs: Crumb[] = [
+    { label: isZh ? '平台控制台' : 'Platform Console' },
+    { label: current ? (isZh ? current.zh : current.en) : '' },
+  ]
 
   return (
-    <header className="bg-card flex h-[58px] shrink-0 items-center gap-4 border-b px-4 md:px-[22px]">
-      <div className="flex items-center gap-2 text-[12.5px]">
-        <span className="text-muted-foreground">{t('title')}</span>
-        {current && (
-          <>
-            <span className="text-muted-foreground/40">/</span>
-            <span className="font-semibold">{t(current.labelKey)}</span>
-          </>
-        )}
-      </div>
-      <div className="flex-1" />
-      <Button variant="outline" size="icon" aria-label={t('title')}>
-        <Bell className="size-4" />
-      </Button>
-    </header>
-  )
-}
-
-export function PlatformLayout() {
-  return (
-    <div className="bg-background flex h-[100dvh] overflow-hidden">
-      <SidebarNav />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar />
-        <main className="flex-1 overflow-auto px-5 py-6 md:px-8 md:py-7">
+    <div className="flex h-screen overflow-hidden">
+      <PlatformSidebar />
+      <div className="relative flex min-w-0 flex-1 flex-col">
+        <Topbar crumbs={crumbs} />
+        <div className="flex-1 overflow-auto">
           <Suspense
             fallback={
-              <div className="flex h-full items-center justify-center">
-                <Loader2 className="text-muted-foreground size-6 animate-spin" />
+              <div className="flex h-full items-center justify-center py-20">
+                <Loader2 className="size-6 animate-spin text-muted-foreground" />
               </div>
             }
           >
             <Outlet />
           </Suspense>
-        </main>
+        </div>
       </div>
     </div>
   )

@@ -1,11 +1,19 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Boxes, FlaskConical, KeyRound, Link2, Pencil, Plus, ShieldCheck, Sparkles, Users } from 'lucide-react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
+import {
+  Boxes,
+  FlaskConical,
+  Link2,
+  Pencil,
+  Plus,
+  ShieldCheck,
+  Sparkles,
+  Users,
+} from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
+import { Button } from '@/components/ui/button'
+import { EmptyState, ErrorState, GridSkeleton } from '@/components/states'
 import { useProjectRole } from '@/hooks/use-projects'
 import { useEntityTypes, useSeedDrugRd } from '@/hooks/use-registry'
 import { useToastError } from '@/hooks/use-toast-error'
@@ -15,95 +23,7 @@ import { ResourceGrantsDialog } from '@/features/grants/ResourceGrantsDialog'
 import { EntityTypeDialog } from './EntityTypeDialog'
 import { FieldGrantsDialog } from './FieldGrantsDialog'
 
-function TypeCard({
-  ty,
-  typeName,
-  canManage,
-  onEdit,
-  onGrants,
-  onCollab,
-}: {
-  ty: EntityType
-  typeName: (id: string) => string
-  canManage: boolean
-  onEdit: () => void
-  onGrants: () => void
-  onCollab: () => void
-}) {
-  const { t } = useTranslation('registry')
-  const sensitiveCount = ty.fields.filter((f) => f.sensitive).length
-  const Icon = ty.kind === 'asset' ? FlaskConical : Boxes
-  return (
-    <Card className="hover:border-brand/40 transition-colors">
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <div
-              className={
-                ty.kind === 'asset'
-                  ? 'bg-brand/10 text-brand flex size-8 shrink-0 items-center justify-center rounded-md'
-                  : 'bg-muted text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-md'
-              }
-            >
-              <Icon className="size-4" />
-            </div>
-            <div className="min-w-0">
-              <div className="truncate font-medium">{ty.name}</div>
-              <div className="text-muted-foreground flex items-center gap-1 font-mono text-xs">
-                <KeyRound className="size-3" />
-                {ty.key}
-              </div>
-            </div>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
-          <span>{t('types.fieldCount', { count: ty.fields.length })}</span>
-          {sensitiveCount > 0 && (
-            <span className="text-warning">
-              · {t('types.sensitiveCount', { count: sensitiveCount })}
-            </span>
-          )}
-          {ty.bound_asset_type_id && (
-            <Badge variant="outline" className="gap-1 text-xs">
-              <Link2 className="size-3" />
-              {typeName(ty.bound_asset_type_id)}
-            </Badge>
-          )}
-        </div>
-        {canManage && (
-          <div className="flex justify-end gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8"
-              title={t('resourceGrants.title', { ns: 'common' })}
-              onClick={onCollab}
-            >
-              <Users className="size-4" />
-            </Button>
-            {sensitiveCount > 0 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8"
-                title={t('types.grants')}
-                onClick={onGrants}
-              >
-                <ShieldCheck className="size-4" />
-              </Button>
-            )}
-            <Button variant="ghost" size="icon" className="size-8" onClick={onEdit}>
-              <Pencil className="size-4" />
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
+/** 类型管理：药物资产类型 + 数据模版（卡片网格）。 */
 export function EntityTypesPanel({ projectId }: { projectId: string }) {
   const { t } = useTranslation('registry')
   const role = useProjectRole(projectId)
@@ -122,19 +42,16 @@ export function EntityTypesPanel({ projectId }: { projectId: string }) {
   const templates = all.filter((ty) => ty.kind === 'template')
   const nameOf = (id: string) => all.find((ty) => ty.id === id)?.name ?? id
 
-  const onSeed = async () => {
-    try {
-      const types = await seed.mutateAsync()
-      toast.success(t('types.seeded', { count: types.length }))
-    } catch (e) {
-      toastError(e)
-    }
-  }
+  const onSeed = () =>
+    seed
+      .mutateAsync()
+      .then((types) => toast.success(t('types.seeded', { count: types.length })))
+      .catch(toastError)
 
-  const renderSection = (title: string, kind: TypeKind, items: EntityType[]) => (
-    <div className="space-y-2">
+  const section = (title: string, kind: TypeKind, items: EntityType[]) => (
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium">{title}</h3>
+        <h3 className="text-[14px] font-bold">{title}</h3>
         {canManage && (
           <Button variant="outline" size="sm" onClick={() => setCreateKind(kind)}>
             <Plus className="size-4" />
@@ -143,7 +60,7 @@ export function EntityTypesPanel({ projectId }: { projectId: string }) {
         )}
       </div>
       {items.length === 0 ? (
-        <p className="text-muted-foreground rounded-md border border-dashed px-3 py-6 text-center text-sm">
+        <p className="rounded-[11px] border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
           {t('types.emptyKind')}
         </p>
       ) : (
@@ -152,7 +69,7 @@ export function EntityTypesPanel({ projectId }: { projectId: string }) {
             <TypeCard
               key={ty.id}
               ty={ty}
-              typeName={nameOf}
+              boundName={nameOf}
               canManage={canManage}
               onEdit={() => setEditTarget(ty)}
               onGrants={() => setGrantsTarget(ty)}
@@ -167,14 +84,9 @@ export function EntityTypesPanel({ projectId }: { projectId: string }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="font-medium">{t('types.title')}</h2>
+        <h2 className="text-[15px] font-bold">{t('types.title')}</h2>
         {canManage && (
-          <Button
-            variant="outline"
-            title={t('types.seedHint')}
-            onClick={onSeed}
-            disabled={seed.isPending}
-          >
+          <Button variant="outline" onClick={onSeed} disabled={seed.isPending}>
             <Sparkles className="size-4" />
             {t('types.seed')}
           </Button>
@@ -182,15 +94,15 @@ export function EntityTypesPanel({ projectId }: { projectId: string }) {
       </div>
 
       {query.isLoading ? (
-        <TableSkeleton rows={3} cols={2} />
+        <GridSkeleton count={3} />
       ) : query.isError ? (
         <ErrorState error={query.error} onRetry={() => query.refetch()} />
       ) : all.length === 0 && !canManage ? (
-        <EmptyState title={t('types.empty')} />
+        <EmptyState title={t('types.empty')} hint={t('types.emptyDesc')} />
       ) : (
         <>
-          {renderSection(t('types.assetTypes'), 'asset', assets)}
-          {renderSection(t('types.dataTemplates'), 'template', templates)}
+          {section(t('types.assetTypes'), 'asset', assets)}
+          {section(t('types.dataTemplates'), 'template', templates)}
         </>
       )}
 
@@ -202,6 +114,7 @@ export function EntityTypesPanel({ projectId }: { projectId: string }) {
       />
       <EntityTypeDialog
         projectId={projectId}
+        kind={editTarget?.kind ?? 'asset'}
         open={!!editTarget}
         onOpenChange={(o) => !o && setEditTarget(null)}
         type={editTarget}
@@ -222,6 +135,80 @@ export function EntityTypesPanel({ projectId }: { projectId: string }) {
           open={!!collabTarget}
           onOpenChange={(o) => !o && setCollabTarget(null)}
         />
+      )}
+    </div>
+  )
+}
+
+function TypeCard({
+  ty,
+  boundName,
+  canManage,
+  onEdit,
+  onGrants,
+  onCollab,
+}: {
+  ty: EntityType
+  boundName: (id: string) => string
+  canManage: boolean
+  onEdit: () => void
+  onGrants: () => void
+  onCollab: () => void
+}) {
+  const { t } = useTranslation('registry')
+  const sensitive = ty.fields.filter((f) => f.sensitive).length
+  const Icon = ty.kind === 'asset' ? FlaskConical : Boxes
+  const tint = ty.kind === 'asset' ? ['#EAF0FF', '#2F6BFF'] : ['#EEF0F3', '#64748B']
+
+  return (
+    <div className="card-shadow rounded-[14px] border bg-card p-4">
+      <div className="flex items-center gap-2.5">
+        <div
+          className="flex size-8 shrink-0 items-center justify-center rounded-lg"
+          style={{ background: tint[0], color: tint[1] }}
+        >
+          <Icon className="size-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[13.5px] font-bold">{ty.name}</div>
+          <div className="mono truncate text-[11px] text-muted-foreground">
+            {ty.key}
+          </div>
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-[12px] text-muted-foreground">
+        <span>{t('types.fieldCount', { count: ty.fields.length })}</span>
+        {sensitive > 0 && (
+          <span className="text-[#B45309]">
+            · {t('types.sensitiveCount', { count: sensitive })}
+          </span>
+        )}
+        {ty.bound_asset_type_id && (
+          <Badge variant="outline" className="gap-1">
+            <Link2 className="size-3" />
+            {boundName(ty.bound_asset_type_id)}
+          </Badge>
+        )}
+      </div>
+      {canManage && (
+        <div className="mt-2 flex justify-end gap-1">
+          <Button variant="ghost" size="icon-sm" title={t('grants.title')} onClick={onCollab}>
+            <Users className="size-4" />
+          </Button>
+          {sensitive > 0 && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              title={t('types.grants')}
+              onClick={onGrants}
+            >
+              <ShieldCheck className="size-4" />
+            </Button>
+          )}
+          <Button variant="ghost" size="icon-sm" onClick={onEdit}>
+            <Pencil className="size-4" />
+          </Button>
+        </div>
       )}
     </div>
   )

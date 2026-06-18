@@ -96,7 +96,7 @@
     "cols": "列"
   },
   "links": {
-    "title": "关联的数据资产",
+    "title": "协作",
     "add": "新增关联",
     "project": "项目",
     "kind": "关系",
@@ -104,5 +104,8 @@
     "empty": "暂无关联",
     "removeTitle": "取消关联？",
     "kindPlaceholder": "如 derived_from"
+  },
+  "collab": {
+    "managedInSettings": "由项目设置统一管理资源级协作授权。"
   }
 }

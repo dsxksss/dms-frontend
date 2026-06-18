@@ -1,199 +1,116 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Loader2, Play } from 'lucide-react'
-
-import { EmptyState, ErrorState } from '@/components/states'
-import { UserName } from '@/components/user-name'
-import { UserAvatar } from '@/components/user-avatar'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Check } from 'lucide-react'
-import { useProjectRole } from '@/hooks/use-projects'
+import { GridHeader, GridRow, TableCard, Th } from '@/components/data-grid'
+import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
+import { Pagination } from '@/components/pagination'
+import { UserAvatar } from '@/components/user-avatar'
+import { statusTone } from '@/components/tone'
 import { useProtocols, useRuns } from '@/hooks/use-protocols'
 import { useSignatures } from '@/hooks/use-signatures'
-import { roleAtLeast } from '@/lib/roles'
-import { statusTone } from '@/lib/tone'
-import { cn } from '@/lib/utils'
-import type { RunStatus } from '@/api/protocols'
-import { StartRunDialog } from './StartRunDialog'
+import { shortId } from '@/lib/format'
+import type { Run } from '@/api/protocols'
 import { RunDetailDialog } from './RunDetailDialog'
 
-const STATUSES: RunStatus[] = ['draft', 'in_progress', 'completed', 'aborted']
-const COLS = 'grid-cols-[1.3fr_1.1fr_160px_110px_100px]'
+const COLS = '130px 1.4fr 1.1fr 110px 110px'
 
+/** 执行实例表：Run / 方案 / 执行人 / 状态 / 签名。 */
 export function RunsPanel({ projectId }: { projectId: string }) {
   const { t } = useTranslation('protocols')
-  const role = useProjectRole(projectId)
-  const canContribute = roleAtLeast(role, 'contributor')
-
-  const [status, setStatus] = useState('')
-  const [page, setPage] = useState({ limit: 20, offset: 0 })
-  const query = useRuns(projectId, { status: status || undefined, ...page })
-  const protocols = useProtocols(projectId, { include_archived: true, limit: 100 })
-  const protoName = useMemo(
-    () => Object.fromEntries((protocols.data?.items ?? []).map((p) => [p.id, p.name])),
-    [protocols.data],
-  )
+  const [page, setPage] = useState({ limit: 30, offset: 0 })
+  const query = useRuns(projectId, page)
+  const protocols = useProtocols(projectId, { limit: 100 })
+  // 已 approved 的 run id 集合（签名单元判定）。
   const sigs = useSignatures(projectId, { target_kind: 'run', limit: 200 })
-  const signedRuns = new Set(sigs.data?.items.map((s) => s.target_id) ?? [])
+  const [active, setActive] = useState<Run | null>(null)
 
-  const [startOpen, setStartOpen] = useState(false)
-  const [openRun, setOpenRun] = useState<string | null>(null)
-
-  const items = query.data?.items ?? []
-  const total = query.data?.total ?? 0
-  const hasMore = page.offset + items.length < total
-
-  const startBtn = canContribute && (
-    <Button onClick={() => setStartOpen(true)}>
-      <Play className="size-4" />
-      {t('run.start')}
-    </Button>
-  )
+  const runs = query.data?.items ?? []
+  const protoName = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const p of protocols.data?.items ?? []) m.set(p.id, p.name)
+    return m
+  }, [protocols.data])
+  const signed = useMemo(() => {
+    const s = new Set<string>()
+    for (const sig of sigs.data?.items ?? [])
+      if (sig.meaning === 'approved') s.add(sig.target_id)
+    return s
+  }, [sigs.data])
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="space-y-1.5">
-          <Label>{t('run.filterStatus')}</Label>
-          <Select
-            value={status || 'all'}
-            onValueChange={(v) => {
-              setStatus(v === 'all' ? '' : v)
-              setPage((p) => ({ ...p, offset: 0 }))
-            }}
-          >
-            <SelectTrigger className="w-44">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('run.allStatus')}</SelectItem>
-              {STATUSES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {t(`status.${s}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        {startBtn}
-      </div>
-
+    <div>
       {query.isLoading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="text-muted-foreground size-6 animate-spin" />
-        </div>
+        <TableSkeleton rows={5} />
       ) : query.isError ? (
         <ErrorState error={query.error} onRetry={() => query.refetch()} />
-      ) : items.length === 0 ? (
-        <EmptyState
-          title={t('run.empty')}
-          description={t('run.emptyDesc')}
-          action={startBtn || undefined}
-        />
+      ) : runs.length === 0 ? (
+        <EmptyState title={t('run.empty')} hint={t('run.emptyDesc')} />
       ) : (
         <>
-          <Card className="gap-0 overflow-hidden py-0">
-            <div className="overflow-x-auto">
-              <div className="min-w-[740px]">
-                <div
-                  className={cn(
-                    'bg-surface-2 text-muted-foreground grid gap-2 border-b px-[18px] py-2.5 text-[11px] font-semibold tracking-[0.04em] uppercase',
-                    COLS,
-                  )}
-                >
-                  <div>{t('columns.name')}</div>
-                  <div>{t('columns.protocol')}</div>
-                  <div>{t('columns.performedBy')}</div>
-                  <div>{t('columns.status')}</div>
-                  <div>{t('columns.signature')}</div>
+          <TableCard>
+            <GridHeader cols={COLS}>
+              <Th>Run</Th>
+              <Th>{t('columns.protocol')}</Th>
+              <Th>{t('columns.performedBy')}</Th>
+              <Th>{t('columns.status')}</Th>
+              <Th>{t('columns.signature')}</Th>
+            </GridHeader>
+            {runs.map((r) => (
+              <GridRow key={r.id} cols={COLS} onClick={() => setActive(r)}>
+                <div className="mono truncate text-[12px] font-semibold text-brand">
+                  {shortId(r.id)}
                 </div>
-                {items.map((r) => (
-                  <div
-                    key={r.id}
-                    className={cn(
-                      'border-divider hover:bg-row-hover grid cursor-pointer items-center gap-2 border-b px-[18px] py-3 text-[13px] last:border-b-0',
-                      COLS,
-                    )}
-                    onClick={() => setOpenRun(r.id)}
-                  >
-                    <span className="truncate font-semibold">{r.name}</span>
-                    <span className="truncate text-[#5a6473]">
-                      {protoName[r.protocol_id] ?? '-'}
-                    </span>
-                    <span className="flex min-w-0 items-center gap-2">
-                      <UserAvatar seed={r.performed_by ?? '?'} className="size-6" />
-                      <UserName
-                        id={r.performed_by ?? ''}
-                        className="truncate text-[12.5px]"
+                <div className="truncate font-semibold">
+                  {protoName.get(r.protocol_id) ?? r.name}
+                </div>
+                <div className="flex min-w-0 items-center gap-2">
+                  {r.performed_by ? (
+                    <>
+                      <UserAvatar
+                        name={r.performed_by}
+                        seed={r.performed_by}
+                        size={24}
                       />
-                    </span>
-                    <span>
-                      <Badge variant={statusTone(r.status)}>
-                        {t(`status.${r.status}`)}
-                      </Badge>
-                    </span>
-                    <span>
-                      {signedRuns.has(r.id) ? (
-                        <Badge variant="success">
-                          <Check className="size-3" />
-                          {t('run.signed')}
-                        </Badge>
-                      ) : (
-                        <span className="text-[#aeb6c2]">—</span>
-                      )}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Card>
-          {(page.offset > 0 || hasMore) && (
-            <div className="flex items-center justify-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page.offset === 0}
-                onClick={() =>
-                  setPage((p) => ({ ...p, offset: Math.max(0, p.offset - p.limit) }))
-                }
-              >
-                {t('table.prev', { ns: 'common' })}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!hasMore}
-                onClick={() => setPage((p) => ({ ...p, offset: p.offset + p.limit }))}
-              >
-                {t('table.next', { ns: 'common' })}
-              </Button>
-            </div>
-          )}
+                      <span className="mono truncate text-[12px] text-muted-foreground">
+                        {shortId(r.performed_by)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </div>
+                <div>
+                  <Badge variant={statusTone(r.status)}>
+                    {t(`status.${r.status}`)}
+                  </Badge>
+                </div>
+                <div>
+                  {signed.has(r.id) ? (
+                    <Badge variant="success">✓ {t('run.signed')}</Badge>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </div>
+              </GridRow>
+            ))}
+          </TableCard>
+          <div className="mt-4 flex justify-end">
+            <Pagination
+              limit={page.limit}
+              offset={page.offset}
+              total={query.data?.total ?? 0}
+              onChange={setPage}
+            />
+          </div>
         </>
       )}
 
-      <StartRunDialog
-        projectId={projectId}
-        open={startOpen}
-        onOpenChange={setStartOpen}
-        onStarted={(run) => setOpenRun(run.id)}
-      />
-      {openRun && (
+      {active && (
         <RunDetailDialog
           projectId={projectId}
-          runId={openRun}
-          open={!!openRun}
-          onOpenChange={(o) => !o && setOpenRun(null)}
+          run={active}
+          open={!!active}
+          onOpenChange={(o) => !o && setActive(null)}
         />
       )}
     </div>

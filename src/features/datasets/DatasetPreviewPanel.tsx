@@ -1,56 +1,57 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Search } from 'lucide-react'
-import { Input } from '@/components/ui/input'
+import { ArrowDown, ArrowUp, Search } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Pagination } from '@/components/pagination'
+import { Input } from '@/components/ui/input'
+import { TableCard } from '@/components/data-grid'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
-import { useDatasetPreview } from '@/hooks/use-datasets'
+import { Pagination } from '@/components/pagination'
+import { columnRoleTone } from '@/components/tone'
 import { useDebounce } from '@/hooks/use-debounce'
-import { columnRoleTone } from '@/lib/tone'
+import { useDatasetPreview } from '@/hooks/use-datasets'
 import { cn } from '@/lib/utils'
 import type { ColumnRole, ColumnSchema } from '@/api/datasets'
 
-const ROLE_LEGEND: ColumnRole[] = ['id', 'feature', 'label', 'ignore']
+const ROLE_ORDER: ColumnRole[] = ['id', 'feature', 'label', 'ignore']
 
+/** 数据集预览（富屏）：全列搜索 + 列角色图例 + 可排序表头 + 斑马行。 */
 export function DatasetPreviewPanel({
   projectId,
   datasetId,
-  schema = [],
+  schema,
 }: {
   projectId: string
   datasetId: string
-  /** 当前版本列模式（name→role/type），用于在表头标注角色与类型。 */
   schema?: ColumnSchema[]
 }) {
   const { t } = useTranslation('datasets')
   const [search, setSearch] = useState('')
-  const [sort, setSort] = useState<string>('')
+  const [sort, setSort] = useState<string | undefined>(undefined)
   const [desc, setDesc] = useState(false)
-  const [page, setPage] = useState({ limit: 20, offset: 0 })
+  const [page, setPage] = useState({ limit: 25, offset: 0 })
+  const debounced = useDebounce(search, 300)
 
-  const debouncedSearch = useDebounce(search, 300)
-  const params = {
-    ...page,
-    search: debouncedSearch || undefined,
-    sort: sort || undefined,
-    desc,
-  }
-  const query = useDatasetPreview(projectId, datasetId, params)
-  const cols = query.data?.columns ?? []
-  const schemaMap = new Map(schema.map((c) => [c.name, c]))
+  // 列名 → schema（role/type）映射，用于表头徽标与 id 单元上色。
+  const byName = useMemo(() => {
+    const m = new Map<string, ColumnSchema>()
+    for (const c of schema ?? []) m.set(c.name, c)
+    return m
+  }, [schema])
+
+  const query = useDatasetPreview(projectId, datasetId, {
+    search: debounced || undefined,
+    sort,
+    desc: sort ? desc : undefined,
+    limit: page.limit,
+    offset: page.offset,
+  })
+  const data = query.data
+  const columns = data?.columns ?? []
 
   const onSort = (col: string) => {
-    if (sort === col) setDesc((d) => !d)
-    else {
+    if (sort === col) {
+      setDesc((d) => !d)
+    } else {
       setSort(col)
       setDesc(false)
     }
@@ -58,12 +59,12 @@ export function DatasetPreviewPanel({
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <div className="relative">
-          <Search className="text-muted-foreground absolute top-2.5 left-3 size-[15px]" />
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+        <div className="relative min-w-[220px] flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            className="w-60 pl-9"
+            className="pl-9"
             placeholder={t('preview.search')}
             value={search}
             onChange={(e) => {
@@ -72,101 +73,110 @@ export function DatasetPreviewPanel({
             }}
           />
         </div>
-        <span className="text-muted-foreground text-[12px]">
-          {t('preview.columnRoles')}：
-        </span>
-        {ROLE_LEGEND.map((r) => (
-          <Badge key={r} variant={columnRoleTone(r)}>
-            {t(`columnRole.${r}`)}
-          </Badge>
-        ))}
+        {/* 列角色图例 */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11.5px] font-semibold text-muted-foreground">
+            {t('preview.columnRoles')}
+          </span>
+          {ROLE_ORDER.map((r) => (
+            <Badge key={r} variant={columnRoleTone(r)}>
+              {t(`columnRole.${r}`)}
+            </Badge>
+          ))}
+        </div>
       </div>
 
       {query.isLoading ? (
-        <TableSkeleton rows={6} cols={4} />
+        <TableSkeleton rows={6} />
       ) : query.isError ? (
         <ErrorState error={query.error} onRetry={() => query.refetch()} />
-      ) : query.data && query.data.rows.length > 0 ? (
-        <>
-          <div className="bg-card overflow-x-auto rounded-[14px] border shadow-[0_1px_2px_rgba(20,40,80,0.04)]">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-surface-2 hover:bg-surface-2">
-                  {cols.map((c) => {
-                    const s = schemaMap.get(c)
+      ) : columns.length === 0 ? (
+        <EmptyState title={t('preview.empty')} />
+      ) : (
+        <TableCard>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-[13px]">
+              <thead>
+                <tr className="border-b bg-surface-2">
+                  {columns.map((col) => {
+                    const meta = byName.get(col)
+                    const active = sort === col
                     return (
-                      <TableHead
-                        key={c}
-                        onClick={() => onSort(c)}
-                        className="hover:bg-muted/40 h-auto cursor-pointer py-2.5 align-top whitespace-nowrap select-none"
+                      <th
+                        key={col}
+                        className="cursor-pointer select-none whitespace-nowrap px-3.5 py-2.5 text-left align-bottom"
+                        onClick={() => onSort(col)}
                       >
-                        <div className="flex items-center gap-1">
-                          <span className="text-foreground text-[12px] font-semibold normal-case">
-                            {c}
-                          </span>
-                          {sort === c && (
-                            <span className="text-brand text-[10px]">
-                              {desc ? '▼' : '▲'}
+                        <div className="flex items-center gap-1.5">
+                          <span className="th !text-foreground">{col}</span>
+                          {active &&
+                            (desc ? (
+                              <ArrowDown className="size-3 text-brand" />
+                            ) : (
+                              <ArrowUp className="size-3 text-brand" />
+                            ))}
+                        </div>
+                        <div className="mt-1 flex items-center gap-1.5">
+                          {meta && (
+                            <Badge variant={columnRoleTone(meta.role)}>
+                              {t(`columnRole.${meta.role}`)}
+                            </Badge>
+                          )}
+                          {meta && (
+                            <span className="text-[10.5px] font-medium text-muted-foreground">
+                              {meta.type}
                             </span>
                           )}
                         </div>
-                        {s && (
-                          <div className="mt-1.5 flex items-center gap-1.5">
-                            <Badge
-                              variant={columnRoleTone(s.role)}
-                              className="px-1.5 py-0.5 text-[10px]"
-                            >
-                              {t(`columnRole.${s.role}`)}
-                            </Badge>
-                            <span className="text-muted-foreground text-[10px]">
-                              {s.type}
-                            </span>
-                          </div>
-                        )}
-                      </TableHead>
+                      </th>
                     )
                   })}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {query.data.rows.map((row, i) => (
-                  <TableRow key={i} className={cn(i % 2 === 1 && 'bg-row-hover')}>
-                    {row.map((cell, j) => {
-                      const isId = schemaMap.get(cols[j])?.role === 'id'
+                </tr>
+              </thead>
+              <tbody>
+                {(data?.rows ?? []).map((row, ri) => (
+                  <tr
+                    key={ri}
+                    className={cn(
+                      'border-b border-divider last:border-b-0',
+                      ri % 2 === 1 && 'bg-row-hover',
+                    )}
+                  >
+                    {row.map((cell, ci) => {
+                      const meta = byName.get(columns[ci])
+                      const isId = meta?.role === 'id'
                       return (
-                        <TableCell
-                          key={j}
+                        <td
+                          key={ci}
                           className={cn(
-                            'tabular-nums whitespace-nowrap',
-                            isId
-                              ? 'text-brand font-mono text-[12px] font-semibold'
-                              : 'text-[12.5px]',
+                            'whitespace-nowrap px-3.5 py-2',
+                            isId && 'mono font-semibold text-brand',
                           )}
                         >
                           {cell}
-                        </TableCell>
+                        </td>
                       )
                     })}
-                  </TableRow>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
+              </tbody>
+            </table>
           </div>
-          <div className="text-muted-foreground text-[12px]">
-            {t('preview.footer', {
-              shown: query.data.rows.length,
-              total: query.data.total,
-            })}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-divider px-[18px] py-3 text-[12.5px] text-muted-foreground">
+            <span>
+              {t('preview.footer', {
+                shown: data?.rows.length ?? 0,
+                total: data?.total ?? 0,
+              })}
+            </span>
+            <Pagination
+              limit={page.limit}
+              offset={page.offset}
+              total={data?.total ?? 0}
+              onChange={setPage}
+            />
           </div>
-          <Pagination
-            limit={page.limit}
-            offset={page.offset}
-            total={query.data.total}
-            onChange={setPage}
-          />
-        </>
-      ) : (
-        <EmptyState title={t('preview.empty')} />
+        </TableCard>
       )}
     </div>
   )

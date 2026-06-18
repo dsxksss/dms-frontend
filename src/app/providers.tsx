@@ -2,7 +2,6 @@ import type { ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
-import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/auth/AuthProvider'
 import '@/i18n/i18n'
 
@@ -17,17 +16,16 @@ export function createQueryClient() {
 
 const queryClient = createQueryClient()
 
+/** 全站 Provider 栈。原型为纯浅色，不含暗色主题切换。 */
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
-    <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <TooltipProvider delayDuration={200}>
-            {children}
-            <Toaster richColors position="top-right" />
-          </TooltipProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider delayDuration={200}>
+          {children}
+          <Toaster richColors position="top-right" />
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   )
 }

@@ -1,18 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlertTriangle, Loader2, PenLine, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { AlertTriangle, CheckCircle2, Loader2, Plus, X } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { RowList, Row } from '@/components/row-list'
-import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -20,185 +20,60 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Skeleton } from '@/components/ui/skeleton'
-import { EmptyState, ErrorState } from '@/components/states'
-import { UserName } from '@/components/user-name'
-import { SchemaForm } from '@/features/registry/SchemaForm'
-import { EntityPicker } from '@/features/registry/EntityPicker'
-import { SignDialog } from '@/features/signatures/SignDialog'
-import { SignaturesList } from '@/features/signatures/SignaturesList'
-import { useSignatures } from '@/hooks/use-signatures'
-import { useProjectRole } from '@/hooks/use-projects'
-import { useDatasets } from '@/hooks/use-datasets'
+import { statusTone } from '@/components/tone'
 import {
   useAddRunLink,
   useDeleteRunLink,
-  useRun,
   useRunLinks,
   useSetRunStatus,
   useUpdateResults,
 } from '@/hooks/use-protocols'
+import { useSignatures } from '@/hooks/use-signatures'
 import { useToastError } from '@/hooks/use-toast-error'
-import { roleAtLeast } from '@/lib/roles'
-import { statusTone } from '@/lib/tone'
-import { shortId, formatDateTime } from '@/lib/format'
-import { buildData, initialValues, type FormValues } from '@/lib/field-types'
-import type { LinkTarget, RunResults, RunStatus } from '@/api/protocols'
+import { formatDateTime, shortId } from '@/lib/format'
+import type { LinkTarget, Run, RunResults } from '@/api/protocols'
+import { SignDialog } from '@/features/signatures/SignDialog'
 
-function RunLinksSection({
-  projectId,
-  runId,
-  canEdit,
-}: {
-  projectId: string
-  runId: string
-  canEdit: boolean
-}) {
-  const { t } = useTranslation('protocols')
-  const links = useRunLinks(projectId, runId)
-  const datasets = useDatasets(projectId)
-  const add = useAddRunLink(projectId, runId)
-  const del = useDeleteRunLink(projectId, runId)
-  const toastError = useToastError()
-  const [target, setTarget] = useState<LinkTarget>('entity')
-  const [entityId, setEntityId] = useState<string | undefined>()
-  const [datasetId, setDatasetId] = useState('')
+const LINK_KINDS: LinkTarget[] = ['entity', 'dataset', 'file']
 
-  const onAdd = async () => {
-    const targetId = target === 'entity' ? entityId : datasetId
-    if (!targetId) return
-    try {
-      await add.mutateAsync({ target_kind: target, target_id: targetId })
-      toast.success(t('links.added'))
-      setEntityId(undefined)
-      setDatasetId('')
-    } catch (e) {
-      toastError(e)
-    }
-  }
-
-  return (
-    <div className="space-y-2">
-      <h3 className="text-[13px] font-bold">{t('links.title')}</h3>
-      {canEdit && (
-        <Card className="gap-2 p-3">
-          <div className="flex gap-2">
-            <Select value={target} onValueChange={(v) => setTarget(v as LinkTarget)}>
-              <SelectTrigger size="sm" className="w-36">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="entity">{t('links.entity')}</SelectItem>
-                <SelectItem value="dataset">{t('links.dataset')}</SelectItem>
-              </SelectContent>
-            </Select>
-            {target === 'dataset' && (
-              <Select value={datasetId} onValueChange={setDatasetId}>
-                <SelectTrigger size="sm" className="flex-1">
-                  <SelectValue placeholder={t('links.dataset')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {(datasets.data ?? []).map((d) => (
-                    <SelectItem key={d.id} value={d.id}>
-                      {d.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-          {target === 'entity' && (
-            <EntityPicker projectId={projectId} value={entityId} onChange={setEntityId} />
-          )}
-          <Button size="sm" onClick={onAdd} disabled={add.isPending}>
-            {add.isPending ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Plus className="size-4" />
-            )}
-            {t('links.add')}
-          </Button>
-        </Card>
-      )}
-      {links.data && links.data.length > 0 ? (
-        <RowList>
-          {links.data.map((l) => (
-            <Row key={l.id}>
-              <Badge variant="info">{t(`links.${l.target_kind}`)}</Badge>
-              <span className="text-brand flex-1 font-mono text-xs font-semibold">
-                {shortId(l.target_id)}
-              </span>
-              {canEdit && (
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={t('links.removed')}
-                  onClick={() =>
-                    del
-                      .mutateAsync(l.id)
-                      .then(() => toast.success(t('links.removed')))
-                      .catch(toastError)
-                  }
-                >
-                  <Trash2 className="text-destructive size-4" />
-                </Button>
-              )}
-            </Row>
-          ))}
-        </RowList>
-      ) : (
-        <p className="text-muted-foreground text-sm">{t('links.empty')}</p>
-      )}
-    </div>
-  )
-}
-
+/** Run 详情：步骤结果录入 + 关联 Links + 完成前合规（approved 电子签名）。 */
 export function RunDetailDialog({
   projectId,
-  runId,
+  run,
   open,
   onOpenChange,
 }: {
   projectId: string
-  runId: string
+  run: Run
   open: boolean
-  onOpenChange: (o: boolean) => void
+  onOpenChange: (open: boolean) => void
 }) {
   const { t } = useTranslation('protocols')
-  const role = useProjectRole(projectId)
-  const canContribute = roleAtLeast(role, 'contributor')
-  const query = useRun(projectId, runId, open)
-  const run = query.data
-  const updateResults = useUpdateResults(projectId, runId)
-  const setStatus = useSetRunStatus(projectId, runId)
   const toastError = useToastError()
-
-  const [forms, setForms] = useState<Record<string, FormValues>>({})
+  const updateResults = useUpdateResults(projectId, run.id)
+  const setStatus = useSetRunStatus(projectId, run.id)
+  const [results, setResults] = useState<RunResults>({})
   const [signOpen, setSignOpen] = useState(false)
 
-  // 强制签名：Run 须有 approved 签名才能标记完成（与后端校验一致，避免 422）。
-  const runSigs = useSignatures(
+  // 本对象签名：判定是否已具 approved 签名（完成门禁）。
+  const sigs = useSignatures(
     projectId,
-    { target_kind: 'run', target_id: runId },
+    { target_kind: 'run', target_id: run.id, limit: 50 },
     open,
   )
-  const hasApproved =
-    runSigs.data?.items.some((s) => s.meaning === 'approved') ?? false
-  useEffect(() => {
-    if (run) {
-      const next: Record<string, FormValues> = {}
-      for (const s of run.steps) next[s.name] = initialValues(s.fields, run.results?.[s.name])
-      setForms(next)
-    }
-  }, [run])
+  const hasApproved = (sigs.data?.items ?? []).some(
+    (s) => s.meaning === 'approved',
+  )
+  const inProgress = run.status === 'in_progress'
 
-  const editable =
-    canContribute && (run?.status === 'draft' || run?.status === 'in_progress')
+  useEffect(() => {
+    if (open) setResults(run.results ?? {})
+  }, [open, run])
+
+  const setField = (step: string, field: string, value: string) =>
+    setResults((r) => ({ ...r, [step]: { ...(r[step] ?? {}), [field]: value } }))
 
   const saveResults = async () => {
-    if (!run) return
-    const results: RunResults = {}
-    for (const s of run.steps) results[s.name] = buildData(s.fields, forms[s.name] ?? {})
     try {
       await updateResults.mutateAsync({ results, version: run.version })
       toast.success(t('run.resultsSaved'))
@@ -207,11 +82,11 @@ export function RunDetailDialog({
     }
   }
 
-  const changeStatus = async (status: RunStatus) => {
-    if (!run) return
+  const complete = async () => {
     try {
-      await setStatus.mutateAsync({ status, version: run.version })
+      await setStatus.mutateAsync({ status: 'completed', version: run.version })
       toast.success(t('status.changed'))
+      onOpenChange(false)
     } catch (e) {
       toastError(e)
     }
@@ -219,132 +94,40 @@ export function RunDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-2xl">
-        {query.isLoading ? (
-          <div className="space-y-3">
-            <Skeleton className="h-7 w-48" />
-            <Skeleton className="h-40 w-full" />
-          </div>
-        ) : query.isError ? (
-          <ErrorState error={query.error} onRetry={() => query.refetch()} />
-        ) : !run ? (
-          <EmptyState title={t('run.empty')} />
-        ) : (
-          <>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                {run.name}
-                <Badge variant={statusTone(run.status)}>
-                  {t(`status.${run.status}`)}
-                </Badge>
-              </DialogTitle>
-            </DialogHeader>
-
-            <div className="text-muted-foreground grid grid-cols-2 gap-y-1 text-sm">
-              <span>{t('run.performedBy')}</span>
-              <span className="text-foreground">
-                <UserName id={run.performed_by} />
+      <DialogContent className="max-h-[88vh] gap-0 overflow-y-auto sm:max-w-[820px]">
+        <DialogHeader>
+          <DialogTitle className="flex flex-wrap items-center gap-2.5">
+            <span className="mono text-brand">{shortId(run.id)}</span>
+            <span className="text-muted-foreground">·</span>
+            <span>{run.name}</span>
+            <Badge variant={statusTone(run.status)}>
+              {t(`status.${run.status}`)}
+            </Badge>
+          </DialogTitle>
+          <DialogDescription className="flex flex-wrap items-center gap-3">
+            <span>
+              {t('run.protocolVersion')} v{run.protocol_version}
+            </span>
+            {run.started_at && (
+              <span>
+                {t('run.startedAt')}: {formatDateTime(run.started_at)}
               </span>
-              <span>{t('run.startedAt')}</span>
-              <span className="text-foreground tabular-nums">
-                {formatDateTime(run.started_at)}
-              </span>
-              {run.completed_at && (
-                <>
-                  <span>{t('run.completedAt')}</span>
-                  <span className="text-foreground tabular-nums">
-                    {formatDateTime(run.completed_at)}
-                  </span>
-                </>
-              )}
-              <span>{t('run.protocolVersion')}</span>
-              <span className="text-foreground tabular-nums">
-                v{run.protocol_version}
-              </span>
-            </div>
-
-            {/* status transitions */}
-            {canContribute && run.status !== 'completed' && run.status !== 'aborted' && (
-              <div className="space-y-1.5">
-                <div className="flex flex-wrap gap-2">
-                  {run.status === 'draft' && (
-                    <Button size="sm" onClick={() => changeStatus('in_progress')}>
-                      {t('status.toInProgress')}
-                    </Button>
-                  )}
-                  {run.status === 'in_progress' && (
-                    <Button
-                      size="sm"
-                      onClick={() => changeStatus('completed')}
-                      disabled={!hasApproved}
-                    >
-                      {t('status.toCompleted')}
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => changeStatus('aborted')}
-                  >
-                    {t('status.toAborted')}
-                  </Button>
-                </div>
-                {run.status === 'in_progress' && !hasApproved && (
-                  <div className="flex gap-2.5 rounded-[12px] border border-[#F5E6C8] bg-[#FFFCF5] px-4 py-3">
-                    <AlertTriangle className="size-[18px] shrink-0 text-[#C77B16]" />
-                    <div>
-                      <div className="text-[12.5px] font-bold text-[#92600A]">
-                        {t('compliance', { ns: 'signatures' })}
-                      </div>
-                      <div className="mt-1 text-[12px] leading-[1.55] text-[#7a5a10]">
-                        {t('complianceDesc', { ns: 'signatures' })}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
             )}
+          </DialogDescription>
+        </DialogHeader>
 
-            {/* results per step */}
-            <div className="space-y-4">
-              <Label className="text-[13px] font-bold">{t('run.results')}</Label>
-              {run.steps.map((s, idx) => (
-                <Card key={s.name} className="gap-0 p-4">
-                  <div className="mb-3 flex items-center gap-2.5">
-                    <span className="bg-accent text-brand flex size-[22px] shrink-0 items-center justify-center rounded-full text-[11px] font-bold">
-                      {idx + 1}
-                    </span>
-                    <div>
-                      <div className="text-[13px] font-bold">{s.name}</div>
-                      {s.description && (
-                        <div className="text-muted-foreground text-xs">
-                          {s.description}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  {s.fields.length === 0 ? (
-                    <p className="text-muted-foreground text-xs">—</p>
-                  ) : (
-                    <fieldset disabled={!editable} className="disabled:opacity-70">
-                      <SchemaForm
-                        projectId={projectId}
-                        fields={s.fields}
-                        values={forms[s.name] ?? {}}
-                        errors={{}}
-                        onChange={(name, value) =>
-                          setForms((prev) => ({
-                            ...prev,
-                            [s.name]: { ...prev[s.name], [name]: value },
-                          }))
-                        }
-                      />
-                    </fieldset>
-                  )}
-                </Card>
-              ))}
-              {editable && (
-                <Button onClick={saveResults} disabled={updateResults.isPending}>
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-[1.6fr_1fr]">
+          {/* 左：步骤 + 结果录入 */}
+          <Card className="gap-0 p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-[13px] font-bold">{t('steps.title')}</span>
+              {inProgress && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={saveResults}
+                  disabled={updateResults.isPending}
+                >
                   {updateResults.isPending && (
                     <Loader2 className="size-4 animate-spin" />
                   )}
@@ -352,41 +135,189 @@ export function RunDetailDialog({
                 </Button>
               )}
             </div>
-
-            <RunLinksSection projectId={projectId} runId={runId} canEdit={editable} />
-
-            {/* e-signatures (21 CFR Part 11) */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h3 className="text-[13px] font-bold">
-                  {t('onTarget', { ns: 'signatures' })}
-                </h3>
-                {canContribute && (
-                  <Button size="sm" variant="outline" onClick={() => setSignOpen(true)}>
-                    <PenLine className="size-4" />
-                    {t('sign.button', { ns: 'signatures' })}
-                  </Button>
-                )}
-              </div>
-              <SignaturesList projectId={projectId} targetKind="run" targetId={runId} />
+            <div className="space-y-4">
+              {run.steps.map((step, si) => (
+                <div key={si}>
+                  <div className="flex items-center gap-2">
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-accent text-[12px] font-bold text-brand">
+                      {si + 1}
+                    </span>
+                    <span className="text-[13px] font-semibold">
+                      {step.name}
+                    </span>
+                  </div>
+                  {step.fields.length > 0 && (
+                    <div className="mt-2 space-y-2 pl-8">
+                      {step.fields.map((f) => (
+                        <div key={f.name} className="space-y-1">
+                          <label className="text-[11.5px] font-medium text-muted-foreground">
+                            {f.name}
+                          </label>
+                          <Input
+                            className="h-8"
+                            disabled={!inProgress}
+                            value={String(results[step.name]?.[f.name] ?? '')}
+                            onChange={(e) =>
+                              setField(step.name, f.name, e.target.value)
+                            }
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
+          </Card>
 
-            <SignDialog
-              projectId={projectId}
-              targetKind="run"
-              targetId={run.id}
-              content={JSON.stringify({
-                id: run.id,
-                protocol_version: run.protocol_version,
-                status: run.status,
-                results: run.results,
-              })}
-              open={signOpen}
-              onOpenChange={setSignOpen}
-            />
-          </>
-        )}
+          {/* 右：Links + 合规 */}
+          <div className="space-y-4">
+            <LinksCard projectId={projectId} runId={run.id} />
+
+            {inProgress && !hasApproved && (
+              <div className="rounded-[12px] border border-[#F5E6C8] bg-[#FFFCF5] p-3.5">
+                <div className="flex items-center gap-2 text-[#C77B16]">
+                  <AlertTriangle className="size-4" />
+                  <span className="text-[12.5px] font-bold">
+                    {t('compliance', { ns: 'signatures' })}
+                  </span>
+                </div>
+                <p className="mt-1.5 text-[11.5px] leading-relaxed text-[#8a6d2f]">
+                  {t('complianceDesc', { ns: 'signatures' })}
+                </p>
+                <Button
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => setSignOpen(true)}
+                >
+                  {t('status.toCompleted')}
+                </Button>
+              </div>
+            )}
+
+            {inProgress && hasApproved && (
+              <div className="rounded-[12px] border border-[#CDEBD6] bg-[#F4FBF6] p-3.5">
+                <div className="flex items-center gap-2 text-[#15803D]">
+                  <CheckCircle2 className="size-4" />
+                  <span className="text-[12.5px] font-bold">
+                    {t('run.signed', { defaultValue: '已签' })}
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  className="mt-3"
+                  onClick={complete}
+                  disabled={setStatus.isPending}
+                >
+                  {setStatus.isPending && (
+                    <Loader2 className="size-4 animate-spin" />
+                  )}
+                  {t('status.toCompleted')}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
       </DialogContent>
+
+      <SignDialog
+        projectId={projectId}
+        open={signOpen}
+        onOpenChange={setSignOpen}
+        target={{ kind: 'run', id: run.id, name: run.name }}
+      />
     </Dialog>
+  )
+}
+
+function LinksCard({ projectId, runId }: { projectId: string; runId: string }) {
+  const { t } = useTranslation('protocols')
+  const toastError = useToastError()
+  const query = useRunLinks(projectId, runId)
+  const add = useAddRunLink(projectId, runId)
+  const del = useDeleteRunLink(projectId, runId)
+  const [kind, setKind] = useState<LinkTarget>('dataset')
+  const [targetId, setTargetId] = useState('')
+  const links = query.data ?? []
+
+  const onAdd = async () => {
+    if (!targetId.trim()) return
+    try {
+      await add.mutateAsync({ target_kind: kind, target_id: targetId.trim() })
+      toast.success(t('links.added'))
+      setTargetId('')
+    } catch (e) {
+      toastError(e)
+    }
+  }
+
+  const onRemove = (id: string) =>
+    del
+      .mutateAsync(id)
+      .then(() => toast.success(t('links.removed')))
+      .catch(toastError)
+
+  const targetLabel = useMemo(
+    () => ({
+      entity: t('links.entity'),
+      dataset: t('links.dataset'),
+      file: t('links.file'),
+    }),
+    [t],
+  )
+
+  return (
+    <Card className="gap-0 p-4">
+      <div className="mb-3 text-[13px] font-bold">{t('links.title')}</div>
+      {links.length === 0 ? (
+        <p className="text-[12px] text-muted-foreground">{t('links.empty')}</p>
+      ) : (
+        <div className="space-y-2">
+          {links.map((l) => (
+            <div key={l.id} className="flex items-center gap-2">
+              <Badge variant="info">{targetLabel[l.target_kind]}</Badge>
+              <span className="mono flex-1 truncate text-[11.5px] text-muted-foreground">
+                {shortId(l.target_id)}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={() => onRemove(l.id)}
+              >
+                <X className="size-3" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-3 flex items-center gap-2 border-t border-divider pt-3">
+        <Select value={kind} onValueChange={(v) => setKind(v as LinkTarget)}>
+          <SelectTrigger size="sm" className="h-8 w-[108px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {LINK_KINDS.map((k) => (
+              <SelectItem key={k} value={k}>
+                {targetLabel[k]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          className="h-8"
+          placeholder={t('links.add')}
+          value={targetId}
+          onChange={(e) => setTargetId(e.target.value)}
+        />
+        <Button
+          size="icon-sm"
+          onClick={onAdd}
+          disabled={!targetId.trim() || add.isPending}
+        >
+          <Plus className="size-4" />
+        </Button>
+      </div>
+    </Card>
   )
 }

@@ -1,5 +1,6 @@
 {
   "title": "Protocols",
+  "pageTitle": "Protocols & Runs",
   "subtitle": "Reusable protocol templates and execution records (ELN)",
   "tabs": { "protocols": "Protocols", "runs": "Runs" },
   "columns": { "name": "Name", "key": "Key", "steps": "Steps", "status": "Status", "protocol": "Protocol", "performedBy": "Performed by", "started": "Started", "signature": "Signature" },

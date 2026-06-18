@@ -1,147 +1,107 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
-
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { LangToggle } from '@/components/lang-toggle'
-import { AuthBrandPanel } from '@/features/auth/AuthBrandPanel'
 import { useAuth } from '@/auth/auth-context'
-import { errorI18nKey, isAppError } from '@/lib/errors'
-import { resolveTenant } from '@/lib/tenant'
+import { useToastError } from '@/hooks/use-toast-error'
+import { AuthBrandPanel } from './AuthBrandPanel'
 
 export function SignupPage() {
   const { t } = useTranslation('auth')
-  const { t: tc } = useTranslation('common')
-  const { signupUser } = useAuth()
+  const { signupUser, status } = useAuth()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const toastError = useToastError()
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-  // 同登录：企业由子域名 / ?tenant= / 上次 / 默认 自动解析，用户无需在注册时指定。
-  const resolvedTenant = resolveTenant(searchParams.get('tenant')) || undefined
+  if (status === 'authed') return <Navigate to="/projects" replace />
 
-  const schema = z.object({
-    email: z
-      .string()
-      .min(1, t('signup.required.email'))
-      .email(t('signup.required.emailFormat')),
-    password: z.string().min(1, t('signup.required.password')),
-  })
-  type Values = z.infer<typeof schema>
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<Values>({
-    resolver: zodResolver(schema),
-    defaultValues: { email: '', password: '' },
-  })
-  const [formError, setFormError] = useState<string | null>(null)
-
-  const onSubmit = async (v: Values) => {
-    setFormError(null)
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitting(true)
     try {
-      await signupUser({
-        tenant: resolvedTenant,
-        email: v.email,
-        password: v.password,
-      })
-      navigate('/', { replace: true })
-    } catch (e) {
-      if (isAppError(e) && e.kind === 'validation') {
-        setFormError(t('login.tenantNeeded'))
-      } else {
-        setFormError(isAppError(e) && e.detail ? e.detail : tc(errorI18nKey(e)))
-      }
+      await signupUser({ email, password, name: name || undefined })
+      navigate('/projects')
+    } catch (err) {
+      toastError(err)
+    } finally {
+      setSubmitting(false)
     }
   }
 
   return (
-    <main className="flex h-[100dvh]">
+    <div className="flex h-screen">
       <AuthBrandPanel />
-
-      <div className="bg-card relative flex flex-1 items-center justify-center lg:w-[480px] lg:flex-none">
-        <div className="absolute top-4 right-4">
-          <LangToggle />
-        </div>
-
-        <div className="w-[340px] max-w-[86vw]">
-          <h1 className="text-[22px] font-extrabold">{t('signup.userTitle')}</h1>
-          <p className="text-muted-foreground mt-1.5 text-[13px]">
+      <div className="flex flex-1 items-center justify-center bg-white px-6 md:max-w-[480px] md:flex-none">
+        <form className="w-[340px]" onSubmit={onSubmit}>
+          <div className="text-[22px] font-extrabold">{t('signup.userTitle')}</div>
+          <div className="mt-1.5 text-[13px] text-muted-foreground">
             {t('signup.userSubtitle')}
-          </p>
+          </div>
 
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            noValidate
-            className="mt-[26px] space-y-4"
+          <div className="mt-[26px] space-y-1.5">
+            <Label htmlFor="name" className="text-[12px] text-[#5a6473]">
+              {t('account')}
+            </Label>
+            <Input
+              id="name"
+              autoComplete="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div className="mt-4 space-y-1.5">
+            <Label htmlFor="email" className="text-[12px] text-[#5a6473]">
+              {t('login.email')}
+            </Label>
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="mt-4 space-y-1.5">
+            <Label htmlFor="password" className="text-[12px] text-[#5a6473]">
+              {t('login.password')}
+            </Label>
+            <Input
+              id="password"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+
+          <Button
+            type="submit"
+            className="mt-6 h-11 w-full text-[14px]"
+            disabled={submitting}
           >
-            <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs font-semibold text-[#5a6473]">
-                {t('login.email')}
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                autoFocus
-                autoComplete="username"
-                aria-invalid={!!errors.email}
-                {...register('email')}
-              />
-              {errors.email && (
-                <p className="text-destructive text-xs">{errors.email.message}</p>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label
-                htmlFor="password"
-                className="text-xs font-semibold text-[#5a6473]"
-              >
-                {t('login.password')}
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="new-password"
-                aria-invalid={!!errors.password}
-                {...register('password')}
-              />
-              {errors.password && (
-                <p className="text-destructive text-xs">{errors.password.message}</p>
-              )}
-            </div>
+            {submitting && <Loader2 className="size-4 animate-spin" />}
+            {t('signup.submitUser')}
+          </Button>
 
-            {formError && (
-              <div
-                role="alert"
-                className="border-destructive/30 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-[13px]"
-              >
-                {formError}
-              </div>
-            )}
-            <Button
-              type="submit"
-              className="h-11 w-full text-sm"
-              disabled={isSubmitting}
+          <div className="mt-4 text-center text-[12.5px] text-muted-foreground">
+            <button
+              type="button"
+              className="font-semibold text-brand"
+              onClick={() => navigate('/login')}
             >
-              {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-              {t('signup.submitUser')}
-            </Button>
-          </form>
-
-          <p className="text-muted-foreground mt-4 text-center text-[12.5px]">
-            <Link to="/login" className="text-brand font-semibold hover:underline">
               {t('signup.haveAccount')}
-            </Link>
-          </p>
-        </div>
+            </button>
+          </div>
+        </form>
       </div>
-    </main>
+    </div>
   )
 }

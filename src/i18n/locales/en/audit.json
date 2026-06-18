@@ -41,5 +41,23 @@
     "after": "After",
     "none": "No change details",
     "raw": "View raw JSON"
+  },
+  "actionLabels": {
+    "created": "Created",
+    "updated": "Updated",
+    "deleted": "Deleted",
+    "signed": "Signed",
+    "granted": "Granted",
+    "revoked": "Revoked",
+    "invited": "Invited",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "removed": "Removed",
+    "added": "Added",
+    "archived": "Archived",
+    "restored": "Restored",
+    "renamed": "Renamed",
+    "suspended": "Suspended",
+    "activated": "Activated"
   }
 }

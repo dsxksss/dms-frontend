@@ -1,175 +1,96 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Archive, ArchiveRestore, KeyRound, ListChecks, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { FlaskConical, Play, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
-import { ConfirmDialog } from '@/components/confirm-dialog'
-import { Pagination } from '@/components/pagination'
-import { useProjectRole } from '@/hooks/use-projects'
-import {
-  useDeleteProtocol,
-  useProtocols,
-  useSetProtocolArchived,
-} from '@/hooks/use-protocols'
-import { useToastError } from '@/hooks/use-toast-error'
-import { roleAtLeast } from '@/lib/roles'
+import { EmptyState, ErrorState, GridSkeleton } from '@/components/states'
+import { useProtocols, useRuns } from '@/hooks/use-protocols'
 import type { Protocol } from '@/api/protocols'
 import { ProtocolDialog } from './ProtocolDialog'
+import { StartRunDialog } from './StartRunDialog'
 
+/** 方案卡片列表（2 列）：可复用模板，点开编辑或发起执行。 */
 export function ProtocolsPanel({ projectId }: { projectId: string }) {
   const { t } = useTranslation('protocols')
-  const role = useProjectRole(projectId)
-  const canManage = roleAtLeast(role, 'manager')
-  const toastError = useToastError()
-
-  const [includeArchived, setIncludeArchived] = useState(false)
-  const [page, setPage] = useState({ limit: 20, offset: 0 })
-  const query = useProtocols(projectId, { include_archived: includeArchived, ...page })
-  const setArchived = useSetProtocolArchived(projectId)
-  const del = useDeleteProtocol(projectId)
-
+  const query = useProtocols(projectId, { limit: 100 })
+  // 一次性拉全部 run，按 protocol_id 聚合出执行次数（避免逐方案 N+1）。
+  const runsQuery = useRuns(projectId, { limit: 200 })
   const [createOpen, setCreateOpen] = useState(false)
-  const [editTarget, setEditTarget] = useState<Protocol | null>(null)
-  const [delTarget, setDelTarget] = useState<Protocol | null>(null)
+  const [editing, setEditing] = useState<Protocol | null>(null)
+  const [running, setRunning] = useState<Protocol | null>(null)
 
-  const onArchive = async (p: Protocol) => {
-    try {
-      await setArchived.mutateAsync({ id: p.id, archived: !p.archived })
-      toast.success(p.archived ? t('protocol.unarchived') : t('protocol.archived'))
-    } catch (e) {
-      toastError(e)
-    }
-  }
-  const onDelete = async () => {
-    if (!delTarget) return
-    try {
-      await del.mutateAsync({ id: delTarget.id, version: delTarget.version })
-      toast.success(t('protocol.deleted'))
-      setDelTarget(null)
-    } catch (e) {
-      toastError(e)
-    }
-  }
+  const protocols = query.data?.items ?? []
+  const runCounts = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const r of runsQuery.data?.items ?? [])
+      m.set(r.protocol_id, (m.get(r.protocol_id) ?? 0) + 1)
+    return m
+  }, [runsQuery.data])
+
+  const createBtn = (
+    <Button onClick={() => setCreateOpen(true)}>
+      <Plus className="size-4" />
+      {t('protocol.create')}
+    </Button>
+  )
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Switch
-            id="proto-archived"
-            checked={includeArchived}
-            onCheckedChange={(v) => {
-              setIncludeArchived(v)
-              setPage((p) => ({ ...p, offset: 0 }))
-            }}
-          />
-          <Label htmlFor="proto-archived" className="text-muted-foreground text-sm">
-            {t('protocol.filterArchived')}
-          </Label>
-        </div>
-        {canManage && (
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="size-4" />
-            {t('protocol.create')}
-          </Button>
-        )}
+    <div>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="text-[18px] font-extrabold tracking-[-0.01em]">
+          {t('tabs.protocols')}
+        </h2>
+        {createBtn}
       </div>
 
       {query.isLoading ? (
-        <TableSkeleton rows={3} cols={2} />
+        <GridSkeleton count={2} columns={2} />
       ) : query.isError ? (
         <ErrorState error={query.error} onRetry={() => query.refetch()} />
-      ) : query.data && query.data.items.length > 0 ? (
-        <>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {query.data.items.map((p) => (
-              <Card key={p.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="truncate font-medium">{p.name}</div>
-                      <div className="text-muted-foreground flex items-center gap-1 font-mono text-xs">
-                        <KeyRound className="size-3" />
-                        {p.key}
-                      </div>
-                    </div>
-                    {p.archived && (
-                      <Badge variant="neutral" className="shrink-0">
-                        {t('status.archived', { ns: 'projects' })}
-                      </Badge>
-                    )}
-                    {canManage && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-8 shrink-0">
-                            <MoreHorizontal className="size-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setEditTarget(p)}>
-                            <Pencil className="size-4" />
-                            {t('protocol.edit')}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onArchive(p)}>
-                            {p.archived ? (
-                              <ArchiveRestore className="size-4" />
-                            ) : (
-                              <Archive className="size-4" />
-                            )}
-                            {p.archived
-                              ? t('protocol.unarchived')
-                              : t('protocol.archived')}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => setDelTarget(p)}
-                          >
-                            <Trash2 className="size-4" />
-                            {t('actions.delete', { ns: 'common' })}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent className="text-muted-foreground flex items-center gap-1.5 text-sm">
-                  <ListChecks className="size-4" />
-                  {t('protocol.stepCount', { count: p.steps.length })}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          <Pagination
-            limit={page.limit}
-            offset={page.offset}
-            total={query.data.total}
-            onChange={setPage}
-          />
-        </>
-      ) : (
+      ) : protocols.length === 0 ? (
         <EmptyState
           title={t('protocol.empty')}
-          description={t('protocol.emptyDesc')}
-          action={
-            canManage ? (
-              <Button onClick={() => setCreateOpen(true)}>
-                <Plus className="size-4" />
-                {t('protocol.create')}
-              </Button>
-            ) : undefined
-          }
+          hint={t('protocol.emptyDesc')}
+          action={createBtn}
         />
+      ) : (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {protocols.map((p) => (
+            <div
+              key={p.id}
+              className="card-shadow rounded-[14px] border bg-card p-[18px]"
+            >
+              <div className="flex items-start gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditing(p)}
+                  className="flex min-w-0 flex-1 items-start gap-3 text-left"
+                >
+                  <div className="flex size-[42px] shrink-0 items-center justify-center rounded-[11px] bg-[#FEF4E6] text-[#B45309]">
+                    <FlaskConical className="size-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="truncate text-[15px] font-bold hover:text-brand">
+                      {p.name}
+                    </div>
+                    <div className="mt-0.5 text-[12px] text-muted-foreground">
+                      {t('protocol.stepCount', { count: p.steps.length })} ·{' '}
+                      {runCounts.get(p.id) ?? 0} {t('run.section')}
+                    </div>
+                  </div>
+                </button>
+                <Button size="sm" onClick={() => setRunning(p)}>
+                  <Play className="size-3.5" />
+                  {t('run.start')}
+                </Button>
+              </div>
+              {p.description && (
+                <p className="mt-3 line-clamp-2 text-[12.5px] leading-relaxed text-muted-foreground">
+                  {p.description}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
       )}
 
       <ProtocolDialog
@@ -179,19 +100,18 @@ export function ProtocolsPanel({ projectId }: { projectId: string }) {
       />
       <ProtocolDialog
         projectId={projectId}
-        open={!!editTarget}
-        onOpenChange={(o) => !o && setEditTarget(null)}
-        protocol={editTarget}
+        open={!!editing}
+        onOpenChange={(o) => !o && setEditing(null)}
+        protocol={editing ?? undefined}
       />
-      <ConfirmDialog
-        open={!!delTarget}
-        onOpenChange={(o) => !o && setDelTarget(null)}
-        title={t('protocol.deleteTitle')}
-        description={t('protocol.deleteDesc', { name: delTarget?.name })}
-        destructive
-        loading={del.isPending}
-        onConfirm={onDelete}
-      />
+      {running && (
+        <StartRunDialog
+          projectId={projectId}
+          protocolId={running.id}
+          open={!!running}
+          onOpenChange={(o) => !o && setRunning(null)}
+        />
+      )}
     </div>
   )
 }

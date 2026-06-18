@@ -19,7 +19,8 @@
     "submit": "Sign",
     "signed": "Signed",
     "reasonRequired": "Reason is required",
-    "passwordRequired": "Password is required"
+    "passwordRequired": "Password is required",
+    "wrongPassword": "Incorrect password"
   },
   "columns": {
     "signer": "Signer",

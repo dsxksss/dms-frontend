@@ -2,12 +2,14 @@ import { useTranslation } from 'react-i18next'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
 import type { GrantResourceType } from '@/api/grants'
 import { ResourceGrantsPanel } from './ResourceGrantsPanel'
 
+/** ResourceGrantsPanel 的弹窗外壳：标题带资源名，内嵌授权面板。 */
 export function ResourceGrantsDialog({
   resourceType,
   resourceId,
@@ -17,19 +19,17 @@ export function ResourceGrantsDialog({
 }: {
   resourceType: GrantResourceType
   resourceId: string
-  name?: string
+  name: string
   open: boolean
-  onOpenChange: (o: boolean) => void
+  onOpenChange: (open: boolean) => void
 }) {
   const { t } = useTranslation('common')
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle>
-            {t('resourceGrants.title')}
-            {name ? ` · ${name}` : ''}
-          </DialogTitle>
+          <DialogTitle>{t('resourceGrants.title')}</DialogTitle>
+          <DialogDescription className="truncate">{name}</DialogDescription>
         </DialogHeader>
         {open && (
           <ResourceGrantsPanel

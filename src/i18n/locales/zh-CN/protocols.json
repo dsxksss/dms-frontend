@@ -1,5 +1,6 @@
 {
   "title": "实验方案",
+  "pageTitle": "实验方案与执行",
   "subtitle": "可复用的方案模板与执行记录（ELN）",
   "tabs": { "protocols": "方案", "runs": "执行" },
   "columns": { "name": "名称", "key": "标识", "steps": "步骤", "status": "状态", "protocol": "方案", "performedBy": "执行人", "started": "开始", "signature": "签名" },

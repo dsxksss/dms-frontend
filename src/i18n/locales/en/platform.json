@@ -11,6 +11,7 @@
     "submit": "Sign in",
     "submitting": "Signing in…",
     "invalid": "Wrong email or password, or this account is not a platform admin",
+    "backToApp": "Back to sign in",
     "required": {
       "email": "Email is required",
       "emailFormat": "Invalid email format",
@@ -37,6 +38,11 @@
     "empty": "No public datasets yet",
     "emptyDesc": "Click \"New dataset\" to create one, then upload a CSV version.",
     "upload": "Upload version (CSV)",
+    "uploadHint": "Optional; pick a CSV file to upload as the first version.",
+    "version": "Version",
+    "rows": "Rows",
+    "visibility": "Visibility",
+    "readonlyAll": "Read-only all",
     "uploaded": "Version uploaded",
     "created": "Dataset created",
     "deleted": "Dataset deleted",
@@ -72,7 +78,10 @@
   },
   "overview": {
     "title": "Platform overview",
-    "desc": "Companies, usage and license status across the platform."
+    "desc": "Companies, usage and license status across the platform.",
+    "orgsSub": "Across all companies",
+    "usersSub": "All platform users",
+    "storageSub": "After dedup"
   },
   "stats": {
     "tenants": "Companies",
@@ -84,6 +93,7 @@
   },
   "license": {
     "title": "License",
+    "machineBound": "Machine-bound",
     "tenants": "Companies (used / max)",
     "signed": "Public key",
     "baked": "Baked in",

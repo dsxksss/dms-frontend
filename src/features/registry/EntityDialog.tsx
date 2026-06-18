@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -10,111 +10,79 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
 import { useCreateRecord, useUpdateRecord } from '@/hooks/use-registry'
 import { useToastError } from '@/hooks/use-toast-error'
-import {
-  buildData,
-  initialValues,
-  validateEntity,
-  type FormValues,
-} from '@/lib/field-types'
-import type { Entity, EntityType } from '@/api/registry'
+import type { Entity, EntityType, TypeKind } from '@/api/registry'
 import { SchemaForm } from './SchemaForm'
-import { EntityPicker } from './EntityPicker'
 
+/** 新建 / 编辑记录（药物资产或药物数据）。 */
 export function EntityDialog({
   projectId,
+  kind,
   type,
-  entity,
   open,
   onOpenChange,
+  record,
 }: {
   projectId: string
+  kind: TypeKind
   type: EntityType
-  entity?: Entity | null
   open: boolean
-  onOpenChange: (o: boolean) => void
+  onOpenChange: (open: boolean) => void
+  record?: Entity | null
 }) {
   const { t } = useTranslation('registry')
-  const isEdit = !!entity
-  const create = useCreateRecord(projectId, type.kind)
-  const update = useUpdateRecord(projectId, type.kind, entity?.id ?? '')
+  const create = useCreateRecord(projectId, kind)
+  const update = useUpdateRecord(projectId, kind, record?.id ?? '')
   const toastError = useToastError()
-
-  const [values, setValues] = useState<FormValues>({})
+  const [values, setValues] = useState<Record<string, unknown>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [assetRecordId, setAssetRecordId] = useState<string | undefined>()
-  const [submitting, setSubmitting] = useState(false)
-
-  // 数据模版（template）的记录可关联一条药物资产记录。
-  const isData = type.kind === 'template'
 
   useEffect(() => {
     if (open) {
-      setValues(initialValues(type.fields, entity?.data))
-      setAssetRecordId(entity?.asset_record_id ?? undefined)
+      setValues(record?.data ?? {})
       setErrors({})
     }
-  }, [open, type, entity])
+  }, [open, record])
 
   const submit = async () => {
-    const errs = validateEntity(type.fields, values)
-    setErrors(errs)
-    if (Object.keys(errs).length) return
-
-    const data = buildData(type.fields, values)
-    setSubmitting(true)
+    const errs: Record<string, string> = {}
+    type.fields.forEach((f) => {
+      if (f.required) {
+        const v = values[f.name]
+        if (v == null || v === '') errs[f.name] = t('errors.required')
+      }
+    })
+    if (Object.keys(errs).length) {
+      setErrors(errs)
+      return
+    }
     try {
-      if (isEdit && entity) {
-        await update.mutateAsync({ data, version: entity.version })
+      if (record) {
+        await update.mutateAsync({ data: values, version: record.version })
         toast.success(t('entities.updated'))
       } else {
-        await create.mutateAsync({
-          type_id: type.id,
-          data,
-          ...(isData && assetRecordId ? { asset_record_id: assetRecordId } : {}),
-        })
+        await create.mutateAsync({ type_id: type.id, data: values })
         toast.success(t('entities.created'))
       }
       onOpenChange(false)
     } catch (e) {
       toastError(e)
-    } finally {
-      setSubmitting(false)
     }
   }
 
+  const pending = create.isPending || update.isPending
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[640px]">
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? t('entities.edit') : t('entities.create')} · {type.name}
+            {record ? t('entities.edit') : t('entities.create')} ·{' '}
+            <span className="text-muted-foreground">{type.name}</span>
           </DialogTitle>
         </DialogHeader>
-
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            void submit()
-          }}
-          className="space-y-4"
-        >
-          {isData && !isEdit && (
-            <div className="space-y-2">
-              <Label>{t('entities.assetRecord')}</Label>
-              <EntityPicker
-                projectId={projectId}
-                value={assetRecordId}
-                onChange={setAssetRecordId}
-              />
-              <p className="text-muted-foreground text-xs">
-                {t('entities.assetRecordHint')}
-              </p>
-            </div>
-          )}
-
+        <div className="max-h-[60vh] overflow-auto py-1">
           <SchemaForm
             projectId={projectId}
             fields={type.fields}
@@ -124,14 +92,16 @@ export function EntityDialog({
               setValues((prev) => ({ ...prev, [name]: value }))
             }
           />
-
-          <DialogFooter>
-            <Button type="submit" disabled={submitting}>
-              {submitting && <Loader2 className="size-4 animate-spin" />}
-              {isEdit ? t('actions.save', { ns: 'common' }) : t('entities.create')}
-            </Button>
-          </DialogFooter>
-        </form>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t('actions.cancel', { ns: 'common', defaultValue: '取消' })}
+          </Button>
+          <Button onClick={submit} disabled={pending}>
+            {pending && <Loader2 className="size-4 animate-spin" />}
+            {t('actions.save', { ns: 'common', defaultValue: '保存' })}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

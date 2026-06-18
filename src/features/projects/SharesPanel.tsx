@@ -1,16 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Loader2, Plus, Share2, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
-
-import { Building2 } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
-import { RowList, Row } from '@/components/row-list'
-import { roleTone } from '@/lib/tone'
-import { tintOf } from '@/lib/tile'
 import {
   Select,
   SelectContent,
@@ -18,153 +12,118 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { EmptyState } from '@/components/states'
 import { ConfirmDialog } from '@/components/confirm-dialog'
-import { EmptyState, TableSkeleton } from '@/components/states'
-import {
-  useAddShare,
-  useProjectRole,
-  useRemoveShare,
-  useShares,
-} from '@/hooks/use-projects'
+import { roleTone } from '@/components/tone'
 import { useOrgs } from '@/hooks/use-orgs'
+import { useAddShare, useRemoveShare, useShares } from '@/hooks/use-projects'
 import { useToastError } from '@/hooks/use-toast-error'
-import { roleAtLeast, type ProjectRole } from '@/lib/roles'
+import type { ProjectRole } from '@/lib/roles'
 import type { ProjectShare } from '@/api/projects'
 
+// 共享角色不含 owner（跨组织最高授到 manager 级）。
 const SHARE_ROLES: ProjectRole[] = ['viewer', 'contributor', 'manager']
-const ALL = '__all'
+const ALL_ORGS = '__all__'
 
+/** 跨组织共享：列出共享（组织名 / 集团共享）+ 新增（组织 + 角色）+ 移除。 */
 export function SharesPanel({ projectId }: { projectId: string }) {
   const { t } = useTranslation('projects')
-  const role = useProjectRole(projectId)
-  const canManage = roleAtLeast(role, 'manager')
   const shares = useShares(projectId)
-  const orgs = useOrgs()
   const add = useAddShare(projectId)
   const remove = useRemoveShare(projectId)
+  const orgs = useOrgs()
   const toastError = useToastError()
-
-  const [org, setOrg] = useState(ALL)
-  const [shareRole, setShareRole] = useState<ProjectRole>('viewer')
+  const [orgId, setOrgId] = useState<string>(ALL_ORGS)
+  const [role, setRole] = useState<ProjectRole>('viewer')
   const [removeTarget, setRemoveTarget] = useState<ProjectShare | null>(null)
 
   const orgName = (id: string | null) =>
-    id ? (orgs.data?.find((o) => o.id === id)?.name ?? id) : t('shares.allOrgs')
+    id ? orgs.data?.find((o) => o.id === id)?.name ?? id : t('shares.allOrgs')
 
-  const onAdd = async () => {
-    try {
-      await add.mutateAsync({
-        org_id: org === ALL ? undefined : org,
-        role: shareRole,
+  const doAdd = () => {
+    add
+      .mutateAsync({ org_id: orgId === ALL_ORGS ? undefined : orgId, role })
+      .then(() => {
+        toast.success(t('shares.added'))
+        setOrgId(ALL_ORGS)
+        setRole('viewer')
       })
-      toast.success(t('shares.added'))
-    } catch (e) {
-      toastError(e)
-    }
+      .catch(toastError)
   }
 
-  const onRemove = async () => {
-    if (!removeTarget) return
-    try {
-      await remove.mutateAsync(removeTarget.id)
-      toast.success(t('shares.removed'))
-      setRemoveTarget(null)
-    } catch (e) {
-      toastError(e)
-    }
-  }
+  const rows = shares.data ?? []
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="flex items-center gap-2 text-[15px] font-bold">
-          <Share2 className="size-4" />
-          {t('shares.title')}
-        </h2>
-        <p className="text-muted-foreground text-[13px]">{t('shares.desc')}</p>
+    <div className="space-y-3">
+      <p className="text-[12.5px] leading-relaxed text-muted-foreground">
+        {t('shares.desc')}
+      </p>
+
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="space-y-1.5">
+          <Label className="text-[12px]">{t('shares.org')}</Label>
+          <Select value={orgId} onValueChange={setOrgId}>
+            <SelectTrigger className="h-9 w-[200px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_ORGS}>{t('shares.allOrgs')}</SelectItem>
+              {(orgs.data ?? []).map((o) => (
+                <SelectItem key={o.id} value={o.id}>
+                  {o.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-[12px]">{t('shares.role')}</Label>
+          <Select
+            value={role}
+            onValueChange={(v) => setRole(v as ProjectRole)}
+          >
+            <SelectTrigger className="h-9 w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SHARE_ROLES.map((r) => (
+                <SelectItem key={r} value={r}>
+                  {t(`roles.${r}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button onClick={doAdd} disabled={add.isPending}>
+          <Plus className="size-4" />
+          {t('shares.add')}
+        </Button>
       </div>
 
-      {canManage && (
-        <Card className="flex flex-row flex-wrap items-end gap-2 p-4">
-          <div className="space-y-1.5">
-            <Label>{t('shares.org')}</Label>
-            <Select value={org} onValueChange={setOrg}>
-              <SelectTrigger className="w-56">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>{t('shares.allOrgs')}</SelectItem>
-                {(orgs.data ?? []).map((o) => (
-                  <SelectItem key={o.id} value={o.id}>
-                    {o.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t('shares.role')}</Label>
-            <Select
-              value={shareRole}
-              onValueChange={(v) => setShareRole(v as ProjectRole)}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SHARE_ROLES.map((r) => (
-                  <SelectItem key={r} value={r}>
-                    {t(`roles.${r}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <Button onClick={onAdd} disabled={add.isPending}>
-            {add.isPending ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Plus className="size-4" />
-            )}
-            {t('shares.add')}
-          </Button>
-        </Card>
-      )}
-
-      {shares.isLoading ? (
-        <TableSkeleton rows={2} cols={2} />
-      ) : shares.data && shares.data.length > 0 ? (
-        <RowList>
-          {shares.data.map((s) => {
-            const tint = tintOf(s.org_id ?? 'all')
-            return (
-              <Row key={s.id}>
-                <span
-                  className="flex size-[30px] shrink-0 items-center justify-center rounded-[8px]"
-                  style={{ background: tint.bg, color: tint.fg }}
-                >
-                  <Building2 className="size-4" />
-                </span>
-                <span className="min-w-0 flex-1 truncate font-semibold">
-                  {orgName(s.org_id)}
-                </span>
-                <Badge variant={roleTone(s.role)}>{t(`roles.${s.role}`)}</Badge>
-                {canManage && (
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => setRemoveTarget(s)}
-                    aria-label={t('shares.removeTitle')}
-                  >
-                    <Trash2 className="text-destructive size-4" />
-                  </Button>
-                )}
-              </Row>
-            )
-          })}
-        </RowList>
-      ) : (
+      {rows.length === 0 ? (
         <EmptyState title={t('shares.empty')} />
+      ) : (
+        <div className="overflow-hidden rounded-[12px] border border-divider">
+          {rows.map((s) => (
+            <div
+              key={s.id}
+              className="flex items-center gap-3 border-b border-divider px-3.5 py-2.5 last:border-b-0"
+            >
+              <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
+                {orgName(s.org_id)}
+              </span>
+              <Badge variant={roleTone(s.role)}>{t(`roles.${s.role}`)}</Badge>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                title={t('shares.removeTitle')}
+                onClick={() => setRemoveTarget(s)}
+              >
+                <X className="size-4 text-destructive" />
+              </Button>
+            </div>
+          ))}
+        </div>
       )}
 
       <ConfirmDialog
@@ -172,8 +131,18 @@ export function SharesPanel({ projectId }: { projectId: string }) {
         onOpenChange={(o) => !o && setRemoveTarget(null)}
         title={t('shares.removeTitle')}
         destructive
+        confirmText={t('row.delete')}
         loading={remove.isPending}
-        onConfirm={onRemove}
+        onConfirm={() => {
+          if (!removeTarget) return
+          remove
+            .mutateAsync(removeTarget.id)
+            .then(() => {
+              toast.success(t('shares.removed'))
+              setRemoveTarget(null)
+            })
+            .catch(toastError)
+        }}
       />
     </div>
   )

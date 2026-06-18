@@ -96,7 +96,7 @@
     "cols": "cols"
   },
   "links": {
-    "title": "Linked data assets",
+    "title": "Collaboration",
     "add": "Add link",
     "project": "Project",
     "kind": "Kind",
@@ -104,5 +104,8 @@
     "empty": "No links",
     "removeTitle": "Remove link?",
     "kindPlaceholder": "e.g. derived_from"
+  },
+  "collab": {
+    "managedInSettings": "Resource-level collaboration grants are managed in project settings."
   }
 }
