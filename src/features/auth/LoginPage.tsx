@@ -10,8 +10,11 @@ import { AuthBrandPanel } from './AuthBrandPanel'
 
 export function LoginPage() {
   const { t } = useTranslation('auth')
-  const { login, status } = useAuth()
+  const { login, loginWemol, status } = useAuth()
   const navigate = useNavigate()
+  // WeMol SSO 为默认入口（云端 + 私有化）；可切换邮箱 + 密码（超管/首装兜底）。
+  const [mode, setMode] = useState<'wemol' | 'password'>('wemol')
+  const [account, setAccount] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -24,10 +27,14 @@ export function LoginPage() {
     setError('')
     setSubmitting(true)
     try {
-      await login({ email, password })
+      if (mode === 'wemol') {
+        await loginWemol({ name: account, passwd: password })
+      } else {
+        await login({ email, password })
+      }
       navigate('/projects')
     } catch {
-      setError(t('login.invalid'))
+      setError(mode === 'wemol' ? t('login.wemol.invalid') : t('login.invalid'))
     } finally {
       setSubmitting(false)
     }
@@ -48,21 +55,35 @@ export function LoginPage() {
             {t('login.welcomeSub')}
           </div>
 
-          <div className="mt-[26px] space-y-1.5">
-            <Label htmlFor="email" className="text-[12px] text-[#5a6473]">
-              {t('login.email')}
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
+          {mode === 'wemol' ? (
+            <div className="mt-[26px] space-y-1.5">
+              <Label htmlFor="wemol-account" className="text-[12px] text-[#5a6473]">
+                {t('login.wemol.account')}
+              </Label>
+              <Input
+                id="wemol-account"
+                autoComplete="username"
+                value={account}
+                onChange={(e) => setAccount(e.target.value)}
+              />
+            </div>
+          ) : (
+            <div className="mt-[26px] space-y-1.5">
+              <Label htmlFor="email" className="text-[12px] text-[#5a6473]">
+                {t('login.email')}
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+          )}
           <div className="mt-4 space-y-1.5">
             <Label htmlFor="password" className="text-[12px] text-[#5a6473]">
-              {t('login.password')}
+              {mode === 'wemol' ? t('login.wemol.password') : t('login.password')}
             </Label>
             <Input
               id="password"
@@ -83,8 +104,23 @@ export function LoginPage() {
             disabled={submitting}
           >
             {submitting && <Loader2 className="size-4 animate-spin" />}
-            {submitting ? t('login.submitting') : t('login.submit')}
+            {submitting
+              ? t('login.submitting')
+              : mode === 'wemol'
+                ? t('login.wemol.submit')
+                : t('login.submit')}
           </Button>
+
+          <button
+            type="button"
+            className="mt-3 w-full text-center text-[12.5px] font-semibold text-brand"
+            onClick={() => {
+              setError('')
+              setMode((m) => (m === 'wemol' ? 'password' : 'wemol'))
+            }}
+          >
+            {mode === 'wemol' ? t('login.wemol.useEmail') : t('login.wemol.useWemol')}
+          </button>
 
           <div className="mt-4 text-center text-[12.5px] text-muted-foreground">
             {t('signup.haveAccount')}{' '}

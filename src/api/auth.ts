@@ -17,6 +17,13 @@ export interface TenantSignupRequest {
   admin_name?: string
 }
 
+/** 第三方令牌交换：WeMol SSO 用 provider="wemol"，token=ant_uid 或 JSON 凭据。 */
+export interface TokenExchangeRequest {
+  tenant?: string
+  provider: string
+  token: string
+}
+
 export const authApi = {
   login: (req: LoginRequest) =>
     request<SessionTokens>('/v1/auth/login', {
@@ -34,6 +41,14 @@ export const authApi = {
 
   signupTenant: (req: TenantSignupRequest) =>
     request<SessionTokens>('/v1/signup/tenant', {
+      method: 'POST',
+      body: req,
+      skipAuthRefresh: true,
+    }),
+
+  /** 第三方令牌交换（WeMol SSO 等）→ SessionTokens（与普通登录同结构）。 */
+  tokenExchange: (req: TokenExchangeRequest) =>
+    request<SessionTokens>('/v1/auth/token/exchange', {
       method: 'POST',
       body: req,
       skipAuthRefresh: true,

@@ -8,6 +8,8 @@ export interface AuthContextValue {
   status: AuthStatus
   me: Me | null
   login: (req: LoginRequest) => Promise<void>
+  /** WeMol 账号 SSO 登录：账号 + 密码经 token/exchange 换 DMS 会话。 */
+  loginWemol: (req: { name: string; passwd: string; tenant?: string }) => Promise<void>
   signupUser: (req: UserSignupRequest) => Promise<void>
   signupTenant: (req: TenantSignupRequest) => Promise<void>
   logout: () => Promise<void>

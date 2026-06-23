@@ -37,6 +37,7 @@ export function renderWithProviders(
     status: me ? 'authed' : 'anon',
     me,
     login: async () => {},
+    loginWemol: async () => {},
     signupUser: async () => {},
     signupTenant: async () => {},
     logout: async () => {},
