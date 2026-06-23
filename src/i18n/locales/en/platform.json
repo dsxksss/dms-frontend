@@ -104,6 +104,7 @@
     "demo": "Demo",
     "standard": "Standard",
     "enterprise": "Enterprise",
+    "private": "Private",
     "onprem": "On-prem",
     "summary": "{{orgs}} orgs · {{users}}/org · {{storage}}"
   },

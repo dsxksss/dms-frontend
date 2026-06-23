@@ -59,9 +59,11 @@ export function roleTone(role: string): Tone {
   }
 }
 
-/** 订阅档位：enterprise=紫，standard=蓝，demo=灰。 */
+/** 订阅档位：private=品红(私有化)，enterprise=紫，standard=蓝，demo=灰。 */
 export function planTone(plan: string): Tone {
   switch (plan) {
+    case 'private':
+      return 'pink'
     case 'enterprise':
       return 'purple'
     case 'standard':

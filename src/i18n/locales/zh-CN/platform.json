@@ -104,6 +104,7 @@
     "demo": "体验版",
     "standard": "标准版",
     "enterprise": "企业版",
+    "private": "私有化版",
     "onprem": "私有化",
     "summary": "{{orgs}} 组织 · 每组 {{users}} 人 · {{storage}}"
   },
