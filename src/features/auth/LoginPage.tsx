@@ -12,8 +12,12 @@ export function LoginPage() {
   const { t } = useTranslation('auth')
   const { login, loginWemol, status } = useAuth()
   const navigate = useNavigate()
-  // WeMol SSO 为默认入口（云端 + 私有化）；可切换邮箱 + 密码（超管/首装兜底）。
-  const [mode, setMode] = useState<'wemol' | 'password'>('wemol')
+  // WeMol SSO 默认为首选入口（云端 + 私有化）；未配置 WeMol 的部署可置
+  // VITE_WEMOL_SSO=off，登录页默认邮箱 + 密码、WeMol 作次选（仍可切换）。
+  const wemolDefault = import.meta.env.VITE_WEMOL_SSO !== 'off'
+  const [mode, setMode] = useState<'wemol' | 'password'>(
+    wemolDefault ? 'wemol' : 'password',
+  )
   const [account, setAccount] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
