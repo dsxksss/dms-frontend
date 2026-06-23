@@ -66,7 +66,8 @@
       "owner": "Owner",
       "manager": "Manager",
       "contributor": "Contributor",
-      "viewer": "Viewer"
+      "viewer": "Viewer",
+      "auditor": "Auditor"
     }
   },
   "permissions": {

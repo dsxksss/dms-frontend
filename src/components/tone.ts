@@ -44,7 +44,7 @@ export function statusTone(status: string): Tone {
   }
 }
 
-/** 项目 / 组织角色：Owner=紫，Manager·admin=蓝，Contributor=绿，Viewer·member=灰。 */
+/** 项目 / 组织角色：Owner=紫，Manager·admin=蓝，Contributor=绿，auditor=琥珀，Viewer·member=灰。 */
 export function roleTone(role: string): Tone {
   switch (role.toLowerCase()) {
     case 'owner':
@@ -54,6 +54,8 @@ export function roleTone(role: string): Tone {
       return 'info'
     case 'contributor':
       return 'success'
+    case 'auditor':
+      return 'warning'
     default:
       return 'neutral' // viewer / member
   }

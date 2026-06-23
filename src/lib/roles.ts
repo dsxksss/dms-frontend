@@ -9,6 +9,21 @@ export const ROLE_RANK: Record<ProjectRole, number> = {
   owner: 3,
 }
 
+/**
+ * 可经 `/v1/role-grants` 授予的作用域角色 key（role_key 下拉的单一信源）。
+ * `auditor`=审计管理员（仅 `audit:read`，对齐后端 FR-AUDIT 职责分离）。
+ */
+export const GRANTABLE_ROLES = [
+  'owner',
+  'admin',
+  'manager',
+  'contributor',
+  'viewer',
+  'member',
+  'auditor',
+] as const
+export type GrantableRole = (typeof GRANTABLE_ROLES)[number]
+
 /** 当前角色是否达到所需的最低角色。null/undefined（非成员）一律不达标。 */
 export function roleAtLeast(
   role: ProjectRole | null | undefined,

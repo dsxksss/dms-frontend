@@ -31,7 +31,8 @@ import { tintOf } from '@/components/brand-tile'
 import { roleTone } from '@/components/tone'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/auth/auth-context'
-import { useOrgs, useTeams, useCreateTeam } from '@/hooks/use-orgs'
+import { useOrgs, useTeams, useCreateTeam, useGrantRole } from '@/hooks/use-orgs'
+import { GRANTABLE_ROLES } from '@/lib/roles'
 import {
   useApproveJoinRequest,
   useInviteToOrg,
@@ -104,6 +105,7 @@ export function OrgDetailPage() {
         <TabsList>
           <TabsTrigger value="members">{t('tabs.members')}</TabsTrigger>
           <TabsTrigger value="teams">{t('tabs.teams')}</TabsTrigger>
+          {isAdmin && <TabsTrigger value="grants">{t('tabs.grants')}</TabsTrigger>}
           {isAdmin && <TabsTrigger value="join">{t('tabs.join')}</TabsTrigger>}
         </TabsList>
 
@@ -113,6 +115,11 @@ export function OrgDetailPage() {
         <TabsContent value="teams" className="mt-4">
           <TeamsTab orgId={id} canManage={isAdmin} />
         </TabsContent>
+        {isAdmin && (
+          <TabsContent value="grants" className="mt-4">
+            <GrantsTab orgId={id} />
+          </TabsContent>
+        )}
         {isAdmin && (
           <TabsContent value="join" className="mt-4">
             <JoinTab orgId={id} />
@@ -332,6 +339,79 @@ function JoinTab({ orgId }: { orgId: string }) {
         </GridRow>
       ))}
     </TableCard>
+  )
+}
+
+/**
+ * 角色授予：把作用域角色（含审计管理员 auditor）授予某组织成员。
+ * 经 `/v1/role-grants` 写入；后端无列表端点，故为「授予即生效」无回显（成功即提示）。
+ */
+function GrantsTab({ orgId }: { orgId: string }) {
+  const { t } = useTranslation('orgs')
+  const members = useOrgMembers(orgId)
+  const grant = useGrantRole()
+  const toastError = useToastError()
+  const [userId, setUserId] = useState('')
+  const [roleKey, setRoleKey] = useState<string>('auditor')
+  const data = members.data ?? []
+
+  const submit = () => {
+    if (!userId) return
+    grant
+      .mutateAsync({
+        principal_type: 'user',
+        principal_id: userId,
+        role_key: roleKey,
+        scope_type: 'organization',
+        scope_id: orgId,
+      })
+      .then(() => {
+        toast.success(t('grants.granted'))
+        setUserId('')
+      })
+      .catch(toastError)
+  }
+
+  return (
+    <div className="max-w-xl space-y-4">
+      <p className="text-[12.5px] text-muted-foreground">{t('grants.desc')}</p>
+      <div className="space-y-1.5">
+        <Label>{t('grants.selectUser')}</Label>
+        <Select value={userId} onValueChange={setUserId}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder={t('grants.selectUser')} />
+          </SelectTrigger>
+          <SelectContent>
+            {data.map((m) => (
+              <SelectItem key={m.user_id} value={m.user_id}>
+                {m.display_name} · {m.email}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-1.5">
+        <Label>{t('grants.roleKey')}</Label>
+        <Select value={roleKey} onValueChange={setRoleKey}>
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {GRANTABLE_ROLES.map((r) => (
+              <SelectItem key={r} value={r}>
+                {t(`grants.roles.${r}`)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex items-center gap-2">
+        <Badge variant="neutral">{t('grants.scope.organization')}</Badge>
+        <Button onClick={submit} disabled={!userId || grant.isPending}>
+          {t('grants.grant')}
+        </Button>
+      </div>
+    </div>
   )
 }
 
