@@ -33,6 +33,12 @@
   },
   "empty": "No audit entries",
   "none": "—",
+  "meta": {
+    "failure": "Failed",
+    "integrity": "Linked into tamper-evident hash chain",
+    "integrityShort": "Integrity",
+    "userAgent": "Client"
+  },
   "viewChanges": "View changes",
   "changesTitle": "Before / after",
   "changes": {

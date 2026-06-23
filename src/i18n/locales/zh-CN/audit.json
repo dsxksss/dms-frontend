@@ -33,6 +33,12 @@
   },
   "empty": "暂无审计记录",
   "none": "—",
+  "meta": {
+    "failure": "失败",
+    "integrity": "已链入防篡改哈希链",
+    "integrityShort": "完整性",
+    "userAgent": "客户端"
+  },
   "viewChanges": "查看变更",
   "changesTitle": "前后变更",
   "changes": {

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Activity } from 'lucide-react'
+import { Activity, ShieldCheck } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import {
   Select,
@@ -142,13 +142,32 @@ function AuditRow({ entry }: { entry: AuditEntry }) {
         <div className="mt-[3px] flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
           <span>{formatDateTime(entry.occurred_at)}</span>
           {entry.ip_address && <span className="mono">IP {entry.ip_address}</span>}
+          {entry.user_agent && (
+            <span className="max-w-[200px] truncate" title={entry.user_agent}>
+              {t('meta.userAgent')} {entry.user_agent}
+            </span>
+          )}
           {entry.request_id && <span className="mono">{entry.request_id}</span>}
+          {entry.hash && (
+            <span
+              className="inline-flex items-center gap-1 text-[#15803D]"
+              title={`${t('meta.integrity')}\nhash: ${entry.hash}`}
+            >
+              <ShieldCheck className="size-3" />
+              {t('meta.integrityShort')}
+            </span>
+          )}
           <ChangesView entry={entry} />
         </div>
       </div>
-      <Badge variant={tone} className="h-fit">
-        {t(`actionLabels.${verb}`, { defaultValue: verb })}
-      </Badge>
+      <div className="flex h-fit shrink-0 items-center gap-1.5">
+        {entry.result === 'failure' && (
+          <Badge variant="danger">{t('meta.failure')}</Badge>
+        )}
+        <Badge variant={tone}>
+          {t(`actionLabels.${verb}`, { defaultValue: verb })}
+        </Badge>
+      </div>
     </div>
   )
 }
