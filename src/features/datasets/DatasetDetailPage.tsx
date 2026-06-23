@@ -14,11 +14,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ErrorState } from '@/components/states'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ConfirmDialog } from '@/components/confirm-dialog'
-import { useDataset, useDatasetVersions, useDeleteDataset } from '@/hooks/use-datasets'
+import {
+  useDataset,
+  useDatasetVersions,
+  useDeleteDataset,
+  useDatasetLineage,
+} from '@/hooks/use-datasets'
 import { useProjectRole } from '@/hooks/use-projects'
 import { useToastError } from '@/hooks/use-toast-error'
 import { datasetsApi, type DatasetVersion } from '@/api/datasets'
 import { roleAtLeast } from '@/lib/roles'
+import { shortId } from '@/lib/format'
 import { CreateDatasetDialog } from './CreateDatasetDialog'
 import { DatasetMetaBadges } from './DatasetMetaBadges'
 import { DatasetPreviewPanel } from './DatasetPreviewPanel'
@@ -157,6 +163,7 @@ export function DatasetDetailPage() {
         <TabsList>
           <TabsTrigger value="preview">{t('tabs.preview')}</TabsTrigger>
           <TabsTrigger value="versions">{t('tabs.versions')}</TabsTrigger>
+          <TabsTrigger value="lineage">{t('lineage.title')}</TabsTrigger>
           {canManage && (
             <TabsTrigger value="collab">{t('links.title')}</TabsTrigger>
           )}
@@ -175,6 +182,9 @@ export function DatasetDetailPage() {
             datasetId={dsId}
             canManage={canWrite}
           />
+        </TabsContent>
+        <TabsContent value="lineage" className="mt-4">
+          <LineageTab projectId={projectId} datasetId={dsId} />
         </TabsContent>
         {canManage && (
           <TabsContent value="collab" className="mt-4">
@@ -204,6 +214,51 @@ export function DatasetDetailPage() {
         loading={remove.isPending}
         onConfirm={onDelete}
       />
+    </div>
+  )
+}
+
+/** 数据集溯源：derived_from 源类型 + 源记录（数据转数据集时记录）。 */
+function LineageTab({
+  projectId,
+  datasetId,
+}: {
+  projectId: string
+  datasetId: string
+}) {
+  const { t } = useTranslation('datasets')
+  const query = useDatasetLineage(projectId, datasetId)
+  const nodes = query.data ?? []
+
+  if (query.isLoading) return <Skeleton className="h-20 w-full" />
+  if (query.isError)
+    return <ErrorState error={query.error} onRetry={() => query.refetch()} />
+  if (nodes.length === 0)
+    return (
+      <p className="text-[12.5px] text-muted-foreground">{t('lineage.empty')}</p>
+    )
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[12.5px] text-muted-foreground">{t('lineage.desc')}</p>
+      <div className="rounded-[10px] border">
+        {nodes.map((n, i) => (
+          <div
+            key={`${n.source_kind}-${n.source_id}-${i}`}
+            className="flex items-center gap-3 border-b border-divider px-4 py-2.5 text-[13px] last:border-b-0"
+          >
+            <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-semibold text-brand">
+              {t(`lineage.kind.${n.source_kind}`, { defaultValue: n.source_kind })}
+            </span>
+            <span className="mono text-[12px] text-muted-foreground">
+              {shortId(n.source_id)}
+            </span>
+            <span className="ml-auto text-[11px] text-muted-foreground">
+              {n.kind}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

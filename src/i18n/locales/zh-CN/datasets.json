@@ -11,6 +11,25 @@
     "referencesHint": "每行一条参考文献"
   },
   "filter": { "allTags": "全部标签" },
+  "fromRegistry": {
+    "button": "转数据集",
+    "title": "数据转数据集",
+    "subtitle": "从「{{type}}」的项目记录选字段，脱敏后生成可用于 AI 训练的数据集。",
+    "fields": "导出字段",
+    "maskedHint": "敏感字段（🔒）默认脱敏/排除。",
+    "rawSensitive": "导出原始敏感字段",
+    "rawSensitiveHint": "包含 smiles/mol/seq 等明文；需 Manager 且电子签名。",
+    "esignPassword": "电子签名（重输密码）",
+    "esignHint": "导出敏感明文须 approved 电子签名（21 CFR Part 11）",
+    "submit": "生成数据集",
+    "done": "数据集已生成"
+  },
+  "lineage": {
+    "title": "溯源",
+    "desc": "该数据集的 derived_from 来源（源类型与源记录）。",
+    "empty": "无溯源记录（非由数据转数据集生成）。",
+    "kind": { "entity_type": "来源类型", "entity": "源记录" }
+  },
   "columns": {
     "name": "名称",
     "description": "描述",

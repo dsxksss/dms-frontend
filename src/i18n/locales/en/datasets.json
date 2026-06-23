@@ -11,6 +11,25 @@
     "referencesHint": "One reference per line"
   },
   "filter": { "allTags": "All tags" },
+  "fromRegistry": {
+    "button": "To dataset",
+    "title": "Data to dataset",
+    "subtitle": "Pick fields from \"{{type}}\" project records, mask sensitive ones, and generate an AI-ready dataset.",
+    "fields": "Export fields",
+    "maskedHint": "Sensitive fields (🔒) are masked/excluded by default.",
+    "rawSensitive": "Export raw sensitive fields",
+    "rawSensitiveHint": "Includes plaintext smiles/mol/seq; requires Manager + e-signature.",
+    "esignPassword": "E-signature (re-enter password)",
+    "esignHint": "Exporting raw sensitive data requires an approved e-signature (21 CFR Part 11)",
+    "submit": "Generate dataset",
+    "done": "Dataset generated"
+  },
+  "lineage": {
+    "title": "Lineage",
+    "desc": "derived_from sources of this dataset (source types and records).",
+    "empty": "No lineage (not generated from registry data).",
+    "kind": { "entity_type": "Source type", "entity": "Source record" }
+  },
   "columns": {
     "name": "Name",
     "description": "Description",

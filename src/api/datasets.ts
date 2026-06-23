@@ -66,6 +66,27 @@ export interface PreviewParams {
   desc?: boolean
 }
 
+/** 数据转数据集（从某资产类型/数据模版的项目记录生成数据集 + 溯源）。 */
+export interface FromRegistryInput {
+  name: string
+  type_id: string
+  /** 选导出的字段（空=全部）。 */
+  fields?: string[]
+  /** 默认 true 剔除敏感字段；false=导出原始敏感字段(需 Manager + approved 电子签名)。 */
+  mask_sensitive?: boolean
+  description?: string
+  tags?: string[]
+  author?: string
+  references?: string[]
+}
+
+/** 数据集溯源条目：来源类型(entity_type) / 源记录(entity)。 */
+export interface LineageNode {
+  source_kind: 'entity_type' | 'entity'
+  source_id: string
+  kind: string
+}
+
 /** 系统级公共数据集（全企业只读，平台超管维护）。 */
 export interface SystemDataset {
   id: string
@@ -123,6 +144,16 @@ export const datasetsApi = {
       query: { version },
       responseType: 'void',
     }),
+
+  /** 数据转数据集：从资产类型/数据模版记录生成数据集 + derived_from 溯源。 */
+  fromRegistry: (projectId: string, body: FromRegistryInput) =>
+    request<Dataset>(`${base(projectId)}/from-registry`, {
+      method: 'POST',
+      body,
+    }),
+  /** 数据集溯源（derived_from 源类型 + 源记录）。 */
+  lineage: (projectId: string, id: string) =>
+    request<LineageNode[]>(`${ds(projectId, id)}/lineage`),
 
   listVersions: (projectId: string, id: string) =>
     request<DatasetVersion[]>(`${ds(projectId, id)}/versions`),

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQueries } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
+  Database,
   FileUp,
   Lock,
   MoreHorizontal,
@@ -42,6 +43,7 @@ import { EntityDialog } from './EntityDialog'
 import { EntityTypeDialog } from './EntityTypeDialog'
 import { ImportEntitiesDialog } from './ImportEntitiesDialog'
 import { EntityTypesPanel } from './EntityTypesPanel'
+import { FromRegistryDialog } from '@/features/datasets/FromRegistryDialog'
 
 const TYPES_TAB = '__types__'
 
@@ -62,6 +64,7 @@ export function RegistryTab({
   const [createTypeOpen, setCreateTypeOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
+  const [convertOpen, setConvertOpen] = useState(false)
 
   const isAsset = kind === 'asset'
   const kindTypes = (types.data ?? []).filter((ty) => ty.kind === kind)
@@ -100,6 +103,15 @@ export function RegistryTab({
                 <Button variant="outline" onClick={() => setImportOpen(true)}>
                   <FileUp className="size-4" />
                   {t('import.button')}
+                </Button>
+              )}
+              {!showTypes && activeType && (
+                <Button variant="outline" onClick={() => setConvertOpen(true)}>
+                  <Database className="size-4" />
+                  {t('fromRegistry.button', {
+                    ns: 'datasets',
+                    defaultValue: '转数据集',
+                  })}
                 </Button>
               )}
               {!showTypes && activeType && canCreate && (
@@ -203,6 +215,13 @@ export function RegistryTab({
             type={activeType}
             open={createOpen}
             onOpenChange={setCreateOpen}
+          />
+          <FromRegistryDialog
+            projectId={projectId}
+            type={activeType}
+            canManage={canManage}
+            open={convertOpen}
+            onOpenChange={setConvertOpen}
           />
         </>
       )}

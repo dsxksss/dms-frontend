@@ -3,6 +3,7 @@ import {
   datasetsApi,
   type CreateDatasetInput,
   type DatasetMeta,
+  type FromRegistryInput,
   type PreviewParams,
 } from '@/api/datasets'
 
@@ -18,6 +19,8 @@ export const datasetKeys = {
     [...root, projectId, 'detail', id] as const,
   versions: (projectId: string, id: string) =>
     [...root, projectId, 'versions', id] as const,
+  lineage: (projectId: string, id: string) =>
+    [...root, projectId, 'lineage', id] as const,
   preview: (projectId: string, id: string, params: PreviewParams) =>
     [...root, projectId, 'preview', id, params] as const,
 }
@@ -67,6 +70,25 @@ export function useUpdateDataset(projectId: string, id: string) {
       body: { name?: string; description?: string; version: number } & DatasetMeta,
     ) => datasetsApi.update(projectId, id, body),
     onSuccess: invalidate,
+  })
+}
+
+/** 数据转数据集（from-registry）。 */
+export function useDatasetFromRegistry(projectId: string) {
+  const invalidate = useInvalidate(projectId)
+  return useMutation({
+    mutationFn: (body: FromRegistryInput) =>
+      datasetsApi.fromRegistry(projectId, body),
+    onSuccess: invalidate,
+  })
+}
+
+/** 数据集溯源（derived_from）。 */
+export function useDatasetLineage(projectId: string, id: string) {
+  return useQuery({
+    queryKey: datasetKeys.lineage(projectId, id),
+    queryFn: () => datasetsApi.lineage(projectId, id),
+    enabled: !!projectId && !!id,
   })
 }
 
