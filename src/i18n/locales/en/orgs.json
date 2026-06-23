@@ -87,5 +87,31 @@
       "write": "Manage"
     }
   },
-  "tabs": { "teams": "Teams", "members": "Members", "grants": "Role grants", "join": "Join requests" }
+  "registry": {
+    "createAssetType": "New asset type",
+    "createTemplate": "New data template",
+    "createRecord": "New record",
+    "noTypes": "No types yet",
+    "noTypesAdmin": "Click \"New type\" to start org-level assets/data.",
+    "noTypesMember": "The org admin hasn't created any types yet.",
+    "emptyRecords": "No records",
+    "deleted": "Record deleted",
+    "recordCreated": "Record created",
+    "recordUpdated": "Record updated",
+    "typeCreated": "Type created",
+    "typeKey": "Key",
+    "typeName": "Name",
+    "create": "Create",
+    "edit": "Edit",
+    "delete": "Delete",
+    "total": "{{total}} total"
+  },
+  "tabs": {
+    "teams": "Teams",
+    "members": "Members",
+    "assets": "Org assets",
+    "data": "Org data",
+    "grants": "Role grants",
+    "join": "Join requests"
+  }
 }

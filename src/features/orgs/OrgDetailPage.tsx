@@ -33,6 +33,7 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/auth/auth-context'
 import { useOrgs, useTeams, useCreateTeam, useGrantRole } from '@/hooks/use-orgs'
 import { GRANTABLE_ROLES } from '@/lib/roles'
+import { OrgRegistryTab } from './OrgRegistryTab'
 import {
   useApproveJoinRequest,
   useInviteToOrg,
@@ -105,6 +106,8 @@ export function OrgDetailPage() {
         <TabsList>
           <TabsTrigger value="members">{t('tabs.members')}</TabsTrigger>
           <TabsTrigger value="teams">{t('tabs.teams')}</TabsTrigger>
+          <TabsTrigger value="assets">{t('tabs.assets')}</TabsTrigger>
+          <TabsTrigger value="data">{t('tabs.data')}</TabsTrigger>
           {isAdmin && <TabsTrigger value="grants">{t('tabs.grants')}</TabsTrigger>}
           {isAdmin && <TabsTrigger value="join">{t('tabs.join')}</TabsTrigger>}
         </TabsList>
@@ -114,6 +117,12 @@ export function OrgDetailPage() {
         </TabsContent>
         <TabsContent value="teams" className="mt-4">
           <TeamsTab orgId={id} canManage={isAdmin} />
+        </TabsContent>
+        <TabsContent value="assets" className="mt-4">
+          <OrgRegistryTab orgId={id} kind="asset" isAdmin={isAdmin} />
+        </TabsContent>
+        <TabsContent value="data" className="mt-4">
+          <OrgRegistryTab orgId={id} kind="template" isAdmin={isAdmin} />
         </TabsContent>
         {isAdmin && (
           <TabsContent value="grants" className="mt-4">
