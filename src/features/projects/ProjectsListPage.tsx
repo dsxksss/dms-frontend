@@ -94,9 +94,7 @@ function ProjectCard({
   const members = useMembers(project.id)
   const datasets = useDatasets(project.id)
 
-  const sub = orgName
-    ? `${orgName} · ${t('card.orgProject')}`
-    : t('card.personalProject')
+  const sub = orgName ?? t('card.defaultWorkspace')
 
   return (
     <button

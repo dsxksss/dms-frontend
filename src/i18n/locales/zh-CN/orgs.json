@@ -1,6 +1,7 @@
 {
   "title": "组织",
   "subtitle": "企业内的组织与团队、作用域角色授予",
+  "defaultBadge": "我的工作区",
   "create": {
     "title": "新建组织",
     "slug": "标识 slug（可选）",

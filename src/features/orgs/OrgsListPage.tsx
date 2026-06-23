@@ -101,6 +101,7 @@ function OrgCard({ org }: { org: Organization }) {
             @{org.slug}
           </div>
         </Link>
+        {org.is_default && <Badge variant="info">{t('defaultBadge')}</Badge>}
         {myRole && (
           <Badge variant={roleTone(myRole)}>{t(`orgRole.${myRole}`)}</Badge>
         )}

@@ -12,6 +12,7 @@
   "card": {
     "orgProject": "Org project",
     "personalProject": "Personal project",
+    "defaultWorkspace": "My Workspace",
     "open": "Open project"
   },
   "back": "Back to projects",

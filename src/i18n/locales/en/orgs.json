@@ -1,6 +1,7 @@
 {
   "title": "Organizations",
   "subtitle": "Organizations, teams and scoped role grants",
+  "defaultBadge": "My Workspace",
   "create": {
     "title": "New organization",
     "slug": "Slug (optional)",

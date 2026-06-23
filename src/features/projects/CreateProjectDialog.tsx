@@ -26,9 +26,10 @@ import { useCreateProject } from '@/hooks/use-projects'
 import { useOrgs } from '@/hooks/use-orgs'
 import { useToastError } from '@/hooks/use-toast-error'
 
-const PERSONAL = 'personal'
+/** 归属默认值：留空交后端回退到默认组织「我的工作区」。 */
+const DEFAULT_WS = ''
 
-/** 新建项目对话框：名称 + 描述 + 归属（个人 / 某组织）。 */
+/** 新建项目对话框：名称 + 描述 + 归属组织（默认「我的工作区」，可改其他组织）。 */
 export function CreateProjectDialog({
   open,
   onOpenChange,
@@ -43,7 +44,11 @@ export function CreateProjectDialog({
   const toastError = useToastError()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [org, setOrg] = useState(PERSONAL)
+  const [org, setOrg] = useState(DEFAULT_WS)
+  const orgList = orgs.data ?? []
+  const defaultOrg = orgList.find((o) => o.is_default)
+  // 选中值：空=默认工作区（用默认组织 id 回显，否则交后端兜底）。
+  const selected = org || defaultOrg?.id || DEFAULT_WS
 
   const submit = async () => {
     if (!name.trim()) return
@@ -51,13 +56,13 @@ export function CreateProjectDialog({
       const project = await create.mutateAsync({
         name: name.trim(),
         description: description.trim() || undefined,
-        organization_id: org === PERSONAL ? undefined : org,
+        organization_id: org || undefined,
       })
       toast.success(t('toast.created'))
       onOpenChange(false)
       setName('')
       setDescription('')
-      setOrg(PERSONAL)
+      setOrg(DEFAULT_WS)
       navigate(`/projects/${project.id}`)
     } catch (e) {
       toastError(e)
@@ -94,15 +99,19 @@ export function CreateProjectDialog({
           </div>
           <div className="space-y-1.5">
             <Label>{t('columns.organization')}</Label>
-            <Select value={org} onValueChange={setOrg}>
+            <Select value={selected} onValueChange={setOrg}>
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={PERSONAL}>{t('card.personalProject')}</SelectItem>
-                {(orgs.data ?? []).map((o) => (
+                {!defaultOrg && (
+                  <SelectItem value={DEFAULT_WS}>
+                    {t('card.defaultWorkspace')}
+                  </SelectItem>
+                )}
+                {orgList.map((o) => (
                   <SelectItem key={o.id} value={o.id}>
-                    {o.name}
+                    {o.is_default ? `📌 ${o.name}` : o.name}
                   </SelectItem>
                 ))}
               </SelectContent>

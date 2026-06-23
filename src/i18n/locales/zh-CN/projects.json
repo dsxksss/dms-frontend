@@ -12,6 +12,7 @@
   "card": {
     "orgProject": "组织项目",
     "personalProject": "个人项目",
+    "defaultWorkspace": "我的工作区",
     "open": "打开项目"
   },
   "back": "返回项目列表",

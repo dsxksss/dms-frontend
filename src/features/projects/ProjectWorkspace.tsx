@@ -28,6 +28,7 @@ import { UserAvatar } from '@/components/user-avatar'
 import { ErrorState } from '@/components/states'
 import { roleTone } from '@/components/tone'
 import { useProject, useProjectRole, useMembers } from '@/hooks/use-projects'
+import { useOrgs } from '@/hooks/use-orgs'
 import { useEntityTypes } from '@/hooks/use-registry'
 import { useDatasets } from '@/hooks/use-datasets'
 import { useRuns } from '@/hooks/use-protocols'
@@ -66,6 +67,11 @@ export function ProjectLayout() {
   const isZh = useIsZh()
   const project = useProject(projectId)
   const role = useProjectRole(projectId)
+  const orgs = useOrgs()
+  // 项目统一归属组织；展示其组织名（默认组织即「我的工作区」）。
+  const orgName = orgs.data?.find(
+    (o) => o.id === project.data?.organization_id,
+  )?.name
 
   const datasets = useDatasets(projectId)
   const files = useFilesSummary(projectId)
@@ -93,13 +99,7 @@ export function ProjectLayout() {
             <div className="min-w-0 flex-1">
               <div className="truncate text-[13px] font-bold">{name}</div>
               <div className="truncate text-[10.5px] text-muted-foreground">
-                {project.data?.organization_id
-                  ? isZh
-                    ? '组织项目'
-                    : 'Org project'
-                  : isZh
-                    ? '个人项目'
-                    : 'Personal'}
+                {orgName ?? (isZh ? '我的工作区' : 'My Workspace')}
               </div>
             </div>
           </div>
