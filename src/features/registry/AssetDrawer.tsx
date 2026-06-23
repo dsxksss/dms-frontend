@@ -14,6 +14,7 @@ import { statusTone } from '@/components/tone'
 import { useAudit } from '@/hooks/use-audit'
 import { useCan } from '@/auth/auth-context'
 import { useProjectRole } from '@/hooks/use-projects'
+import { useMyFieldAccess } from '@/hooks/use-registry'
 import { roleAtLeast } from '@/lib/roles'
 import { formatDateTime, shortId } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -43,6 +44,9 @@ export function AssetDrawer({
   const canManage = roleAtLeast(role, 'manager')
   const canAudit = useCan('audit:read')
   const [grantsOpen, setGrantsOpen] = useState(false)
+
+  const access = useMyFieldAccess(projectId, type.kind, type.id)
+  const lockedFields = new Set(access.data?.locked_fields ?? [])
 
   const data = entity.data
   const name = String(data.name ?? shortId(entity.id))
@@ -83,7 +87,7 @@ export function AssetDrawer({
               <div>
                 {type.fields.map((f) => {
                   const v = data[f.name]
-                  const masked = f.sensitive && (v == null || v === '')
+                  const masked = lockedFields.has(f.name)
                   return (
                     <div
                       key={f.name}

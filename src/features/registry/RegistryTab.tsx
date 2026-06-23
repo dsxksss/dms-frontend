@@ -4,6 +4,7 @@ import { useQueries } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   FileUp,
+  Lock,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -26,7 +27,12 @@ import { cn } from '@/lib/utils'
 import { roleAtLeast } from '@/lib/roles'
 import { shortId } from '@/lib/format'
 import { useProjectRole } from '@/hooks/use-projects'
-import { useEntityTypes, useRecords, useDeleteRecord } from '@/hooks/use-registry'
+import {
+  useEntityTypes,
+  useRecords,
+  useDeleteRecord,
+  useMyFieldAccess,
+} from '@/hooks/use-registry'
 import { useToastError } from '@/hooks/use-toast-error'
 import { registryApi } from '@/api/registry'
 import type { Entity, EntityType, TypeKind } from '@/api/registry'
@@ -218,6 +224,9 @@ function RecordsGrid({
   const { t } = useTranslation('registry')
   const [page, setPage] = useState({ limit: 20, offset: 0 })
   const query = useRecords(projectId, kind, { type: type.id, ...page })
+  const access = useMyFieldAccess(projectId, kind, type.id)
+  // 列级锁定字段：权威来自 my-field-access，不再靠「单元格值为空」猜。
+  const lockedFields = new Set(access.data?.locked_fields ?? [])
   const del = useDeleteRecord(projectId, kind)
   const toastError = useToastError()
   const [selected, setSelected] = useState<Entity | null>(null)
@@ -247,8 +256,11 @@ function RecordsGrid({
         >
           <div className="th">ID</div>
           {shown.map((f) => (
-            <div key={f.name} className="th truncate">
-              {f.name}
+            <div key={f.name} className="th flex items-center gap-1 truncate">
+              <span className="truncate">{f.name}</span>
+              {lockedFields.has(f.name) && (
+                <Lock className="size-3 shrink-0 text-[#E0492C]" />
+              )}
             </div>
           ))}
           <div />
@@ -266,10 +278,10 @@ function RecordsGrid({
             </div>
             {shown.map((f) => {
               const v = r.data[f.name]
-              const masked = f.sensitive && (v == null || v === '')
+              const locked = lockedFields.has(f.name)
               return (
                 <div key={f.name} className="truncate pr-2">
-                  {masked ? (
+                  {locked ? (
                     <MaskedValue />
                   ) : v == null || v === '' ? (
                     <span className="text-muted-foreground">—</span>

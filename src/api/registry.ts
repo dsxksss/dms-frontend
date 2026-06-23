@@ -92,6 +92,17 @@ export interface FieldGrant {
   field: string
 }
 
+/** 当前用户对某类型敏感字段的列级可见性（前端表头锁渲染，不必靠「值为空」猜）。 */
+export interface FieldAccess {
+  type_id: string
+  /** 该类型的全部敏感字段。 */
+  sensitive_fields: string[]
+  /** 当前用户可见明文的字段。 */
+  visible_fields: string[]
+  /** 当前用户被隐藏（整列锁定）的字段。 */
+  locked_fields: string[]
+}
+
 export interface ImportReport {
   created: number
   failed: { row: number; error: string }[]
@@ -182,6 +193,11 @@ export const registryApi = {
   // ---- 字段授权（按 kind 取对应类型路径）----
   listFieldGrants: (projectId: string, kind: TypeKind, typeId: string) =>
     request<FieldGrant[]>(`${typePath(projectId, kind)}/${typeId}/field-grants`),
+  /** 当前用户对该类型敏感字段的列级可见性。 */
+  myFieldAccess: (projectId: string, kind: TypeKind, typeId: string) =>
+    request<FieldAccess>(
+      `${typePath(projectId, kind)}/${typeId}/my-field-access`,
+    ),
   grantField: (
     projectId: string,
     kind: TypeKind,

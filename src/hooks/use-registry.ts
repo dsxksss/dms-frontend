@@ -19,6 +19,8 @@ export const registryKeys = {
     [...root(pid), 'component-tree', rid] as const,
   fieldGrants: (pid: string, tid: string) =>
     [...root(pid), 'field-grants', tid] as const,
+  fieldAccess: (pid: string, tid: string) =>
+    [...root(pid), 'field-access', tid] as const,
 }
 
 function useInvalidateRegistry(projectId: string) {
@@ -100,6 +102,19 @@ export function useFieldGrants(
   return useQuery({
     queryKey: registryKeys.fieldGrants(projectId, typeId),
     queryFn: () => registryApi.listFieldGrants(projectId, kind, typeId),
+  })
+}
+
+/** 当前用户对某类型敏感字段的列级可见性（表头锁渲染用）。 */
+export function useMyFieldAccess(
+  projectId: string,
+  kind: TypeKind,
+  typeId: string,
+) {
+  return useQuery({
+    queryKey: registryKeys.fieldAccess(projectId, typeId),
+    queryFn: () => registryApi.myFieldAccess(projectId, kind, typeId),
+    enabled: !!typeId,
   })
 }
 
