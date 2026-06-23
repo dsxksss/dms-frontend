@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Grid3x3, Plus } from 'lucide-react'
@@ -7,16 +7,19 @@ import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/page-header'
 import { GridHeader, GridRow, TableCard, Th } from '@/components/data-grid'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
-import { useDatasets } from '@/hooks/use-datasets'
+import { cn } from '@/lib/utils'
+import { useDatasets, useDatasetTags } from '@/hooks/use-datasets'
 import { CreateDatasetDialog } from './CreateDatasetDialog'
 
-const COLS = '1.6fr 90px 130px 110px'
+const COLS = '1.6fr 1fr 130px 110px'
 
 /** 项目数据集列表（成员可见，Contributor+ 可写）。 */
 export function DatasetsPanel({ projectId }: { projectId: string }) {
   const { t } = useTranslation('datasets')
   const navigate = useNavigate()
-  const query = useDatasets(projectId)
+  const [tag, setTag] = useState<string | undefined>(undefined)
+  const query = useDatasets(projectId, tag)
+  const tags = useDatasetTags(projectId)
   const [createOpen, setCreateOpen] = useState(false)
   const data = query.data ?? []
 
@@ -36,6 +39,19 @@ export function DatasetsPanel({ projectId }: { projectId: string }) {
         actions={createBtn}
       />
 
+      {(tags.data?.length ?? 0) > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-1.5">
+          <FilterChip active={!tag} onClick={() => setTag(undefined)}>
+            {t('filter.allTags')}
+          </FilterChip>
+          {tags.data!.map((tg) => (
+            <FilterChip key={tg} active={tag === tg} onClick={() => setTag(tg)}>
+              {tg}
+            </FilterChip>
+          ))}
+        </div>
+      )}
+
       {query.isLoading ? (
         <TableSkeleton rows={5} />
       ) : query.isError ? (
@@ -50,7 +66,7 @@ export function DatasetsPanel({ projectId }: { projectId: string }) {
         <TableCard>
           <GridHeader cols={COLS}>
             <Th>{t('columns.name')}</Th>
-            <Th>{t('columns.version')}</Th>
+            <Th>{t('meta.tags')}</Th>
             <Th>{t('versions.versionNo')}</Th>
             <Th />
           </GridHeader>
@@ -75,8 +91,12 @@ export function DatasetsPanel({ projectId }: { projectId: string }) {
                   )}
                 </div>
               </div>
-              <div>
-                <Badge variant="neutral">v{ds.version}</Badge>
+              <div className="flex flex-wrap items-center gap-1">
+                {ds.tags.slice(0, 3).map((tg) => (
+                  <Badge key={tg} variant="info">
+                    {tg}
+                  </Badge>
+                ))}
               </div>
               {/* 列表项不含行数/时间戳；此处用版本号占位，避免 N+1 拉版本。 */}
               <div className="mono text-[12px] text-muted-foreground">
@@ -96,5 +116,31 @@ export function DatasetsPanel({ projectId }: { projectId: string }) {
         onOpenChange={setCreateOpen}
       />
     </div>
+  )
+}
+
+/** 标签过滤胶囊。 */
+function FilterChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'rounded-full border px-2.5 py-1 text-[12px] font-semibold transition',
+        active
+          ? 'border-brand bg-accent text-brand'
+          : 'border-transparent bg-[#F0F2F6] text-muted-foreground hover:text-foreground',
+      )}
+    >
+      {children}
+    </button>
   )
 }

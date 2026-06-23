@@ -15,6 +15,9 @@ export interface Dataset {
   project_id: string
   name: string
   description: string
+  tags: string[]
+  author: string
+  references: string[]
   version: number
 }
 
@@ -40,6 +43,16 @@ export interface QueryPage {
 export interface CreateDatasetInput {
   name: string
   description?: string
+  tags?: string[]
+  author?: string
+  references?: string[]
+}
+
+/** 建/改数据集可带的元数据（后端规范化：trim、去空、大小写不敏感去重，各 ≤50 项）。 */
+export interface DatasetMeta {
+  tags?: string[]
+  author?: string
+  references?: string[]
 }
 
 export interface PreviewParams {
@@ -58,6 +71,9 @@ export interface SystemDataset {
   id: string
   name: string
   description: string
+  tags: string[]
+  author: string
+  references: string[]
   version: number
 }
 
@@ -69,7 +85,9 @@ const sys = (id: string) => `${sysBase}/${id}`
 
 /** 公共数据集只读访问（任意已认证用户）。 */
 export const systemDatasetsApi = {
-  list: () => request<SystemDataset[]>(sysBase),
+  list: (tag?: string) =>
+    request<SystemDataset[]>(sysBase, { query: tag ? { tag } : {} }),
+  listTags: () => request<string[]>(`${sysBase}/tags`),
   get: (id: string) => request<SystemDataset>(sys(id)),
   listVersions: (id: string) => request<DatasetVersion[]>(`${sys(id)}/versions`),
   preview: (id: string, params: PreviewParams = {}) =>
@@ -83,14 +101,21 @@ export const systemDatasetsApi = {
 }
 
 export const datasetsApi = {
-  list: (projectId: string) => request<Dataset[]>(base(projectId)),
+  list: (projectId: string, tag?: string) =>
+    request<Dataset[]>(base(projectId), { query: tag ? { tag } : {} }),
+  listTags: (projectId: string) =>
+    request<string[]>(`${base(projectId)}/tags`),
   get: (projectId: string, id: string) => request<Dataset>(ds(projectId, id)),
   create: (projectId: string, body: CreateDatasetInput) =>
     request<Dataset>(base(projectId), { method: 'POST', body }),
   update: (
     projectId: string,
     id: string,
-    body: { name?: string; description?: string; version: number },
+    body: {
+      name?: string
+      description?: string
+      version: number
+    } & DatasetMeta,
   ) => request<Dataset>(ds(projectId, id), { method: 'PATCH', body }),
   remove: (projectId: string, id: string, version: number) =>
     request<void>(ds(projectId, id), {

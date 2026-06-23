@@ -1,17 +1,25 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Database } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/page-header'
 import { GridHeader, GridRow, TableCard, Th } from '@/components/data-grid'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
-import { usePublicDatasets } from '@/hooks/use-public-datasets'
+import { cn } from '@/lib/utils'
+import {
+  usePublicDatasets,
+  usePublicDatasetTags,
+} from '@/hooks/use-public-datasets'
 
-const COLS = '1.8fr 90px 150px'
+const COLS = '1.8fr 1fr 150px'
 
 /** 公共（系统）数据集：跨企业全局只读，由平台超管发布。 */
 export function PublicDatasetsPage() {
   const { t } = useTranslation('common')
-  const query = usePublicDatasets()
+  const { t: td } = useTranslation('datasets')
+  const [tag, setTag] = useState<string | undefined>(undefined)
+  const query = usePublicDatasets(tag)
+  const tags = usePublicDatasetTags()
   const data = query.data ?? []
 
   return (
@@ -23,6 +31,38 @@ export function PublicDatasetsPage() {
         size="md"
       />
 
+      {(tags.data?.length ?? 0) > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setTag(undefined)}
+            className={cn(
+              'rounded-full border px-2.5 py-1 text-[12px] font-semibold transition',
+              !tag
+                ? 'border-brand bg-accent text-brand'
+                : 'border-transparent bg-[#F0F2F6] text-muted-foreground hover:text-foreground',
+            )}
+          >
+            {td('filter.allTags')}
+          </button>
+          {tags.data!.map((tg) => (
+            <button
+              key={tg}
+              type="button"
+              onClick={() => setTag(tg)}
+              className={cn(
+                'rounded-full border px-2.5 py-1 text-[12px] font-semibold transition',
+                tag === tg
+                  ? 'border-brand bg-accent text-brand'
+                  : 'border-transparent bg-[#F0F2F6] text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {tg}
+            </button>
+          ))}
+        </div>
+      )}
+
       {query.isLoading ? (
         <TableSkeleton rows={4} />
       ) : query.isError ? (
@@ -33,7 +73,7 @@ export function PublicDatasetsPage() {
         <TableCard>
           <GridHeader cols={COLS}>
             <Th>{t('settings.displayName', { defaultValue: '名称' })}</Th>
-            <Th>v</Th>
+            <Th>{td('meta.tags')}</Th>
             <Th>{t('nav.publicDatasets')}</Th>
           </GridHeader>
           {data.map((d) => (
@@ -51,8 +91,12 @@ export function PublicDatasetsPage() {
                   )}
                 </div>
               </div>
-              <div>
-                <Badge variant="neutral">v{d.version}</Badge>
+              <div className="flex flex-wrap items-center gap-1">
+                {d.tags.slice(0, 3).map((tg) => (
+                  <Badge key={tg} variant="info">
+                    {tg}
+                  </Badge>
+                ))}
               </div>
               <div>
                 <Badge variant="success">

@@ -17,6 +17,12 @@ import { Textarea } from '@/components/ui/textarea'
 import { useCreateDataset, useUpdateDataset } from '@/hooks/use-datasets'
 import { useToastError } from '@/hooks/use-toast-error'
 import type { Dataset } from '@/api/datasets'
+import {
+  DatasetMetaFields,
+  emptyMeta,
+  normalizeMeta,
+  type DatasetMetaValue,
+} from './DatasetMetaFields'
 
 /** 新建 / 编辑数据集：名称 + 描述。编辑携带乐观锁 version。 */
 export function CreateDatasetDialog({
@@ -37,12 +43,18 @@ export function CreateDatasetDialog({
   const update = useUpdateDataset(projectId, dataset?.id ?? '')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [meta, setMeta] = useState<DatasetMetaValue>(emptyMeta())
 
   // 打开时同步初值（编辑回填 / 新建清空）。
   useEffect(() => {
     if (open) {
       setName(dataset?.name ?? '')
       setDescription(dataset?.description ?? '')
+      setMeta({
+        tags: dataset?.tags ?? [],
+        author: dataset?.author ?? '',
+        references: dataset?.references ?? [],
+      })
     }
   }, [open, dataset])
 
@@ -56,12 +68,14 @@ export function CreateDatasetDialog({
           name: name.trim(),
           description: description.trim(),
           version: dataset.version,
+          ...normalizeMeta(meta),
         })
         toast.success(t('toast.updated'))
       } else {
         await create.mutateAsync({
           name: name.trim(),
           description: description.trim() || undefined,
+          ...normalizeMeta(meta),
         })
         toast.success(t('toast.created'))
       }
@@ -80,7 +94,7 @@ export function CreateDatasetDialog({
           </DialogTitle>
           <DialogDescription>{t('subtitle')}</DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="max-h-[64vh] space-y-4 overflow-auto px-0.5">
           <div className="space-y-1.5">
             <Label htmlFor="ds-name">{t('create.name')}</Label>
             <Input
@@ -101,6 +115,7 @@ export function CreateDatasetDialog({
               rows={3}
             />
           </div>
+          <DatasetMetaFields value={meta} onChange={setMeta} />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

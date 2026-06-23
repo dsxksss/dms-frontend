@@ -1,6 +1,16 @@
 {
   "title": "Datasets",
   "subtitle": "Datasets within the project (visible to members, writable by Contributor+)",
+  "meta": {
+    "tags": "Tags",
+    "tagsPlaceholder": "Type and press Enter",
+    "author": "Author",
+    "authorPlaceholder": "e.g. Jane Doe / Lab A",
+    "references": "References",
+    "referencesPlaceholder": "One per line (DOI / URL / citation)",
+    "referencesHint": "One reference per line"
+  },
+  "filter": { "allTags": "All tags" },
   "columns": {
     "name": "Name",
     "description": "Description",

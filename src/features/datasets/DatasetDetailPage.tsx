@@ -20,6 +20,7 @@ import { useToastError } from '@/hooks/use-toast-error'
 import { datasetsApi, type DatasetVersion } from '@/api/datasets'
 import { roleAtLeast } from '@/lib/roles'
 import { CreateDatasetDialog } from './CreateDatasetDialog'
+import { DatasetMetaBadges } from './DatasetMetaBadges'
 import { DatasetPreviewPanel } from './DatasetPreviewPanel'
 import { DatasetVersionsPanel } from './DatasetVersionsPanel'
 
@@ -109,6 +110,15 @@ export function DatasetDetailPage() {
             <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted-foreground">
               {meta}
             </p>
+          )}
+          {ds && (
+            <div className="mt-2.5">
+              <DatasetMetaBadges
+                tags={ds.tags}
+                author={ds.author}
+                references={ds.references}
+              />
+            </div>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">

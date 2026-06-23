@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   datasetsApi,
   type CreateDatasetInput,
+  type DatasetMeta,
   type PreviewParams,
 } from '@/api/datasets'
 
@@ -10,7 +11,9 @@ const root = ['datasets'] as const
 export const datasetKeys = {
   all: root,
   scope: (projectId: string) => [...root, projectId] as const,
-  list: (projectId: string) => [...root, projectId, 'list'] as const,
+  list: (projectId: string, tag?: string) =>
+    [...root, projectId, 'list', tag ?? null] as const,
+  tags: (projectId: string) => [...root, projectId, 'tags'] as const,
   detail: (projectId: string, id: string) =>
     [...root, projectId, 'detail', id] as const,
   versions: (projectId: string, id: string) =>
@@ -24,10 +27,19 @@ function useInvalidate(projectId: string) {
   return () => qc.invalidateQueries({ queryKey: datasetKeys.scope(projectId) })
 }
 
-export function useDatasets(projectId: string) {
+export function useDatasets(projectId: string, tag?: string) {
   return useQuery({
-    queryKey: datasetKeys.list(projectId),
-    queryFn: () => datasetsApi.list(projectId),
+    queryKey: datasetKeys.list(projectId, tag),
+    queryFn: () => datasetsApi.list(projectId, tag),
+    enabled: !!projectId,
+  })
+}
+
+/** 该项目数据集去重标签集合（左侧导航过滤用）。 */
+export function useDatasetTags(projectId: string) {
+  return useQuery({
+    queryKey: datasetKeys.tags(projectId),
+    queryFn: () => datasetsApi.listTags(projectId),
     enabled: !!projectId,
   })
 }
@@ -51,8 +63,9 @@ export function useCreateDataset(projectId: string) {
 export function useUpdateDataset(projectId: string, id: string) {
   const invalidate = useInvalidate(projectId)
   return useMutation({
-    mutationFn: (body: { name?: string; description?: string; version: number }) =>
-      datasetsApi.update(projectId, id, body),
+    mutationFn: (
+      body: { name?: string; description?: string; version: number } & DatasetMeta,
+    ) => datasetsApi.update(projectId, id, body),
     onSuccess: invalidate,
   })
 }
