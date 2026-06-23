@@ -94,6 +94,8 @@
     "noTypes": "暂无类型",
     "noTypesAdmin": "点击右上「新建类型」开始建组织级资产/数据。",
     "noTypesMember": "组织管理员尚未创建类型。",
+    "notMember": "你不是该组织的成员",
+    "notMemberHint": "组织级资产/数据仅对该组织成员可见。请联系组织管理员邀请你加入。",
     "emptyRecords": "暂无记录",
     "deleted": "记录已删除",
     "recordCreated": "记录已创建",

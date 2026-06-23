@@ -24,6 +24,7 @@ import { Pagination } from '@/components/pagination'
 import { cn } from '@/lib/utils'
 import { shortId } from '@/lib/format'
 import { slugify } from '@/lib/slug'
+import { AppError } from '@/lib/errors'
 import { useToastError } from '@/hooks/use-toast-error'
 import {
   useOrgTypes,
@@ -60,8 +61,17 @@ export function OrgRegistryTab({
   const activeType = kindTypes.find((ty) => ty.id === tab) ?? kindTypes[0]
 
   if (types.isLoading) return <TableSkeleton rows={4} />
-  if (types.isError)
+  if (types.isError) {
+    // 403=非该组织成员（租户 owner 仅在列表「看得到」组织，未必是其成员）。
+    if (types.error instanceof AppError && types.error.status === 403)
+      return (
+        <EmptyState
+          title={t('registry.notMember')}
+          hint={t('registry.notMemberHint')}
+        />
+      )
     return <ErrorState error={types.error} onRetry={() => types.refetch()} />
+  }
 
   return (
     <div className="space-y-4">

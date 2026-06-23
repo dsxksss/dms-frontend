@@ -94,6 +94,8 @@
     "noTypes": "No types yet",
     "noTypesAdmin": "Click \"New type\" to start org-level assets/data.",
     "noTypesMember": "The org admin hasn't created any types yet.",
+    "notMember": "You are not a member of this organization",
+    "notMemberHint": "Org-level assets/data are visible only to members. Ask an org admin to invite you.",
     "emptyRecords": "No records",
     "deleted": "Record deleted",
     "recordCreated": "Record created",
