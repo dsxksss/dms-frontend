@@ -55,6 +55,7 @@
     "sensitive": "Sensitive",
     "options": "Enum options",
     "optionsPlaceholder": "Comma-separated, e.g. A,B,C",
+    "refType": "Reference target type",
     "empty": "No fields yet. Click \"Add field\" to start.",
     "nameRequired": "Field name is required",
     "dupName": "Duplicate field name"

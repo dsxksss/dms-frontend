@@ -15,15 +15,23 @@ export function EntityPicker({
   projectId,
   value,
   onChange,
+  refType,
 }: {
   projectId: string
   value: string | null
   onChange: (id: string | null) => void
+  /** 字段的 ref_type（目标资产类型 key）：给定时锁定到该类型，仅列其记录。 */
+  refType?: string | null
 }) {
   const { t } = useTranslation('registry')
   const types = useEntityTypes(projectId)
   const assetTypes = (types.data ?? []).filter((ty) => ty.kind === 'asset')
-  const [typeId, setTypeId] = useState('')
+  // ref_type 指定时锁定目标类型（按 key 匹配），否则用户手选类型。
+  const lockedType = refType
+    ? assetTypes.find((ty) => ty.key === refType)
+    : undefined
+  const [pickedTypeId, setPickedTypeId] = useState('')
+  const typeId = refType ? (lockedType?.id ?? '') : pickedTypeId
   const records = useRecords(
     projectId,
     'asset',
@@ -36,18 +44,24 @@ export function EntityPicker({
 
   return (
     <div className="grid grid-cols-2 gap-2">
-      <Select value={typeId} onValueChange={setTypeId}>
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder={t('picker.type')} />
-        </SelectTrigger>
-        <SelectContent>
-          {assetTypes.map((ty) => (
-            <SelectItem key={ty.id} value={ty.id}>
-              {ty.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {refType ? (
+        <div className="flex h-9 items-center truncate rounded-[8px] border border-input bg-muted px-3 text-[13px] text-muted-foreground">
+          {lockedType?.name ?? refType}
+        </div>
+      ) : (
+        <Select value={pickedTypeId} onValueChange={setPickedTypeId}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder={t('picker.type')} />
+          </SelectTrigger>
+          <SelectContent>
+            {assetTypes.map((ty) => (
+              <SelectItem key={ty.id} value={ty.id}>
+                {ty.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
       <Select
         value={value ?? ''}
         onValueChange={(v) => onChange(v || null)}

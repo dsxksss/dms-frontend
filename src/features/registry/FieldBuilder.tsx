@@ -43,10 +43,13 @@ export function FieldBuilder({
   value,
   onChange,
   allowedTypes = ALL_TYPES,
+  assetTypes = [],
 }: {
   value: FieldDefInput[]
   onChange: (fields: FieldDefInput[]) => void
   allowedTypes?: readonly FieldType[]
+  /** 可作为 reference 目标的资产类型（供 ref_type 下拉）。 */
+  assetTypes?: { key: string; name: string }[]
 }) {
   const { t } = useTranslation('registry')
 
@@ -104,7 +107,12 @@ export function FieldBuilder({
                 />
                 <Select
                   value={f.type}
-                  onValueChange={(v) => update(i, { type: v as FieldType })}
+                  onValueChange={(v) =>
+                    update(i, {
+                      type: v as FieldType,
+                      ref_type: v === 'reference' ? f.ref_type : undefined,
+                    })
+                  }
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue />
@@ -161,6 +169,24 @@ export function FieldBuilder({
                     })
                   }
                 />
+              )}
+
+              {f.type === 'reference' && assetTypes.length > 0 && (
+                <Select
+                  value={f.ref_type ?? ''}
+                  onValueChange={(v) => update(i, { ref_type: v || undefined })}
+                >
+                  <SelectTrigger className="mt-2 w-full">
+                    <SelectValue placeholder={t('fieldBuilder.refType')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {assetTypes.map((at) => (
+                      <SelectItem key={at.key} value={at.key}>
+                        {at.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
             </div>
           ))}

@@ -34,6 +34,8 @@ export interface FieldDef {
   unique: boolean
   sensitive: boolean
   options: string[]
+  /** 仅 reference 字段：引用目标的资产类型 key（前端据此过滤候选；软引用，后端不强制类型）。 */
+  ref_type?: string | null
 }
 
 export type EntityScope = 'organization' | 'project'
@@ -107,6 +109,8 @@ export interface FieldDefInput {
   unique: boolean
   sensitive: boolean
   options: string[]
+  /** 仅 reference 字段：引用目标的资产类型 key。 */
+  ref_type?: string
 }
 
 /** 建类型 body：资产类型仅 {key,name,fields}；数据模版可带 bound/from。 */

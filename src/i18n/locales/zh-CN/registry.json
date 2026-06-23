@@ -55,6 +55,7 @@
     "sensitive": "敏感",
     "options": "枚举选项",
     "optionsPlaceholder": "逗号分隔，如 A,B,C",
+    "refType": "引用目标类型",
     "empty": "尚无字段，点击「添加字段」开始。",
     "nameRequired": "字段名必填",
     "dupName": "字段名重复"

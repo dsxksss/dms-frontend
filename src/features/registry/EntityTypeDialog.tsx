@@ -68,6 +68,7 @@ export function EntityTypeDialog({
           unique: f.unique,
           sensitive: f.sensitive,
           options: f.options ?? [],
+          ref_type: f.ref_type ?? undefined,
         })),
       )
       setBound(type?.bound_asset_type_id ?? NONE)
@@ -156,7 +157,12 @@ export function EntityTypeDialog({
             </div>
           )}
 
-          <FieldBuilder value={fields} onChange={setFields} allowedTypes={allowed} />
+          <FieldBuilder
+            value={fields}
+            onChange={setFields}
+            allowedTypes={allowed}
+            assetTypes={assetTypes.map((ty) => ({ key: ty.key, name: ty.name }))}
+          />
         </div>
 
         <DialogFooter>

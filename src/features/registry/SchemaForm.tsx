@@ -152,6 +152,7 @@ function FieldInput({
           projectId={projectId}
           value={str || null}
           onChange={(id) => onChange(id)}
+          refType={field.ref_type ?? undefined}
         />
       )
     case 'structure':
