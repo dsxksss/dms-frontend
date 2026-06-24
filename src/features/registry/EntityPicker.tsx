@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Plus } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -9,8 +11,9 @@ import {
 } from '@/components/ui/select'
 import { useEntityTypes, useRecords } from '@/hooks/use-registry'
 import { shortId } from '@/lib/format'
+import { EntityDialog } from './EntityDialog'
 
-/** 选择一条药物资产记录（reference 字段 / 关系目标）。 */
+/** 选择一条药物资产记录（reference 字段 / 关系目标）；支持内嵌新建目标记录后自动选中。 */
 export function EntityPicker({
   projectId,
   value,
@@ -31,26 +34,30 @@ export function EntityPicker({
     ? assetTypes.find((ty) => ty.key === refType)
     : undefined
   const [pickedTypeId, setPickedTypeId] = useState('')
-  const typeId = refType ? (lockedType?.id ?? '') : pickedTypeId
+  const targetType = refType
+    ? lockedType
+    : assetTypes.find((ty) => ty.id === pickedTypeId)
+  const typeId = targetType?.id ?? ''
   const records = useRecords(
     projectId,
     'asset',
     { type: typeId, limit: 50 },
     !!typeId,
   )
+  const [createOpen, setCreateOpen] = useState(false)
 
   const label = (data: Record<string, unknown>, id: string) =>
     String(data.name ?? data.id ?? shortId(id))
 
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="flex items-center gap-2">
       {refType ? (
-        <div className="flex h-9 items-center truncate rounded-[8px] border border-input bg-muted px-3 text-[13px] text-muted-foreground">
+        <div className="flex h-9 w-[34%] shrink-0 items-center truncate rounded-[8px] border border-input bg-muted px-3 text-[13px] text-muted-foreground">
           {lockedType?.name ?? refType}
         </div>
       ) : (
         <Select value={pickedTypeId} onValueChange={setPickedTypeId}>
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-[34%] shrink-0">
             <SelectValue placeholder={t('picker.type')} />
           </SelectTrigger>
           <SelectContent>
@@ -67,7 +74,7 @@ export function EntityPicker({
         onValueChange={(v) => onChange(v || null)}
         disabled={!typeId}
       >
-        <SelectTrigger className="w-full">
+        <SelectTrigger className="min-w-0 flex-1">
           <SelectValue placeholder={t('picker.entity')} />
         </SelectTrigger>
         <SelectContent>
@@ -78,6 +85,34 @@ export function EntityPicker({
           ))}
         </SelectContent>
       </Select>
+
+      {/* 内嵌新建目标记录：免去先退出去建好再回来 */}
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        className="shrink-0"
+        disabled={!targetType}
+        title={
+          targetType
+            ? t('picker.createNew', { type: targetType.name })
+            : t('picker.createNew', { type: '' })
+        }
+        onClick={() => setCreateOpen(true)}
+      >
+        <Plus className="size-4" />
+      </Button>
+
+      {targetType && (
+        <EntityDialog
+          projectId={projectId}
+          kind="asset"
+          type={targetType}
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          onCreated={(e) => onChange(e.id)}
+        />
+      )}
     </div>
   )
 }

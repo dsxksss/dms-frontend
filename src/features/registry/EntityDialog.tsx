@@ -23,6 +23,7 @@ export function EntityDialog({
   open,
   onOpenChange,
   record,
+  onCreated,
 }: {
   projectId: string
   kind: TypeKind
@@ -30,6 +31,8 @@ export function EntityDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
   record?: Entity | null
+  /** 新建成功回调（返回新记录）：用于内嵌创建后自动选中。 */
+  onCreated?: (entity: Entity) => void
 }) {
   const { t } = useTranslation('registry')
   const create = useCreateRecord(projectId, kind)
@@ -62,7 +65,8 @@ export function EntityDialog({
         await update.mutateAsync({ data: values, version: record.version })
         toast.success(t('entities.updated'))
       } else {
-        await create.mutateAsync({ type_id: type.id, data: values })
+        const created = await create.mutateAsync({ type_id: type.id, data: values })
+        onCreated?.(created)
         toast.success(t('entities.created'))
       }
       onOpenChange(false)

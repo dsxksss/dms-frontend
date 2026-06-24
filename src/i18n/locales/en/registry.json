@@ -152,7 +152,8 @@
     "entity": "Entity",
     "search": "Search…",
     "none": "(none)",
-    "empty": "No matching entities"
+    "empty": "No matching entities",
+    "createNew": "New {{type}} & select"
   },
   "import": {
     "button": "Bulk import",
