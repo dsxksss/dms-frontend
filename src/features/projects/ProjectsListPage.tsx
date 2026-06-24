@@ -1,16 +1,33 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Plus } from 'lucide-react'
+import { toast } from 'sonner'
+import { Archive, ArchiveRestore, FolderOpen, Plus, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
 import { PageHeader } from '@/components/page-header'
 import { BrandTile } from '@/components/brand-tile'
 import { EmptyState, ErrorState, GridSkeleton } from '@/components/states'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { roleTone } from '@/components/tone'
-import { useProjects, useProjectRole, useMembers } from '@/hooks/use-projects'
+import {
+  useProjects,
+  useProjectRole,
+  useMembers,
+  useSetArchived,
+  useDeleteProject,
+} from '@/hooks/use-projects'
 import { useDatasets } from '@/hooks/use-datasets'
 import { useOrgs } from '@/hooks/use-orgs'
+import { useToastError } from '@/hooks/use-toast-error'
+import { roleAtLeast } from '@/lib/roles'
 import { cn } from '@/lib/utils'
 import type { Project } from '@/api/projects'
 import { CreateProjectDialog } from './CreateProjectDialog'
@@ -101,19 +118,42 @@ function ProjectCard({
   const role = useProjectRole(project.id)
   const members = useMembers(project.id)
   const datasets = useDatasets(project.id)
+  const setArchived = useSetArchived()
+  const del = useDeleteProject()
+  const toastError = useToastError()
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const canOwn = roleAtLeast(role, 'owner')
 
   const sub = orgName ?? t('card.defaultWorkspace')
 
+  const onArchive = () =>
+    setArchived
+      .mutateAsync({ id: project.id, archived: !project.archived })
+      .then(() =>
+        toast.success(t(project.archived ? 'toast.unarchived' : 'toast.archived')),
+      )
+      .catch(toastError)
+  const onDelete = () =>
+    del
+      .mutateAsync({ id: project.id, version: project.version })
+      .then(() => {
+        toast.success(t('toast.deleted'))
+        setDeleteOpen(false)
+      })
+      .catch(toastError)
+
   return (
-    <button
-      type="button"
-      onClick={() => navigate(`/projects/${project.id}`)}
-      className={cn(
-        'card-shadow group rounded-[14px] border bg-card p-[18px] text-left transition',
-        'hover:border-brand/40 hover:shadow-[0_6px_20px_rgba(20,40,80,0.08)]',
-      )}
-    >
-      <div className="mb-3 flex items-center gap-2.5">
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <button
+          type="button"
+          onClick={() => navigate(`/projects/${project.id}`)}
+          className={cn(
+            'card-shadow group rounded-[14px] border bg-card p-[18px] text-left transition',
+            'hover:border-brand/40 hover:shadow-[0_6px_20px_rgba(20,40,80,0.08)]',
+          )}
+        >
+          <div className="mb-3 flex items-center gap-2.5">
         <BrandTile name={project.name} seed={project.id} size={38} />
         <div className="min-w-0 flex-1">
           <div className="truncate text-[15px] font-bold">{project.name}</div>
@@ -138,7 +178,41 @@ function ProjectCard({
             {t('status.archived')}
           </Badge>
         )}
-      </div>
-    </button>
+          </div>
+        </button>
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem onClick={() => navigate(`/projects/${project.id}`)}>
+          <FolderOpen />
+          {t('row.open')}
+        </ContextMenuItem>
+        {canOwn && (
+          <ContextMenuItem onClick={onArchive}>
+            {project.archived ? <ArchiveRestore /> : <Archive />}
+            {t(project.archived ? 'row.unarchive' : 'row.archive')}
+          </ContextMenuItem>
+        )}
+        {canOwn && <ContextMenuSeparator />}
+        {canOwn && (
+          <ContextMenuItem
+            variant="destructive"
+            onClick={() => setDeleteOpen(true)}
+          >
+            <Trash2 />
+            {t('row.delete')}
+          </ContextMenuItem>
+        )}
+      </ContextMenuContent>
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={t('delete.title')}
+        description={t('delete.description', { name: project.name })}
+        confirmText={t('delete.confirm')}
+        destructive
+        loading={del.isPending}
+        onConfirm={onDelete}
+      />
+    </ContextMenu>
   )
 }
