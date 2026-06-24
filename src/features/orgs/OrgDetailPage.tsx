@@ -35,6 +35,7 @@ import { useOrgs, useTeams, useCreateTeam, useGrantRole } from '@/hooks/use-orgs
 import { GRANTABLE_ROLES } from '@/lib/roles'
 import { AppError } from '@/lib/errors'
 import { OrgRegistryTab } from './OrgRegistryTab'
+import { useFirstRunTour } from '@/features/onboarding/onboarding'
 import {
   useApproveJoinRequest,
   useInviteToOrg,
@@ -62,6 +63,12 @@ export function OrgDetailPage() {
   const isAdmin = myRole === 'admin'
   const [inviteOpen, setInviteOpen] = useState(false)
   const [tintBg, tintFg] = tintOf(id)
+  // 非成员：成员/资产等端点 403。整页提示，且不自动起组织引导。
+  const notMember =
+    members.isError &&
+    members.error instanceof AppError &&
+    members.error.status === 403
+  useFirstRunTour('org', !!org && !notMember && !members.isLoading)
 
   if (!org) {
     return (
@@ -71,12 +78,7 @@ export function OrgDetailPage() {
     )
   }
 
-  // 非该组织成员（如租户 owner 仅在列表「看得到」组织）：成员/资产/数据等端点都 403。
-  // 整页给清楚提示，避免逐个 Tab 报通用 forbidden。
-  const notMember =
-    members.isError &&
-    members.error instanceof AppError &&
-    members.error.status === 403
+  // 非成员整页提示，避免逐个 Tab 报通用 forbidden（租户 owner 仅在列表「看得到」组织）。
   if (notMember) {
     return (
       <div className="mx-auto max-w-[920px] px-8 py-7">
@@ -134,9 +136,15 @@ export function OrgDetailPage() {
         <TabsList>
           <TabsTrigger value="members">{t('tabs.members')}</TabsTrigger>
           <TabsTrigger value="teams">{t('tabs.teams')}</TabsTrigger>
-          <TabsTrigger value="assets">{t('tabs.assets')}</TabsTrigger>
+          <TabsTrigger value="assets" data-tour="org-assets">
+            {t('tabs.assets')}
+          </TabsTrigger>
           <TabsTrigger value="data">{t('tabs.data')}</TabsTrigger>
-          {isAdmin && <TabsTrigger value="grants">{t('tabs.grants')}</TabsTrigger>}
+          {isAdmin && (
+            <TabsTrigger value="grants" data-tour="org-grants">
+              {t('tabs.grants')}
+            </TabsTrigger>
+          )}
           {isAdmin && <TabsTrigger value="join">{t('tabs.join')}</TabsTrigger>}
         </TabsList>
 

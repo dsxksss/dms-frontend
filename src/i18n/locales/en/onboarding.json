@@ -56,5 +56,41 @@
       "title": "③ Data to dataset",
       "desc": "On the Drug Assets page, click \"To dataset\": pick fields and turn asset records into a masked dataset in one click, with lineage recorded. That's the core loop!"
     }
+  },
+  "datasets": {
+    "welcome": {
+      "title": "📊 Datasets",
+      "desc": "Manage your project datasets here — the AI-ready output. Here's tag filtering and creating one."
+    },
+    "tags": {
+      "title": "Tag filter",
+      "desc": "Datasets can carry tags — filter by tag here. Details also show author and references."
+    },
+    "new": {
+      "title": "New dataset",
+      "desc": "Upload a CSV/XLSX to create a dataset, or…"
+    },
+    "convert": {
+      "title": "Easier: convert from assets",
+      "desc": "More often you'll go to Drug Assets and click \"To dataset\" — turning entered records straight into a masked dataset, no manual prep."
+    }
+  },
+  "org": {
+    "welcome": {
+      "title": "🏢 Organization",
+      "desc": "Organizations are for grouping and collaboration: members, teams, org-level shared assets, and scoped role grants."
+    },
+    "assets": {
+      "title": "Org assets / data",
+      "desc": "Org-level shared drug assets and data (e.g. an internal compound library) reusable across its projects. Visible to members only."
+    },
+    "grants": {
+      "title": "Role grants",
+      "desc": "Grant scoped roles (including Auditor) to members. Available to org admins."
+    },
+    "end": {
+      "title": "Start collaborating",
+      "desc": "Invite members, then share projects or maintain org-level assets. Click \"?\" top-right to replay."
+    }
   }
 }

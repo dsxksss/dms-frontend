@@ -9,6 +9,7 @@ import { GridHeader, GridRow, TableCard, Th } from '@/components/data-grid'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
 import { cn } from '@/lib/utils'
 import { useDatasets, useDatasetTags } from '@/hooks/use-datasets'
+import { useFirstRunTour } from '@/features/onboarding/onboarding'
 import { CreateDatasetDialog } from './CreateDatasetDialog'
 
 const COLS = '1.6fr 1fr 130px 110px'
@@ -23,8 +24,10 @@ export function DatasetsPanel({ projectId }: { projectId: string }) {
   const [createOpen, setCreateOpen] = useState(false)
   const data = query.data ?? []
 
+  useFirstRunTour('datasets', !query.isLoading && !query.isError)
+
   const createBtn = (
-    <Button onClick={() => setCreateOpen(true)}>
+    <Button onClick={() => setCreateOpen(true)} data-tour="ds-new">
       <Plus className="size-4" />
       {t('create.title')}
     </Button>
@@ -40,7 +43,10 @@ export function DatasetsPanel({ projectId }: { projectId: string }) {
       />
 
       {(tags.data?.length ?? 0) > 0 && (
-        <div className="mb-4 flex flex-wrap items-center gap-1.5">
+        <div
+          data-tour="ds-tags"
+          className="mb-4 flex flex-wrap items-center gap-1.5"
+        >
           <FilterChip active={!tag} onClick={() => setTag(undefined)}>
             {t('filter.allTags')}
           </FilterChip>

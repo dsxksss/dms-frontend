@@ -110,21 +110,99 @@ export function startProjectTour(t: TFunction) {
   ])
 }
 
+/** 数据集页引导（首次进入项目数据集页）。 */
+export function startDatasetsTour(t: TFunction) {
+  run(t, [
+    {
+      popover: {
+        title: t('datasets.welcome.title'),
+        description: t('datasets.welcome.desc'),
+      },
+    },
+    {
+      element: '[data-tour="ds-tags"]',
+      popover: {
+        title: t('datasets.tags.title'),
+        description: t('datasets.tags.desc'),
+        side: 'bottom',
+      },
+    },
+    {
+      element: '[data-tour="ds-new"]',
+      popover: {
+        title: t('datasets.new.title'),
+        description: t('datasets.new.desc'),
+        side: 'bottom',
+      },
+    },
+    {
+      popover: {
+        title: t('datasets.convert.title'),
+        description: t('datasets.convert.desc'),
+      },
+    },
+  ])
+}
+
+/** 组织详情引导（首次进入某组织）。 */
+export function startOrgTour(t: TFunction) {
+  run(t, [
+    {
+      popover: {
+        title: t('org.welcome.title'),
+        description: t('org.welcome.desc'),
+      },
+    },
+    {
+      element: '[data-tour="org-assets"]',
+      popover: {
+        title: t('org.assets.title'),
+        description: t('org.assets.desc'),
+        side: 'bottom',
+      },
+    },
+    {
+      element: '[data-tour="org-grants"]',
+      popover: {
+        title: t('org.grants.title'),
+        description: t('org.grants.desc'),
+        side: 'bottom',
+      },
+    },
+    {
+      popover: { title: t('org.end.title'), description: t('org.end.desc') },
+    },
+  ])
+}
+
+type TourKind = 'app' | 'project' | 'datasets' | 'org'
+const TOUR_KEY: Record<TourKind, string> = {
+  app: SEEN_APP,
+  project: SEEN_PROJECT,
+  datasets: 'dms-tour-datasets',
+  org: 'dms-tour-org',
+}
+const TOUR_FN: Record<TourKind, (t: TFunction) => void> = {
+  app: startAppTour,
+  project: startProjectTour,
+  datasets: startDatasetsTour,
+  org: startOrgTour,
+}
+
 /**
  * 首次访问自动起一轮引导（localStorage 记忆，看过即不再自动弹）。
  * `enabled` 为 false 时不触发（如数据未就绪 / 非目标路由）。
  */
-export function useFirstRunTour(kind: 'app' | 'project', enabled: boolean) {
+export function useFirstRunTour(kind: TourKind, enabled: boolean) {
   const { t } = useTranslation('onboarding')
   useEffect(() => {
     if (!enabled) return
-    const key = kind === 'app' ? SEEN_APP : SEEN_PROJECT
+    const key = TOUR_KEY[kind]
     if (localStorage.getItem(key)) return
     // 延迟到目标元素渲染完成再起。
     const id = window.setTimeout(() => {
       localStorage.setItem(key, '1')
-      if (kind === 'app') startAppTour(t)
-      else startProjectTour(t)
+      TOUR_FN[kind](t)
     }, 700)
     return () => window.clearTimeout(id)
   }, [enabled, kind, t])
@@ -136,5 +214,7 @@ export function useTourReplay() {
   return {
     replayApp: () => startAppTour(t),
     replayProject: () => startProjectTour(t),
+    replayDatasets: () => startDatasetsTour(t),
+    replayOrg: () => startOrgTour(t),
   }
 }
