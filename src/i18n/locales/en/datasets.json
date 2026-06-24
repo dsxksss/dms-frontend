@@ -59,7 +59,7 @@
   "row": { "open": "Open", "edit": "Edit", "delete": "Delete" },
   "empty": {
     "title": "No datasets yet",
-    "description": "Create a dataset, upload a CSV/Excel version, then preview and export."
+    "description": "Two ways: ① click \"New dataset\" to upload a CSV/Excel; ② easier — go to Drug Assets and click \"To dataset\" to turn entered records into a masked dataset in one click."
   },
   "delete": {
     "title": "Delete dataset?",

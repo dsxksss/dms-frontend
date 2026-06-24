@@ -180,7 +180,13 @@ function OrgRecordsGrid({
   if (query.isLoading) return <TableSkeleton rows={5} />
   if (query.isError)
     return <ErrorState error={query.error} onRetry={() => query.refetch()} />
-  if (records.length === 0) return <EmptyState title={t('registry.emptyRecords')} />
+  if (records.length === 0)
+    return (
+      <EmptyState
+        title={t('registry.emptyRecords')}
+        hint={t('registry.emptyRecordsHint')}
+      />
+    )
 
   return (
     <>

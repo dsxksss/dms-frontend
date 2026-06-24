@@ -59,7 +59,7 @@
   "row": { "open": "打开", "edit": "编辑", "delete": "删除" },
   "empty": {
     "title": "还没有数据集",
-    "description": "创建数据集并上传 CSV/Excel 版本，预览、导出。"
+    "description": "两种方式：① 点「新建数据集」上传 CSV/Excel；② 更省事——去「数据资产」页点「转数据集」，把已录入的资产记录一键脱敏导出。"
   },
   "delete": {
     "title": "删除数据集？",

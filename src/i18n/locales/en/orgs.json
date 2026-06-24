@@ -98,6 +98,7 @@
     "notMember": "You are not a member of this organization",
     "notMemberHint": "Org-level assets/data are visible only to members. Ask an org admin to invite you.",
     "emptyRecords": "No records",
+    "emptyRecordsHint": "An org admin can click \"New record\" (top-right) to add the first org-level asset/data.",
     "deleted": "Record deleted",
     "recordCreated": "Record created",
     "recordUpdated": "Record updated",

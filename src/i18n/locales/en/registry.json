@@ -84,6 +84,7 @@
     "noAssetTypes": "No asset types yet — create one on the Types tab or import the built-ins",
     "noTemplates": "No data templates yet — create one on the Types tab",
     "empty": "No entities of this type yet",
+    "emptyHint": "Next: add your first record (e.g. a compound), or use \"Import\" to bring in many at once from CSV/FASTA.",
     "created": "Entity created",
     "updated": "Entity updated",
     "deleted": "Entity deleted",

@@ -98,6 +98,7 @@
     "notMember": "你不是该组织的成员",
     "notMemberHint": "组织级资产/数据仅对该组织成员可见。请联系组织管理员邀请你加入。",
     "emptyRecords": "暂无记录",
+    "emptyRecordsHint": "组织管理员点右上「新建记录」录入第一条组织级资产/数据。",
     "deleted": "记录已删除",
     "recordCreated": "记录已创建",
     "recordUpdated": "记录已更新",

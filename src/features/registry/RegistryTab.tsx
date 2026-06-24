@@ -189,6 +189,8 @@ export function RegistryTab({
           kind={kind}
           type={activeType}
           canManage={canManage}
+          canCreate={canCreate}
+          onCreate={() => setCreateOpen(true)}
         />
       ) : null}
 
@@ -234,11 +236,15 @@ function RecordsGrid({
   kind,
   type,
   canManage,
+  canCreate,
+  onCreate,
 }: {
   projectId: string
   kind: TypeKind
   type: EntityType
   canManage: boolean
+  canCreate: boolean
+  onCreate: () => void
 }) {
   const { t } = useTranslation('registry')
   const [page, setPage] = useState({ limit: 20, offset: 0 })
@@ -264,7 +270,21 @@ function RecordsGrid({
   if (query.isLoading) return <TableSkeleton rows={6} />
   if (query.isError)
     return <ErrorState error={query.error} onRetry={() => query.refetch()} />
-  if (records.length === 0) return <EmptyState title={t('entities.empty')} />
+  if (records.length === 0)
+    return (
+      <EmptyState
+        title={t('entities.empty')}
+        hint={t('entities.emptyHint')}
+        action={
+          canCreate ? (
+            <Button onClick={onCreate}>
+              <Plus className="size-4" />
+              {t('entities.create')}
+            </Button>
+          ) : undefined
+        }
+      />
+    )
 
   return (
     <>
