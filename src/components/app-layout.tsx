@@ -1,13 +1,5 @@
-import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import {
-  Activity,
-  Building2,
-  ChevronDown,
-  FolderClosed,
-  LogOut,
-  Mail,
-  Settings,
-} from 'lucide-react'
+import { Outlet, useLocation } from 'react-router-dom'
+import { Activity, Building2, FolderClosed, Mail, Settings } from 'lucide-react'
 import {
   Sidebar,
   SidebarCaption,
@@ -18,16 +10,9 @@ import {
 import { Topbar, type Crumb } from '@/components/topbar'
 import { BrandMark } from '@/components/brand-mark'
 import { BiLabel, useIsZh } from '@/components/bilingual'
-import { UserAvatar } from '@/components/user-avatar'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { useAuth, useCan } from '@/auth/auth-context'
-import { useMyInvitations, useUser } from '@/hooks/use-membership'
+import { SidebarUser } from '@/components/sidebar-user'
+import { useCan } from '@/auth/auth-context'
+import { useMyInvitations } from '@/hooks/use-membership'
 import { useFirstRunTour, useTourReplay } from '@/features/onboarding/onboarding'
 
 /** 路由首段 → 面包屑标签。 */
@@ -41,14 +26,10 @@ const SECTION: Record<string, [string, string]> = {
 }
 
 function GlobalSidebar() {
-  const { me, logout } = useAuth()
-  const navigate = useNavigate()
   const isZh = useIsZh()
   const canAudit = useCan('audit:read')
   const invites = useMyInvitations()
-  const profile = useUser(me?.user_id)
   const inviteCount = invites.data?.length ?? 0
-  const name = profile.data?.display_name || profile.data?.email || '账户'
 
   return (
     <Sidebar>
@@ -88,39 +69,7 @@ function GlobalSidebar() {
       </SidebarNav>
 
       <SidebarFooter>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex w-full items-center gap-2.5 text-left outline-none">
-              <UserAvatar
-                name={name}
-                seed={me?.user_id ?? name}
-                color="#2F6BFF"
-                size={30}
-              />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-[12.5px] font-bold">{name}</div>
-                <div className="truncate text-[10.5px] text-muted-foreground">
-                  {profile.data?.email ?? ''}
-                </div>
-              </div>
-              <ChevronDown className="size-[15px] text-[#8b95a3]" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" side="top" className="w-52">
-            <DropdownMenuItem onClick={() => navigate('/settings')}>
-              <Settings className="size-4" />
-              {isZh ? '设置' : 'Settings'}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-destructive"
-              onClick={() => void logout()}
-            >
-              <LogOut className="size-4" />
-              {isZh ? '退出登录' : 'Sign out'}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <SidebarUser />
       </SidebarFooter>
     </Sidebar>
   )

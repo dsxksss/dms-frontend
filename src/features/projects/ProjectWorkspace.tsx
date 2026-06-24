@@ -19,14 +19,13 @@ import {
   SidebarNavItem,
 } from '@/components/sidebar'
 import { Topbar, type Crumb } from '@/components/topbar'
-import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/page-header'
 import { StatCard } from '@/components/stat-card'
 import { BrandTile } from '@/components/brand-tile'
 import { BiLabel, useIsZh } from '@/components/bilingual'
 import { UserAvatar } from '@/components/user-avatar'
 import { ErrorState } from '@/components/states'
-import { roleTone } from '@/components/tone'
+import { SidebarUser } from '@/components/sidebar-user'
 import { useProject, useProjectRole, useMembers } from '@/hooks/use-projects'
 import { useOrgs } from '@/hooks/use-orgs'
 import {
@@ -133,11 +132,7 @@ export function ProjectLayout() {
           ))}
         </SidebarNav>
         <SidebarFooter>
-          {role && (
-            <Badge variant={roleTone(role)} className="w-full justify-center">
-              {isZh ? '我的角色' : 'Role'}：{role}
-            </Badge>
-          )}
+          <SidebarUser role={role} />
         </SidebarFooter>
       </Sidebar>
 
