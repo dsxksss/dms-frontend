@@ -35,6 +35,7 @@
     "run": "Run",
     "dataset": "Dataset",
     "entity": "Entity",
+    "asset_type": "Asset type",
     "file": "File",
     "protocol": "Protocol"
   },

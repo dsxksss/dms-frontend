@@ -35,6 +35,7 @@
     "run": "执行 Run",
     "dataset": "数据集",
     "entity": "实体",
+    "asset_type": "资产类型",
     "file": "文件",
     "protocol": "方案"
   },

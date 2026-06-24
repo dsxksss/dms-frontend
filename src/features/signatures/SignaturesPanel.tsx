@@ -22,7 +22,14 @@ import { formatDateTime, shortId } from '@/lib/format'
 
 const COLS = '1.2fr 90px 1.3fr 1fr 150px 120px'
 const ALL = '__all__'
-const TARGET_KINDS = ['run', 'dataset', 'entity', 'file', 'protocol']
+const TARGET_KINDS = [
+  'run',
+  'dataset',
+  'entity',
+  'asset_type',
+  'file',
+  'protocol',
+]
 
 function meaningTone(m: SignatureMeaning) {
   switch (m) {
