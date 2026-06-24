@@ -5,6 +5,7 @@ import {
   type FieldDefInput,
   type TypeKind,
 } from '@/api/registry'
+import { markOnboard } from '@/features/onboarding/flags'
 
 const root = (projectId: string) => ['registry', projectId] as const
 
@@ -179,7 +180,10 @@ export function useCreateRecord(projectId: string, kind: TypeKind) {
       data: Record<string, unknown>
       asset_record_id?: string
     }) => registryApi.createRecord(projectId, kind, body),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate()
+      markOnboard('asset') // 快速上手清单：标记「录入数据资产」完成
+    },
   })
 }
 

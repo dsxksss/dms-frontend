@@ -6,6 +6,7 @@ import {
   type FromRegistryInput,
   type PreviewParams,
 } from '@/api/datasets'
+import { markOnboard } from '@/features/onboarding/flags'
 
 const root = ['datasets'] as const
 
@@ -59,7 +60,10 @@ export function useCreateDataset(projectId: string) {
   const invalidate = useInvalidate(projectId)
   return useMutation({
     mutationFn: (body: CreateDatasetInput) => datasetsApi.create(projectId, body),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate()
+      markOnboard('dataset') // 快速上手清单：标记「生成数据集」完成
+    },
   })
 }
 
@@ -79,7 +83,10 @@ export function useDatasetFromRegistry(projectId: string) {
   return useMutation({
     mutationFn: (body: FromRegistryInput) =>
       datasetsApi.fromRegistry(projectId, body),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate()
+      markOnboard('dataset')
+    },
   })
 }
 

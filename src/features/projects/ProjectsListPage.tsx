@@ -14,6 +14,7 @@ import { useOrgs } from '@/hooks/use-orgs'
 import { cn } from '@/lib/utils'
 import type { Project } from '@/api/projects'
 import { CreateProjectDialog } from './CreateProjectDialog'
+import { GettingStarted } from '@/features/onboarding/GettingStarted'
 
 export function ProjectsListPage() {
   const { t } = useTranslation('projects')
@@ -48,6 +49,13 @@ export function ProjectsListPage() {
           </>
         }
       />
+
+      {query.data && (
+        <GettingStarted
+          hasProject={projects.length > 0}
+          onCreateProject={() => setCreateOpen(true)}
+        />
+      )}
 
       {query.isLoading ? (
         <GridSkeleton count={6} />

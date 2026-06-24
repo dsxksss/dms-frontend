@@ -2,6 +2,17 @@
   "next": "Next",
   "prev": "Back",
   "done": "Got it",
+  "checklist": {
+    "title": "🚀 Getting started",
+    "subtitle": "Three steps through the core flow. This card hides itself once done.",
+    "s1": "Create your first project",
+    "s1d": "A project is the boundary container for data and permissions — everything starts here.",
+    "s2": "Enter a drug asset",
+    "s2d": "Open a project → Drug Assets, define an asset type and add your first record (e.g. a compound).",
+    "s3": "Generate a dataset",
+    "s3d": "Click \"To dataset\" on the Drug Assets page, or create one on the Datasets page — an AI-ready dataset.",
+    "cta": "Create your first project"
+  },
   "app": {
     "welcome": {
       "title": "👋 Welcome to Bio-Data OS",
