@@ -150,6 +150,8 @@
     "title": "Select entity",
     "type": "Type",
     "entity": "Entity",
+    "selectType": "Select type…",
+    "selectEntity": "Select a record…",
     "search": "Search…",
     "none": "(none)",
     "empty": "No matching entities",

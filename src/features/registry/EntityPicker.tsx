@@ -58,7 +58,7 @@ export function EntityPicker({
       ) : (
         <Select value={pickedTypeId} onValueChange={setPickedTypeId}>
           <SelectTrigger className="w-[34%] shrink-0">
-            <SelectValue placeholder={t('picker.type')} />
+            <SelectValue placeholder={t('picker.selectType')} />
           </SelectTrigger>
           <SelectContent>
             {assetTypes.map((ty) => (
@@ -75,7 +75,7 @@ export function EntityPicker({
         disabled={!typeId}
       >
         <SelectTrigger className="min-w-0 flex-1">
-          <SelectValue placeholder={t('picker.entity')} />
+          <SelectValue placeholder={t('picker.selectEntity')} />
         </SelectTrigger>
         <SelectContent>
           {(records.data?.items ?? []).map((r) => (

@@ -150,6 +150,8 @@
     "title": "选择实体",
     "type": "类型",
     "entity": "实体",
+    "selectType": "选择类型…",
+    "selectEntity": "选择记录…",
     "search": "搜索…",
     "none": "（未选择）",
     "empty": "无匹配实体",
