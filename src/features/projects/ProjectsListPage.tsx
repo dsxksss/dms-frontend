@@ -41,7 +41,7 @@ export function ProjectsListPage() {
             >
               {t('filter.includeArchived')}
             </Button>
-            <Button onClick={() => setCreateOpen(true)}>
+            <Button onClick={() => setCreateOpen(true)} data-tour="new-project">
               <Plus className="size-4" />
               {t('create.title')}
             </Button>

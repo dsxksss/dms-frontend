@@ -29,6 +29,10 @@ import { ErrorState } from '@/components/states'
 import { roleTone } from '@/components/tone'
 import { useProject, useProjectRole, useMembers } from '@/hooks/use-projects'
 import { useOrgs } from '@/hooks/use-orgs'
+import {
+  useFirstRunTour,
+  useTourReplay,
+} from '@/features/onboarding/onboarding'
 import { useEntityTypes } from '@/hooks/use-registry'
 import { useDatasets } from '@/hooks/use-datasets'
 import { useRuns } from '@/hooks/use-protocols'
@@ -82,6 +86,10 @@ export function ProjectLayout() {
     members: members.data?.length,
   }
 
+  const { replayProject } = useTourReplay()
+  // 首次进入项目自动起一轮业务流引导（项目数据就绪后）。
+  useFirstRunTour('project', !!project.data)
+
   const name = project.data?.name ?? ''
   const crumbs: Crumb[] = [{ label: name, to: `/projects/${projectId}` }]
 
@@ -112,6 +120,13 @@ export function ProjectLayout() {
               end={'end' in n ? n.end : undefined}
               icon={n.icon}
               badge={'count' in n ? counts[n.count] : undefined}
+              tourId={
+                n.seg === '/registry'
+                  ? 'proj-registry'
+                  : n.seg === '/datasets'
+                    ? 'proj-datasets'
+                    : undefined
+              }
             >
               <BiLabel zh={n.zh} en={n.en} />
             </SidebarNavItem>
@@ -127,7 +142,7 @@ export function ProjectLayout() {
       </Sidebar>
 
       <div className="relative flex min-w-0 flex-1 flex-col">
-        <Topbar crumbs={crumbs} />
+        <Topbar crumbs={crumbs} onHelp={replayProject} />
         <div className="flex-1 overflow-auto">
           {project.isError ? (
             <div className="p-8">

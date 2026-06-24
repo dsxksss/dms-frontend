@@ -28,6 +28,8 @@ import zhPlatform from './locales/zh-CN/platform.json'
 import enPlatform from './locales/en/platform.json'
 import zhNotebook from './locales/zh-CN/notebook.json'
 import enNotebook from './locales/en/notebook.json'
+import zhOnboarding from './locales/zh-CN/onboarding.json'
+import enOnboarding from './locales/en/onboarding.json'
 
 export const SUPPORTED_LANGS = ['zh-CN', 'en'] as const
 export type Lang = (typeof SUPPORTED_LANGS)[number]
@@ -47,6 +49,7 @@ export const resources = {
     signatures: zhSignatures,
     platform: zhPlatform,
     notebook: zhNotebook,
+    onboarding: zhOnboarding,
   },
   en: {
     common: enCommon,
@@ -62,6 +65,7 @@ export const resources = {
     signatures: enSignatures,
     platform: enPlatform,
     notebook: enNotebook,
+    onboarding: enOnboarding,
   },
 } as const
 
@@ -86,6 +90,8 @@ void i18n
       'protocols',
       'signatures',
       'platform',
+      'notebook',
+      'onboarding',
     ],
     interpolation: { escapeValue: false },
     detection: {
