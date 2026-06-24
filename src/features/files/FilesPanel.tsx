@@ -80,37 +80,28 @@ import {
 } from '@/api/files'
 import { FileGrantsDialog } from './FileGrantsDialog'
 
-/** 分类色（design_handoff 冻结）：[底色, 主色]。 */
-const CATEGORY_TINT: Record<FileCategory, readonly [string, string]> = {
-  raw_data: ['#EAF0FF', '#2F6BFF'],
-  structures: ['#E7F6EC', '#15803D'],
-  sequences: ['#FEF4E6', '#B45309'],
-  reports: ['#F3EEFB', '#7C3AED'],
-  datasets: ['#FBEAF2', '#BE185D'],
-  misc: ['#EEF0F3', '#64748B'],
-}
-
 const ROOT = '__root__'
 const INDENT = 16
-const BASE_PAD = 8
+const BASE_PAD = 10
 
-/** 按扩展名取文件图标 + 色（VS Code 风格文件类型图标）。 */
-function fileIcon(name: string): { Icon: typeof File; color: string } {
+/**
+ * 按扩展名取文件图标（仅形状区分类型，颜色统一中性——对齐「中性灰 + 单一强调色」主题）。
+ */
+function fileIcon(name: string): { Icon: typeof File } {
   const ext = extOf(name)
   if (['csv', 'tsv', 'xlsx', 'xls', 'parquet'].includes(ext))
-    return { Icon: FileSpreadsheet, color: '#15803D' }
-  if (ext === 'pdf') return { Icon: FileText, color: '#B91C1C' }
-  if (['doc', 'docx', 'txt', 'md', 'rtf'].includes(ext))
-    return { Icon: FileText, color: '#2F6BFF' }
+    return { Icon: FileSpreadsheet }
+  if (ext === 'pdf') return { Icon: FileText }
+  if (['doc', 'docx', 'txt', 'md', 'rtf'].includes(ext)) return { Icon: FileText }
   if (['fasta', 'fa', 'fastq', 'fq', 'gb', 'gbk'].includes(ext))
-    return { Icon: FileType, color: '#B45309' }
+    return { Icon: FileType }
   if (['sdf', 'mol', 'mol2', 'pdb', 'cif'].includes(ext))
-    return { Icon: FlaskConical, color: '#7C3AED' }
+    return { Icon: FlaskConical }
   if (['png', 'jpg', 'jpeg', 'svg', 'gif', 'webp', 'bmp'].includes(ext))
-    return { Icon: FileImage, color: '#0E9AB5' }
+    return { Icon: FileImage }
   if (['json', 'xml', 'yaml', 'yml', 'toml'].includes(ext))
-    return { Icon: FileCode, color: '#64748B' }
-  return { Icon: File, color: '#64748B' }
+    return { Icon: FileCode }
+  return { Icon: File }
 }
 
 /** 文件夹操作目标（新建子夹 / 重命名 / 删除）。 */
@@ -170,28 +161,7 @@ export function FilesPanel({ projectId }: { projectId: string }) {
 
   const tree = (
     <TableCard>
-      <div className="flex items-center justify-between border-b bg-surface-2 px-3 py-2">
-        <span className="th">{t('folder.tree')}</span>
-        <div className="flex items-center gap-0.5">
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            title={t('actions.refresh', { ns: 'common', defaultValue: '刷新' })}
-            onClick={() => folders.refetch()}
-          >
-            <RefreshCw className={cn('size-4', folders.isFetching && 'animate-spin')} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            title={t('folder.collapseAll', { defaultValue: '全部折叠' })}
-            onClick={() => setExpanded(new Set())}
-          >
-            <ChevronsDownUp className="size-4" />
-          </Button>
-        </div>
-      </div>
-      <div className="py-1.5">
+      <div className="py-2">
         {allCats.map((cat) => (
           <TreeFolder
             key={cat.category}
@@ -222,7 +192,33 @@ export function FilesPanel({ projectId }: { projectId: string }) {
 
   return (
     <div className="max-w-[920px] px-[26px] py-[22px]">
-      <PageHeader title={t('title')} titleEn="Files" description={t('subtitle')} />
+      <PageHeader
+        title={t('title')}
+        titleEn="Files"
+        description={t('subtitle')}
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="icon"
+              title={t('actions.refresh', { ns: 'common', defaultValue: '刷新' })}
+              onClick={() => folders.refetch()}
+            >
+              <RefreshCw
+                className={cn('size-4', folders.isFetching && 'animate-spin')}
+              />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              title={t('folder.collapseAll', { defaultValue: '全部折叠' })}
+              onClick={() => setExpanded(new Set())}
+            >
+              <ChevronsDownUp className="size-4" />
+            </Button>
+          </>
+        }
+      />
       {folders.isLoading ? (
         <TableSkeleton rows={6} />
       ) : folders.isError ? (
@@ -275,7 +271,6 @@ function TreeFolder({
   const upload = useUploadFile(p.projectId)
   const fileRef = useRef<HTMLInputElement>(null)
   const toastError = useToastError()
-  const [bg, fg] = CATEGORY_TINT[p.category]
 
   const onUpload = (file?: File) => {
     if (!file) return
@@ -292,7 +287,7 @@ function TreeFolder({
     <>
       <div
         className={cn(
-          'group relative flex min-h-[24px] cursor-pointer items-center gap-1.5 pr-2 text-[13px] select-none',
+          'group relative flex min-h-[30px] cursor-pointer items-center gap-1.5 pr-2 text-[13px] select-none',
           isSelected ? 'bg-accent' : 'hover:bg-surface-2',
         )}
         style={{ paddingLeft: BASE_PAD + depth * INDENT }}
@@ -309,9 +304,11 @@ function TreeFolder({
           )}
         />
         <FolderIcon
-          className={cn('size-4 shrink-0', !isCategory && 'text-muted-foreground')}
-          style={isCategory ? { color: fg } : undefined}
-          fill={isCategory ? bg : 'none'}
+          className={cn(
+            'size-4 shrink-0',
+            isCategory ? 'text-brand' : 'text-muted-foreground',
+          )}
+          fill={isCategory ? 'var(--accent)' : 'none'}
         />
         <span
           className={cn(
@@ -456,7 +453,7 @@ function FolderChildren({
       ))}
       {files.isLoading ? (
         <div
-          className="flex min-h-[24px] items-center gap-1.5 text-[12px] text-muted-foreground"
+          className="flex min-h-[30px] items-center gap-1.5 text-[12px] text-muted-foreground"
           style={{ paddingLeft: BASE_PAD + depth * INDENT + 20 }}
         >
           <Loader2 className="size-3.5 animate-spin" />
@@ -473,7 +470,7 @@ function FolderChildren({
       )}
       {empty && rows.length === 0 && !files.isLoading && (
         <div
-          className="min-h-[24px] py-1 text-[12px] text-muted-foreground italic"
+          className="min-h-[30px] py-1 text-[12px] text-muted-foreground italic"
           style={{ paddingLeft: BASE_PAD + depth * INDENT + 20 }}
         >
           {t('folder.emptyHere')}
@@ -499,7 +496,7 @@ function FileRow({
   const [deleteOpen, setDeleteOpen] = useState(false)
   const key = `file:${file.id}`
   const isSelected = p.selected === key
-  const { Icon, color } = fileIcon(file.name)
+  const { Icon } = fileIcon(file.name)
   const stop = (e: { stopPropagation: () => void }) => e.stopPropagation()
 
   const toggleConfidential = () =>
@@ -511,7 +508,7 @@ function FileRow({
   return (
     <div
       className={cn(
-        'group relative flex min-h-[24px] cursor-pointer items-center gap-1.5 pr-2 text-[13px] select-none',
+        'group relative flex min-h-[30px] cursor-pointer items-center gap-1.5 pr-2 text-[13px] select-none',
         isSelected ? 'bg-accent' : 'hover:bg-surface-2',
       )}
       style={{ paddingLeft: BASE_PAD + depth * INDENT }}
@@ -521,7 +518,7 @@ function FileRow({
       <IndentGuides depth={depth} />
       {/* 文件无 twistie：占位对齐 */}
       <span className="size-4 shrink-0" />
-      <Icon className="size-4 shrink-0" style={{ color }} />
+      <Icon className="size-4 shrink-0 text-muted-foreground" />
       <span className={cn('truncate', isSelected && 'text-brand')}>
         {file.name}
       </span>
