@@ -7,16 +7,10 @@ export function useIsZh(): boolean {
 }
 
 /**
- * 双语短标签（原型侧栏 / Tab 风格）：
- * 中文 locale 显示「中文 + 浅色英文」；英文 locale 仅显示英文。
+ * 短标签：只显示当前语言（中文 locale → 中文，英文 locale → 英文）。
+ * 侧栏导航用，避免中文模式下中英并排显得冗余。
  */
 export function BiLabel({ zh, en }: { zh: string; en: string }) {
   const isZh = useIsZh()
-  if (!isZh) return <>{en}</>
-  return (
-    <>
-      {zh}
-      <span className="ml-1.5 font-normal opacity-55">{en}</span>
-    </>
-  )
+  return <>{isZh ? zh : en}</>
 }
