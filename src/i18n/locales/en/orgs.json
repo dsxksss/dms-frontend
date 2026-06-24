@@ -2,6 +2,7 @@
   "title": "Organizations",
   "subtitle": "Organizations, teams and scoped role grants",
   "defaultBadge": "My Workspace",
+  "notMemberDesc": "You are not a member of this organization, so its members, teams, assets and data are not visible. Ask an org admin to invite you.",
   "create": {
     "title": "New organization",
     "slug": "Slug (optional)",

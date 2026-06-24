@@ -33,6 +33,7 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/auth/auth-context'
 import { useOrgs, useTeams, useCreateTeam, useGrantRole } from '@/hooks/use-orgs'
 import { GRANTABLE_ROLES } from '@/lib/roles'
+import { AppError } from '@/lib/errors'
 import { OrgRegistryTab } from './OrgRegistryTab'
 import {
   useApproveJoinRequest,
@@ -66,6 +67,33 @@ export function OrgDetailPage() {
     return (
       <div className="mx-auto max-w-[920px] px-8 py-7">
         <EmptyState title={t('empty')} />
+      </div>
+    )
+  }
+
+  // 非该组织成员（如租户 owner 仅在列表「看得到」组织）：成员/资产/数据等端点都 403。
+  // 整页给清楚提示，避免逐个 Tab 报通用 forbidden。
+  const notMember =
+    members.isError &&
+    members.error instanceof AppError &&
+    members.error.status === 403
+  if (notMember) {
+    return (
+      <div className="mx-auto max-w-[920px] px-8 py-7">
+        <Link
+          to="/orgs"
+          className="mb-2 inline-flex items-center gap-1 text-[12.5px] text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="size-3.5" />
+          {t('title')}
+        </Link>
+        <PageHeader title={org.name} size="md" description={`@${org.slug}`} />
+        <div className="mt-4">
+          <EmptyState
+            title={t('registry.notMember')}
+            hint={t('notMemberDesc')}
+          />
+        </div>
       </div>
     )
   }
