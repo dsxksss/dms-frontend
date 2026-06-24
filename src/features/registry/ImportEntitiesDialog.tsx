@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { InfoHint } from '@/components/info-hint'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -76,7 +77,10 @@ export function ImportEntitiesDialog({
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label>{t('import.format')}</Label>
+            <Label className="flex items-center gap-1.5">
+              {t('import.format')}
+              <InfoHint>{t('import.formatHint')}</InfoHint>
+            </Label>
             <Select
               value={format}
               onValueChange={(v) => setFormat(v as 'csv' | 'fasta')}

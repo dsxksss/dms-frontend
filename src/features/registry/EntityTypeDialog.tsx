@@ -25,6 +25,7 @@ import { useToastError } from '@/hooks/use-toast-error'
 import { slugify } from '@/lib/slug'
 import { SCALAR_FIELD_TYPES } from '@/api/registry'
 import type { EntityType, FieldDefInput, TypeKind } from '@/api/registry'
+import { InfoHint } from '@/components/info-hint'
 import { FieldBuilder } from './FieldBuilder'
 
 const NONE = '__none__'
@@ -118,7 +119,10 @@ export function EntityTypeDialog({
         <div className="max-h-[60vh] space-y-5 overflow-auto py-1">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-[12px] text-[#5a6473]">{t('types.key')}</Label>
+              <Label className="flex items-center gap-1.5 text-[12px] text-[#5a6473]">
+                {t('types.key')}
+                <InfoHint>{t('types.keyHint')}</InfoHint>
+              </Label>
               <Input
                 placeholder={t('types.keyPlaceholder')}
                 value={key}
@@ -138,8 +142,9 @@ export function EntityTypeDialog({
 
           {kind === 'template' && !editing && (
             <div className="space-y-1.5">
-              <Label className="text-[12px] text-[#5a6473]">
+              <Label className="flex items-center gap-1.5 text-[12px] text-[#5a6473]">
                 {t('types.boundAsset')}
+                <InfoHint>{t('types.boundAssetHint')}</InfoHint>
               </Label>
               <Select value={bound} onValueChange={setBound}>
                 <SelectTrigger className="w-full">

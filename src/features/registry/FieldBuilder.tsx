@@ -91,7 +91,10 @@ export function FieldBuilder({
             )}
           >
             <div>{t('fieldBuilder.name')}</div>
-            <div>{t('fieldBuilder.type')}</div>
+            <div className="flex items-center gap-1">
+              {t('fieldBuilder.type')}
+              <InfoHint>{t('fieldBuilder.typeHint')}</InfoHint>
+            </div>
             <div className="text-center">{t('fieldBuilder.required')}</div>
             <div className="text-center">{t('fieldBuilder.unique')}</div>
             <div className="flex items-center justify-center gap-1">
