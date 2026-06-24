@@ -79,7 +79,7 @@ export function PublicDatasetsPage() {
           {data.map((d) => (
             <GridRow key={d.id} cols={COLS}>
               <div className="flex items-center gap-2.5">
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-[9px] bg-[#EFE9FB] text-[#6D5BD0]">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-[9px] bg-accent text-brand">
                   <Database className="size-4" />
                 </div>
                 <div className="min-w-0">

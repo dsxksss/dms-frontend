@@ -181,14 +181,9 @@ export function ProjectSignaturesSection() {
 
 /* ============ overview dashboard ============ */
 
-const STAT_TINTS = {
-  assets: ['#EAF0FF', '#2F6BFF'],
-  datasets: ['#E7F6EC', '#15803D'],
-  runs: ['#FEF4E6', '#B45309'],
-  members: ['#F3EEFB', '#7C3AED'],
-} as const
-
-const BAR_COLORS = ['#2F6BFF', '#16A34A', '#C77B16', '#7C3AED', '#DB2777']
+// 统一品牌强调色（对齐「中性灰 + 单一强调色」主题，不再每卡/每条一色）。
+const STAT_TINT = ['#EAF0FF', '#2F6BFF'] as const
+const BAR_COLOR = '#2F6BFF'
 
 export function ProjectOverviewSection() {
   const projectId = useProjectId()
@@ -251,25 +246,25 @@ export function ProjectOverviewSection() {
         <StatCard
           label={t('tabs.registry')}
           value={assetTotal}
-          tint={STAT_TINTS.assets}
+          tint={STAT_TINT}
           icon={<Boxes />}
         />
         <StatCard
           label={t('tabs.datasets')}
           value={datasets.data?.length ?? 0}
-          tint={STAT_TINTS.datasets}
+          tint={STAT_TINT}
           icon={<Database />}
         />
         <StatCard
           label={t('overview.runs')}
           value={runs.data?.total ?? 0}
-          tint={STAT_TINTS.runs}
+          tint={STAT_TINT}
           icon={<FlaskConical />}
         />
         <StatCard
           label={t('members.title')}
           value={memberList.length}
-          tint={STAT_TINTS.members}
+          tint={STAT_TINT}
           icon={<Users />}
         />
       </div>
@@ -294,7 +289,7 @@ export function ProjectOverviewSection() {
                       className="h-full rounded-full"
                       style={{
                         width: `${(c / maxBar) * 100}%`,
-                        background: BAR_COLORS[i % BAR_COLORS.length],
+                        background: BAR_COLOR,
                       }}
                     />
                   </div>

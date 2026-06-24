@@ -65,7 +65,7 @@ export function ProtocolsPanel({ projectId }: { projectId: string }) {
                   onClick={() => setEditing(p)}
                   className="flex min-w-0 flex-1 items-start gap-3 text-left"
                 >
-                  <div className="flex size-[42px] shrink-0 items-center justify-center rounded-[11px] bg-[#FEF4E6] text-[#B45309]">
+                  <div className="flex size-[42px] shrink-0 items-center justify-center rounded-[11px] bg-accent text-brand">
                     <FlaskConical className="size-5" />
                   </div>
                   <div className="min-w-0">
