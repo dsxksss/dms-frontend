@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import { InfoHint } from '@/components/info-hint'
 import type { FieldDefInput, FieldType } from '@/api/registry'
 
 const ALL_TYPES: FieldType[] = [
@@ -93,7 +94,10 @@ export function FieldBuilder({
             <div>{t('fieldBuilder.type')}</div>
             <div className="text-center">{t('fieldBuilder.required')}</div>
             <div className="text-center">{t('fieldBuilder.unique')}</div>
-            <div className="text-center">{t('fieldBuilder.sensitive')}</div>
+            <div className="flex items-center justify-center gap-1">
+              {t('fieldBuilder.sensitive')}
+              <InfoHint>{t('fieldBuilder.sensitiveHint')}</InfoHint>
+            </div>
             <div />
           </div>
           {value.map((f, i) => (
@@ -172,11 +176,12 @@ export function FieldBuilder({
               )}
 
               {f.type === 'reference' && assetTypes.length > 0 && (
-                <Select
-                  value={f.ref_type ?? ''}
-                  onValueChange={(v) => update(i, { ref_type: v || undefined })}
-                >
-                  <SelectTrigger className="mt-2 w-full">
+                <div className="mt-2 flex items-center gap-1.5">
+                  <Select
+                    value={f.ref_type ?? ''}
+                    onValueChange={(v) => update(i, { ref_type: v || undefined })}
+                  >
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder={t('fieldBuilder.refType')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -186,7 +191,9 @@ export function FieldBuilder({
                       </SelectItem>
                     ))}
                   </SelectContent>
-                </Select>
+                  </Select>
+                  <InfoHint>{t('fieldBuilder.refTypeHint')}</InfoHint>
+                </div>
               )}
             </div>
           ))}

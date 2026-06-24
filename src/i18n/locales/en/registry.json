@@ -53,9 +53,11 @@
     "required": "Required",
     "unique": "Unique",
     "sensitive": "Sensitive",
+    "sensitiveHint": "Fields marked sensitive (e.g. smiles, sequence) are masked from lower-privilege members by default; only Managers or specifically granted users see plaintext.",
     "options": "Enum options",
     "optionsPlaceholder": "Comma-separated, e.g. A,B,C",
     "refType": "Reference target type",
+    "refTypeHint": "Restricts this reference field to records of this asset type. E.g. an antibody's heavy chain points to \"sequence\", so only sequence records are listed when entering data.",
     "empty": "No fields yet. Click \"Add field\" to start.",
     "nameRequired": "Field name is required",
     "dupName": "Duplicate field name"

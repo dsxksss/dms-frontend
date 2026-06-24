@@ -19,8 +19,10 @@
     "maskedHint": "Sensitive fields (🔒) are masked/excluded by default.",
     "rawSensitive": "Export raw sensitive fields",
     "rawSensitiveHint": "Includes plaintext smiles/mol/seq; requires Manager + e-signature.",
+    "rawSensitiveTip": "By default the dataset excludes sensitive fields (masked). Turn this on to also export plaintext smiles/mol/sequence — a high-sensitivity action, Manager-only, requiring an e-signature for traceability. AI training usually doesn't need plaintext structures, so keep it off.",
     "esignPassword": "E-signature (re-enter password)",
     "esignHint": "Exporting raw sensitive data requires an approved e-signature (21 CFR Part 11)",
+    "esignTip": "21 CFR Part 11 compliance: high-risk actions like exporting sensitive plaintext require re-entering your login password as an e-signature. The signer, time and meaning are recorded immutably.",
     "submit": "Generate dataset",
     "done": "Dataset generated"
   },

@@ -53,9 +53,11 @@
     "required": "必填",
     "unique": "唯一",
     "sensitive": "敏感",
+    "sensitiveHint": "标为敏感的字段（如 smiles、序列）默认对低权限成员脱敏隐藏，仅 Manager 或被单独授权者可见明文。",
     "options": "枚举选项",
     "optionsPlaceholder": "逗号分隔，如 A,B,C",
     "refType": "引用目标类型",
+    "refTypeHint": "限定该引用字段只能指向此类资产记录。例如抗体的 heavy 链选「序列」，录入时只会列出序列记录。",
     "empty": "尚无字段，点击「添加字段」开始。",
     "nameRequired": "字段名必填",
     "dupName": "字段名重复"

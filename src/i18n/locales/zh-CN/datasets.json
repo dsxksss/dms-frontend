@@ -19,8 +19,10 @@
     "maskedHint": "敏感字段（🔒）默认脱敏/排除。",
     "rawSensitive": "导出原始敏感字段",
     "rawSensitiveHint": "包含 smiles/mol/seq 等明文；需 Manager 且电子签名。",
+    "rawSensitiveTip": "默认数据集会剔除敏感字段（脱敏）。打开此项才会把 smiles/mol/序列 等明文也导出——属高敏操作，仅 Manager 可用，且须电子签名留痕。一般 AI 训练不需要明文结构，保持关闭即可。",
     "esignPassword": "电子签名（重输密码）",
     "esignHint": "导出敏感明文须 approved 电子签名（21 CFR Part 11）",
+    "esignTip": "21 CFR Part 11 合规要求：导出敏感明文这类高风险操作须重新输入你的登录密码作为电子签名，系统会记录签署人、时间与含义，不可篡改。",
     "submit": "生成数据集",
     "done": "数据集已生成"
   },

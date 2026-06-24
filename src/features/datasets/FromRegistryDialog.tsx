@@ -20,6 +20,7 @@ import { useDatasetFromRegistry } from '@/hooks/use-datasets'
 import { useSign } from '@/hooks/use-signatures'
 import { useToastError } from '@/hooks/use-toast-error'
 import { sha256Hex } from '@/lib/sha256'
+import { InfoHint } from '@/components/info-hint'
 import type { EntityType } from '@/api/registry'
 import {
   DatasetMetaFields,
@@ -164,8 +165,9 @@ export function FromRegistryDialog({
           {canManage && (
             <div className="flex items-center justify-between rounded-[8px] border px-3 py-2.5">
               <div className="pr-3">
-                <div className="text-[13px] font-semibold">
+                <div className="flex items-center gap-1.5 text-[13px] font-semibold">
                   {t('fromRegistry.rawSensitive')}
+                  <InfoHint>{t('fromRegistry.rawSensitiveTip')}</InfoHint>
                 </div>
                 <div className="text-[11px] text-muted-foreground">
                   {t('fromRegistry.rawSensitiveHint')}
@@ -180,7 +182,10 @@ export function FromRegistryDialog({
 
           {rawSensitive && (
             <div className="space-y-1.5">
-              <Label htmlFor="fr-pass">{t('fromRegistry.esignPassword')}</Label>
+              <Label htmlFor="fr-pass" className="flex items-center gap-1.5">
+                {t('fromRegistry.esignPassword')}
+                <InfoHint>{t('fromRegistry.esignTip')}</InfoHint>
+              </Label>
               <Input
                 id="fr-pass"
                 type="password"
