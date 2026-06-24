@@ -21,10 +21,10 @@
 
 - **前端 dist 由 nginx 容器托管**（不是后端）。见 [`Dockerfile`](../Dockerfile) + [`nginx.conf`](../nginx.conf)。
 - nginx 反代 `/v1` 到后端 → **同源、无 CORS**，并透传 `X-Forwarded-For`（后端审计记录真实 IP）。
-- **后端是纯 API 服务**（额外提供 `/docs` Swagger UI），**不需要也不托管前端静态文件**。
+- **后端默认是纯 API 服务**（额外提供 `/docs` Swagger UI），分离模式下不托管前端静态文件。
 
-> ❓ **后端要不要做一个"托管 dist 的页面 API"？** —— 不需要。dist 由 nginx 托管、`/v1` 反代即可。
-> 见下方 §6「可选：后端单体托管 dist」——仅离线/单容器场景才考虑，且需后端改造，**默认不用**。
+> ❓ **后端要不要托管 dist？** —— 默认分离模式不需要（dist 由 nginx 托管、`/v1` 反代即可）。
+> 但后端**也支持**用 `web-ui` 档同时托管前端（单二进制/离线/单机），见下方 §6——仅该场景才用，**默认仍走分离**。
 
 ---
 
@@ -177,17 +177,42 @@ base_url = "https://wemol.example.com"   # 你的 WeMol 平台
 
 ---
 
-## 6. 可选：后端单体托管 dist（离线/单容器）
+## 6. 可选：后端单体托管 dist（`web-ui` 档，离线/单容器）
 
-私有化离线、希望"一个容器搞定"时，可让后端直接托管前端 dist（去掉 nginx）。
-**当前后端未实现**，需在后端加：
+私有化离线、希望"一个容器搞定"时，可让**后端进程同时托管前端 dist**（去掉 nginx）。
+**后端已支持**（`web-ui` 编译档，不进 `full`；云端走 CDN 时无需背 `tower-http/fs`）。
 
-1. `tower_http::services::ServeDir` 指向打包进镜像的 `dist/`，加 SPA 回退到 `index.html`；
-2. 把前端 `npm run build` 的 `dist/` 在后端镜像里 `COPY` 进去（或多阶段构建）；
-3. 前端构建时 `VITE_API_BASE_URL` 留空（同源）。
+两个条件，缺一则不托管（前端照常可独立 nginx/CDN）：
+1. **用 `full,web-ui` 构建**后端；
+2. 配 **`server.static_dir`** 指向前端 `npm run build` 的 `dist`。
 
-权衡：单体部署简单、无 nginx；但前后端发版耦合、静态缓存/压缩需自己处理。
-**默认仍推荐 §1 的分离模式**（nginx 托管静态更专业，前后端可独立发版）。
+```bash
+# 后端：含 web-ui 档构建
+cargo build --release --features full,web-ui
+#   或 Docker：--build-arg DMS_FEATURES=full,web-ui
+
+# 前端：构建 dist，并拷到后端 static_dir 指向的目录
+npm run build           # 产物 dist/  —— VITE_API_BASE_URL 必须留空(同源)
+cp -r dist/* /app/web/
+```
+
+```toml
+# 后端 config/<env>.toml
+[server]
+static_dir = "/app/web"   # 指向上面拷入的 dist
+```
+
+访问后端端口（默认 8080）即同时拿到前端 + API。**路由优先级**（后端已测）：
+- `/v1/*`、`/healthz`、`/readyz`、`/metrics`、`/docs`、`/openapi.json` → API 优先；`/v1` 未命中显式 404（不会漏成 index.html）；
+- `static_dir` 里的真实文件（`/index.html`、`/assets/*`）→ 直读；
+- 其它路径（前端 history 路由如 `/projects/abc/overview`）→ **回退 `index.html` 返 200**（SPA 必需）。
+
+> ✅ **前端已就绪**：API base 默认用**同源相对路径**（`VITE_API_BASE_URL` 留空 → 请求打 `/v1/...`），
+> 代码里无写死 host，所以独立部署与被后端同源托管两种方式**同一份 dist 通用**。
+
+权衡：单体部署简单、无 nginx；但前后端发版耦合、静态缓存/压缩由后端处理。
+**默认仍推荐 §1 的分离模式**（nginx 托管静态更专业、前后端可独立发版）；
+单机/离线/演示则 `full,web-ui` 更省事。后端文档另见 `dms-backend/docs/deployment.md` 与 `tiers.md`。
 
 ---
 
