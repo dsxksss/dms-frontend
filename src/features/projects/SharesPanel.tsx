@@ -5,6 +5,7 @@ import { Plus, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { InfoHint } from '@/components/info-hint'
 import {
   Select,
   SelectContent,
@@ -61,7 +62,10 @@ export function SharesPanel({ projectId }: { projectId: string }) {
 
       <div className="flex flex-wrap items-end gap-2">
         <div className="space-y-1.5">
-          <Label className="text-[12px]">{t('shares.org')}</Label>
+          <Label className="flex items-center gap-1.5 text-[12px]">
+            {t('shares.org')}
+            <InfoHint>{t('shares.scopeHint')}</InfoHint>
+          </Label>
           <Select value={orgId} onValueChange={setOrgId}>
             <SelectTrigger className="h-9 w-[200px]">
               <SelectValue />

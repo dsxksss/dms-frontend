@@ -14,6 +14,7 @@ import {
 import { TableCard } from '@/components/data-grid'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
 import { columnRoleTone } from '@/components/tone'
+import { InfoHint } from '@/components/info-hint'
 import {
   useDatasetVersions,
   useSetColumnRoles,
@@ -162,8 +163,9 @@ function VersionCard({
       </div>
 
       <div className="mt-3 border-t border-divider pt-3">
-        <div className="mb-2 text-[11.5px] font-bold text-muted-foreground">
+        <div className="mb-2 flex items-center gap-1.5 text-[11.5px] font-bold text-muted-foreground">
           {t('versions.roles')}
+          <InfoHint>{t('versions.rolesHint')}</InfoHint>
         </div>
         <div className="flex flex-wrap gap-2">
           {version.columns.map((c) => (

@@ -101,6 +101,7 @@
     "size": "Size",
     "columns": "Columns",
     "roles": "Column roles (AI-ready)",
+    "rolesHint": "Label each column's role for AI training: feature = input, label = prediction target, id = identifier (not trained on), ignore = skip. Once set, the dataset is ready to feed a model.",
     "saveRoles": "Save column roles",
     "pickFile": "Choose file (CSV/XLSX)"
   },

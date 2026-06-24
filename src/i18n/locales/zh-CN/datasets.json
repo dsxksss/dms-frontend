@@ -101,6 +101,7 @@
     "size": "大小",
     "columns": "列",
     "roles": "列角色（AI-ready）",
+    "rolesHint": "为 AI 训练标注每列用途：feature=输入特征，label=预测目标，id=标识符(不参与训练)，ignore=忽略。标好后数据集即可直接喂给模型。",
     "saveRoles": "保存列角色",
     "pickFile": "选择文件（CSV/XLSX）"
   },

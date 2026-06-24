@@ -12,6 +12,7 @@
     "button": "Sign",
     "title": "Electronic signature",
     "meaning": "Meaning",
+    "meaningHint": "21 CFR Part 11 signing meaning: authored = I created it, reviewed = I reviewed it, approved = I approve it, responsibility = I'm responsible. Recorded with the signature, immutable.",
     "reason": "Reason",
     "reasonPlaceholder": "e.g. Reviewed results, data complete",
     "password": "Password (re-authenticate)",

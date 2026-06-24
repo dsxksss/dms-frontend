@@ -12,6 +12,7 @@
     "button": "签署",
     "title": "电子签名",
     "meaning": "签名含义",
+    "meaningHint": "符合 21 CFR Part 11 的签署含义：authored=我创作，reviewed=我审阅，approved=我批准，responsibility=我负责。会随签名一并记录，不可篡改。",
     "reason": "理由",
     "reasonPlaceholder": "如：已复核结果，数据完整",
     "password": "密码（重新认证）",

@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { InfoHint } from '@/components/info-hint'
 import { Textarea } from '@/components/ui/textarea'
 import { useSign } from '@/hooks/use-signatures'
 import { isAppError } from '@/lib/errors'
@@ -117,7 +118,10 @@ export function SignDialog({
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label>{t('sign.meaning')}</Label>
+            <Label className="flex items-center gap-1.5">
+              {t('sign.meaning')}
+              <InfoHint>{t('sign.meaningHint')}</InfoHint>
+            </Label>
             <div className="flex flex-wrap gap-2">
               {MEANINGS.map((m) => {
                 const active = meaning === m

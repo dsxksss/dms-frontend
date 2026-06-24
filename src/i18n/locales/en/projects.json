@@ -107,6 +107,7 @@
     "desc": "Share this project with an organization (its members get the granted role); no org = share with all orgs (group-wide).",
     "add": "Add share",
     "org": "Organization",
+    "scopeHint": "Pick an organization = share the project with it; its members access by the granted role. Pick \"All organizations\" = group-wide, every org in this company can access. Handy for cross-subsidiary collaboration.",
     "allOrgs": "All organizations (group-wide)",
     "role": "Role",
     "empty": "No cross-org shares",
