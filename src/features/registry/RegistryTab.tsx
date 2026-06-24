@@ -94,17 +94,8 @@ export function RegistryTab({
         size="md"
         actions={
           canManage && (
-            <>
-              <Button variant="outline" onClick={() => setCreateTypeOpen(true)}>
-                <Wand2 className="size-4" />
-                {isAsset ? t('types.createAsset') : t('types.createTemplate')}
-              </Button>
-              {!showTypes && activeType && isAsset && (
-                <Button variant="outline" onClick={() => setImportOpen(true)}>
-                  <FileUp className="size-4" />
-                  {t('import.button')}
-                </Button>
-              )}
+            <div className="flex items-center gap-2">
+              {/* 高频动作直出：转数据集 + 新建记录(主)；建类型/批量导入收进「更多」。 */}
               {!showTypes && activeType && (
                 <Button variant="outline" onClick={() => setConvertOpen(true)}>
                   <Database className="size-4" />
@@ -120,7 +111,26 @@ export function RegistryTab({
                   {t('entities.create')}
                 </Button>
               )}
-            </>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" title={t('more')}>
+                    <MoreHorizontal className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setCreateTypeOpen(true)}>
+                    <Wand2 className="size-4" />
+                    {isAsset ? t('types.createAsset') : t('types.createTemplate')}
+                  </DropdownMenuItem>
+                  {!showTypes && activeType && isAsset && (
+                    <DropdownMenuItem onClick={() => setImportOpen(true)}>
+                      <FileUp className="size-4" />
+                      {t('import.button')}
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           )
         }
       />

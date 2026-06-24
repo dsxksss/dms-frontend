@@ -130,7 +130,7 @@ function IndentGuides({ depth }: { depth: number }) {
       {Array.from({ length: depth }).map((_, i) => (
         <span
           key={i}
-          className="pointer-events-none absolute top-0 bottom-0 w-px bg-[#ECEFF4]"
+          className="pointer-events-none absolute top-0 bottom-0 w-px bg-border"
           style={{ left: BASE_PAD + i * INDENT + 7 }}
         />
       ))}
@@ -309,8 +309,8 @@ function TreeFolder({
           )}
         />
         <FolderIcon
-          className="size-4 shrink-0"
-          style={{ color: isCategory ? fg : '#7A8597' }}
+          className={cn('size-4 shrink-0', !isCategory && 'text-muted-foreground')}
+          style={isCategory ? { color: fg } : undefined}
           fill={isCategory ? bg : 'none'}
         />
         <span
