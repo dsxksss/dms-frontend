@@ -10,18 +10,13 @@ export const ROLE_RANK: Record<ProjectRole, number> = {
 }
 
 /**
- * 可经 `/v1/role-grants` 授予的作用域角色 key（role_key 下拉的单一信源）。
- * `auditor`=审计管理员（仅 `audit:read`，对齐后端 FR-AUDIT 职责分离）。
+ * 可经 `/v1/role-grants` 授予的**租户 RBAC 角色** key（role_key 下拉的单一信源）。
+ * 必须与后端 seed.rs DEFAULT_ROLES 一致——后端按 `roles` 表校验，未知 key 报
+ * `seed role not found`。当前仅 4 个：owner / admin / member / auditor。
+ * 注：manager / contributor / viewer 是**项目成员角色**（另一套，经项目成员管理设置），
+ * 不在此列——它们不是 role-grants 可授予的租户角色。
  */
-export const GRANTABLE_ROLES = [
-  'owner',
-  'admin',
-  'manager',
-  'contributor',
-  'viewer',
-  'member',
-  'auditor',
-] as const
+export const GRANTABLE_ROLES = ['owner', 'admin', 'member', 'auditor'] as const
 export type GrantableRole = (typeof GRANTABLE_ROLES)[number]
 
 /** 当前角色是否达到所需的最低角色。null/undefined（非成员）一律不达标。 */
