@@ -35,7 +35,9 @@ export function SchemaForm({
       {fields.map((f) => {
         const v = values[f.name]
         const err = errors[f.name]
-        const wide = f.type === 'text' || f.type === 'sequence'
+        // 长内容 + 引用字段(含类型框/记录下拉/新建钮)占满整行，避免太窄显示不全。
+        const wide =
+          f.type === 'text' || f.type === 'sequence' || f.type === 'reference'
         return (
           <div
             key={f.name}

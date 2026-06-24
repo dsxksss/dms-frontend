@@ -52,7 +52,7 @@ export function EntityPicker({
   return (
     <div className="flex items-center gap-2">
       {refType ? (
-        <div className="flex h-9 w-[34%] shrink-0 items-center truncate rounded-[8px] border border-input bg-muted px-3 text-[13px] text-muted-foreground">
+        <div className="flex h-9 max-w-[40%] shrink-0 items-center truncate rounded-[8px] border border-input bg-muted px-3 text-[13px] text-muted-foreground">
           {lockedType?.name ?? refType}
         </div>
       ) : (
@@ -74,7 +74,7 @@ export function EntityPicker({
         onValueChange={(v) => onChange(v || null)}
         disabled={!typeId}
       >
-        <SelectTrigger className="min-w-0 flex-1">
+        <SelectTrigger className="w-full min-w-0 flex-1">
           <SelectValue placeholder={t('picker.selectEntity')} />
         </SelectTrigger>
         <SelectContent>
