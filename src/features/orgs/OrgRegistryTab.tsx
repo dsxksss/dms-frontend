@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { Loader2, Lock, MoreHorizontal, Pencil, Plus, Trash2, Wand2 } from 'lucide-react'
+import {
+  FileUp,
+  Loader2,
+  Lock,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Trash2,
+  Wand2,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -33,11 +42,13 @@ import {
   useCreateOrgRecord,
   useUpdateOrgRecord,
   useDeleteOrgRecord,
+  useImportOrgEntities,
 } from '@/hooks/use-org-registry'
 import type { Entity, EntityType, FieldDefInput, TypeKind } from '@/api/registry'
 import { FieldBuilder } from '@/features/registry/FieldBuilder'
 import { SchemaForm } from '@/features/registry/SchemaForm'
 import { MaskedValue } from '@/features/registry/MaskedValue'
+import { ImportEntitiesDialog } from '@/features/registry/ImportEntitiesDialog'
 
 /**
  * 组织级药物资产 / 数据（场景 2.4）。读=组织成员；建类型/写记录=组织 admin。
@@ -58,7 +69,9 @@ export function OrgRegistryTab({
   const [tab, setTab] = useState('')
   const [typeOpen, setTypeOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const activeType = kindTypes.find((ty) => ty.id === tab) ?? kindTypes[0]
+  const importer = useImportOrgEntities(orgId, activeType?.id ?? '')
 
   if (types.isLoading) return <TableSkeleton rows={4} />
   if (types.isError) {
@@ -104,6 +117,16 @@ export function OrgRegistryTab({
                 ? t('registry.createAssetType')
                 : t('registry.createTemplate')}
             </Button>
+            {activeType && kind === 'asset' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setImportOpen(true)}
+              >
+                <FileUp className="size-4" />
+                {t('import.button', { ns: 'registry' })}
+              </Button>
+            )}
             {activeType && (
               <Button size="sm" onClick={() => setCreateOpen(true)}>
                 <Plus className="size-4" />
@@ -143,6 +166,13 @@ export function OrgRegistryTab({
           type={activeType}
           open={createOpen}
           onOpenChange={setCreateOpen}
+        />
+      )}
+      {isAdmin && activeType && kind === 'asset' && (
+        <ImportEntitiesDialog
+          importer={importer}
+          open={importOpen}
+          onOpenChange={setImportOpen}
         />
       )}
     </div>

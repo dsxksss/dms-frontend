@@ -6,17 +6,19 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/auth/auth-context'
+import { isWemol, isStandalone } from '@/lib/edition'
 import { AuthBrandPanel } from './AuthBrandPanel'
 
 export function LoginPage() {
   const { t } = useTranslation('auth')
   const { login, loginWemol, status } = useAuth()
   const navigate = useNavigate()
-  // WeMol SSO 默认为首选入口（云端 + 私有化）；未配置 WeMol 的部署可置
-  // VITE_WEMOL_SSO=off，登录页默认邮箱 + 密码、WeMol 作次选（仍可切换）。
-  const wemolDefault = import.meta.env.VITE_WEMOL_SSO !== 'off'
+  // 版本决定登录形态：
+  // - wemol 版：默认 WeMol SSO，邮箱密码作隐蔽的「管理员登录」兜底（首装 / 超管）。
+  // - standalone 版：默认邮箱密码；仅当 VITE_WEMOL_SSO=on 时附带 WeMol 入口。
+  const wemolAvailable = isWemol || import.meta.env.VITE_WEMOL_SSO === 'on'
   const [mode, setMode] = useState<'wemol' | 'password'>(
-    wemolDefault ? 'wemol' : 'password',
+    isWemol ? 'wemol' : 'password',
   )
   const [account, setAccount] = useState('')
   const [email, setEmail] = useState('')
@@ -115,27 +117,36 @@ export function LoginPage() {
                 : t('login.submit')}
           </Button>
 
-          <button
-            type="button"
-            className="mt-3 w-full text-center text-[12.5px] font-semibold text-brand"
-            onClick={() => {
-              setError('')
-              setMode((m) => (m === 'wemol' ? 'password' : 'wemol'))
-            }}
-          >
-            {mode === 'wemol' ? t('login.wemol.useEmail') : t('login.wemol.useWemol')}
-          </button>
-
-          <div className="mt-4 text-center text-[12.5px] text-muted-foreground">
-            {t('signup.haveAccount')}{' '}
+          {wemolAvailable && (
             <button
               type="button"
-              className="font-semibold text-brand"
-              onClick={() => navigate('/signup')}
+              className="mt-3 w-full text-center text-[12.5px] font-semibold text-brand"
+              onClick={() => {
+                setError('')
+                setMode((m) => (m === 'wemol' ? 'password' : 'wemol'))
+              }}
             >
-              {t('signup.createAccount')} →
+              {mode === 'wemol'
+                ? isWemol
+                  ? t('login.adminLogin')
+                  : t('login.wemol.useEmail')
+                : t('login.wemol.useWemol')}
             </button>
-          </div>
+          )}
+
+          {/* 自助注册仅自定义租户版（standalone）开放；WeMol 版用户来自 WeMol，无注册入口。 */}
+          {isStandalone && (
+            <div className="mt-4 text-center text-[12.5px] text-muted-foreground">
+              {t('signup.haveAccount')}{' '}
+              <button
+                type="button"
+                className="font-semibold text-brand"
+                onClick={() => navigate('/signup')}
+              >
+                {t('signup.createAccount')} →
+              </button>
+            </div>
+          )}
           <div className="mt-[22px] border-t pt-[18px] text-center">
             <button
               type="button"

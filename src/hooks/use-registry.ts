@@ -63,11 +63,35 @@ export function useUpdateType(
   })
 }
 
+export function useDeleteType(projectId: string) {
+  const invalidate = useInvalidateRegistry(projectId)
+  return useMutation({
+    mutationFn: ({
+      kind,
+      typeId,
+      version,
+    }: {
+      kind: TypeKind
+      typeId: string
+      version: number
+    }) => registryApi.deleteType(projectId, kind, typeId, version),
+    onSuccess: invalidate,
+  })
+}
+
 export function useSeedDrugRd(projectId: string) {
   const invalidate = useInvalidateRegistry(projectId)
   return useMutation({
-    mutationFn: () => registryApi.seedDrugRd(projectId),
+    mutationFn: (keys?: string[]) => registryApi.seedDrugRd(projectId, keys),
     onSuccess: invalidate,
+  })
+}
+
+export function useDrugRdCatalog(projectId: string, enabled = true) {
+  return useQuery({
+    queryKey: [...registryKeys.types(projectId), 'catalog'],
+    queryFn: () => registryApi.drugRdCatalog(projectId),
+    enabled: enabled && !!projectId,
   })
 }
 

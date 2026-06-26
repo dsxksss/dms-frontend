@@ -5,6 +5,20 @@
     "tagline": "The data asset platform for drug R&D"
   },
   "comingSoon": "Coming soon",
+  "search": {
+    "trigger": "Search…",
+    "placeholder": "Search projects, orgs, datasets, assets, files…",
+    "searching": "Searching…",
+    "projects": "Projects",
+    "organizations": "Organizations",
+    "datasets": "Datasets",
+    "assets": "Drug assets",
+    "data": "Drug data",
+    "files": "Files",
+    "notebook": "Notebook",
+    "protocols": "Protocols",
+    "empty": "No matching results"
+  },
   "settings": {
     "appearance": "Appearance",
     "appearanceDesc": "Theme and interface language",
@@ -37,6 +51,9 @@
     "user": "User",
     "action": "Action",
     "add": "Grant",
+    "addUser": "Grant to someone else (search by name / email)",
+    "matrixDesc": "Tick to allow that action on top of the member's role; untick to revoke. Actions already covered by the member's role are shown locked.",
+    "noMembers": "No members yet",
     "empty": "No individual grants",
     "granted": "Granted",
     "revoked": "Revoked",
@@ -46,7 +63,14 @@
       "update": "Update",
       "delete": "Delete",
       "manage": "Manage"
-    }
+    },
+    "permissions": "Permissions",
+    "fromRole": "From member role (can't be revoked here)",
+    "presets": "Role presets",
+    "presetViewer": "Viewer",
+    "presetContributor": "Contributor",
+    "presetManager": "Manager",
+    "presetClear": "Clear"
   },
   "actions": {
     "getStarted": "Get started",

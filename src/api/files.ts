@@ -9,14 +9,9 @@ export type FileCategory =
   | 'datasets'
   | 'misc'
 
-export const FILE_CATEGORIES: FileCategory[] = [
-  'raw_data',
-  'structures',
-  'sequences',
-  'reports',
-  'datasets',
-  'misc',
-]
+// 文件区默认只展示「数据集」一个分类根（精简，与项目的数据集页面对应）。
+// 其余分类后端仍支持，但前端默认不展示（如需恢复把它们加回此数组即可）。
+export const FILE_CATEGORIES: FileCategory[] = ['datasets']
 
 /** 镜像后端 FileCategory::allowed_extensions（前端先校验，提示更友好）。 */
 export const ALLOWED_EXT: Record<FileCategory, string[]> = {
@@ -166,4 +161,7 @@ export const filesApi = {
     }),
   download: (projectId: string, fileId: string, name: string) =>
     download(`${base(projectId)}/${fileId}/content`, name),
+  /** 取文件内容为 Blob（带鉴权 + 401 刷新）；供在线预览构造对象 URL。 */
+  fetchBlob: (projectId: string, fileId: string) =>
+    request<Blob>(`${base(projectId)}/${fileId}/content`, { responseType: 'blob' }),
 }

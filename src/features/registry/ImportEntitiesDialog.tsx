@@ -21,23 +21,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useImportEntities } from '@/hooks/use-registry'
+import type { ImportReport } from '@/api/registry'
 import { useToastError } from '@/hooks/use-toast-error'
 
-/** 批量导入实体（CSV / FASTA）。typeId = 目标药物资产类型。 */
+interface ImportArgs {
+  body: string
+  format: 'csv' | 'fasta'
+  name_field?: string
+  seq_field?: string
+}
+
+/**
+ * 批量导入实体（CSV / FASTA）。`importer` 为目标作用域的导入 mutation
+ * （项目级 useImportEntities / 组织级 useImportOrgEntities，二者入参同构）。
+ */
 export function ImportEntitiesDialog({
-  projectId,
-  typeId,
+  importer,
   open,
   onOpenChange,
 }: {
-  projectId: string
-  typeId: string
+  importer: {
+    mutateAsync: (args: ImportArgs) => Promise<ImportReport>
+    isPending: boolean
+  }
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
   const { t } = useTranslation('registry')
-  const importer = useImportEntities(projectId, typeId)
   const toastError = useToastError()
   const fileRef = useRef<HTMLInputElement>(null)
   const [format, setFormat] = useState<'csv' | 'fasta'>('csv')

@@ -15,6 +15,7 @@ export const membershipKeys = {
   orgMembers: (oid: string) => [...root, 'org-members', oid] as const,
   myJoinRequests: () => [...root, 'my-jr'] as const,
   orgJoinRequests: (oid: string) => [...root, 'org-jr', oid] as const,
+  incomingJoinRequests: () => [...root, 'incoming-jr'] as const,
   discoverable: (q: string) => [...root, 'discoverable', q] as const,
 }
 
@@ -27,11 +28,20 @@ function useInvalidate() {
 }
 
 // ---- directory ----
-export function useUserSearch(search: string) {
+/**
+ * 目录用户搜索。`opts.listAll` 时空查询也拉取（列出本公司可见目录用户，供"先列出再选"）；
+ * 否则维持原行为（需输入 ≥1 字符才查）。`opts.limit` 控制返回条数。
+ */
+export function useUserSearch(
+  search: string,
+  opts: { listAll?: boolean; limit?: number } = {},
+) {
+  const q = search.trim()
+  const limit = opts.limit ?? 10
   return useQuery({
-    queryKey: membershipKeys.userSearch(search),
-    queryFn: () => membershipApi.searchUsers(search),
-    enabled: search.trim().length >= 1,
+    queryKey: [...membershipKeys.userSearch(q), limit] as const,
+    queryFn: () => membershipApi.searchUsers(q, limit),
+    enabled: opts.listAll || q.length >= 1,
   })
 }
 
@@ -179,6 +189,14 @@ export function useCancelJoinRequest() {
   return useMutation({
     mutationFn: (id: string) => membershipApi.cancelJoinRequest(id),
     onSuccess: invalidate,
+  })
+}
+
+/** 收件箱聚合：待我审批的组织加入申请（跨我为 admin 的所有组织）。 */
+export function useIncomingOrgJoinRequests() {
+  return useQuery({
+    queryKey: membershipKeys.incomingJoinRequests(),
+    queryFn: () => membershipApi.incomingJoinRequests(),
   })
 }
 

@@ -6,7 +6,7 @@ export interface Organization {
   name: string
   /** 是否可被搜索/申请加入；后端在 OrganizationResponse 返回后即可回显当前状态。 */
   discoverable?: boolean
-  /** 注册自动创建的默认组织「我的工作区」；前端据此置顶/打标，无行为特权。列表已按其置顶。 */
+  /** 注册自动创建的默认组织「我的组织」；前端据此置顶/打标，无行为特权。列表已按其置顶。 */
   is_default?: boolean
 }
 

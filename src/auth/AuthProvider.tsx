@@ -63,7 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signupUser = async (req: UserSignupRequest) => {
-    await applySession(req.tenant ?? '', await authApi.signupUser(req))
+    // tenant 由后端在注册响应里回传（applySession 优先用 tokens.tenant）。
+    await applySession('', await authApi.signupUser(req))
   }
 
   const signupTenant = async (req: TenantSignupRequest) => {

@@ -162,14 +162,6 @@ export function startOrgTour(t: TFunction) {
       },
     },
     {
-      element: '[data-tour="org-grants"]',
-      popover: {
-        title: t('org.grants.title'),
-        description: t('org.grants.desc'),
-        side: 'bottom',
-      },
-    },
-    {
       popover: { title: t('org.end.title'), description: t('org.end.desc') },
     },
   ])

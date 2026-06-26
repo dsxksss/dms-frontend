@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Loader2, X } from 'lucide-react'
@@ -17,7 +17,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from '@/components/ui/select'
 import { UserAvatar } from '@/components/user-avatar'
 import { useToastError } from '@/hooks/use-toast-error'
@@ -27,10 +26,18 @@ import {
   useRevokeInvitation,
   useUser,
 } from '@/hooks/use-membership'
+import { useMembers } from '@/hooks/use-projects'
 import type { Invitation } from '@/api/membership'
 import { UserPicker } from './UserPicker'
 
 const INVITE_ROLES = ['viewer', 'contributor', 'manager'] as const
+
+/** 角色 → 其授予的增删改查（与「权限」那套 resourceGrants.actions 对齐）。 */
+const ROLE_CRUD: Record<(typeof INVITE_ROLES)[number], string[]> = {
+  viewer: ['read'],
+  contributor: ['read', 'create', 'update'],
+  manager: ['read', 'create', 'update', 'delete', 'manage'],
+}
 
 /** 邀请成员弹窗：UserPicker 多选 + 角色 + 可选附言 → 批量邀请；下方列出待处理邀请并可撤销。 */
 export function InvitePanel({
@@ -42,11 +49,17 @@ export function InvitePanel({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const { t } = useTranslation(['membership', 'projects'])
+  const { t } = useTranslation(['membership', 'projects', 'common'])
   const [selected, setSelected] = useState<string[]>([])
   const [role, setRole] = useState<string>('viewer')
   const [message, setMessage] = useState('')
   const invite = useInviteToProject(projectId)
+  const members = useMembers(projectId)
+  // 已是项目成员的人不应再被邀请 → 在 picker 里灰显「已是成员」。
+  const memberIds = useMemo(
+    () => new Set((members.data ?? []).map((m) => m.user_id)),
+    [members.data],
+  )
   const toastError = useToastError()
 
   const reset = () => {
@@ -89,7 +102,12 @@ export function InvitePanel({
           <DialogTitle>{t('invite.title')}</DialogTitle>
         </DialogHeader>
 
-        <UserPicker selected={selected} onChange={setSelected} />
+        <UserPicker
+          selected={selected}
+          onChange={setSelected}
+          disabledIds={memberIds}
+          disabledLabel={t('invite.alreadyMember')}
+        />
 
         <div className="space-y-1.5">
           <Label className="text-[12.5px]">{t('invite.message')}</Label>
@@ -105,13 +123,19 @@ export function InvitePanel({
           <div className="flex items-center gap-2">
             <Label className="text-[12.5px]">{t('invite.role')}</Label>
             <Select value={role} onValueChange={setRole}>
-              <SelectTrigger className="h-8 w-32">
-                <SelectValue />
+              {/* 触发器只显示角色名（紧凑）；下拉项展开为「角色名 · 查看·新增·改…」与权限模型对齐。 */}
+              <SelectTrigger className="h-8 w-28">
+                {t(`projects:roles.${role}`)}
               </SelectTrigger>
               <SelectContent>
                 {INVITE_ROLES.map((r) => (
                   <SelectItem key={r} value={r}>
-                    {t(`projects:roles.${r}`)}
+                    <span className="font-medium">{t(`projects:roles.${r}`)}</span>
+                    <span className="ml-1.5 text-[11px] text-muted-foreground">
+                      {ROLE_CRUD[r]
+                        .map((a) => t(`resourceGrants.actions.${a}`, { ns: 'common' }))
+                        .join(' · ')}
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>

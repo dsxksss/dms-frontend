@@ -20,6 +20,7 @@ import { formatDateTime, shortId } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { Entity, EntityType } from '@/api/registry'
 import { MaskedValue } from './MaskedValue'
+import { ReferenceValue, useRefResolver } from './ReferenceValue'
 import { ComponentTreeView } from './ComponentTreeView'
 import { FieldGrantsDialog } from './FieldGrantsDialog'
 
@@ -47,11 +48,16 @@ export function AssetDrawer({
 
   const access = useMyFieldAccess(projectId, type.kind, type.id)
   const lockedFields = new Set(access.data?.locked_fields ?? [])
+  // 编辑按钮按**有效改权限**（角色 OR 细粒度授权）显示，而非 Manager 角色。
+  const canUpdate = access.data?.can_update ?? false
 
   const data = entity.data
   const name = String(data.name ?? shortId(entity.id))
   const status = data.status ? String(data.status) : null
   const hasSensitive = type.fields.some((f) => f.sensitive)
+
+  // 引用字段 uuid → 目标记录名 + 悬浮卡片（与列表视图一致，含权限脱敏）。
+  const resolveRef = useRefResolver(projectId, type.fields)
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -88,6 +94,7 @@ export function AssetDrawer({
                 {type.fields.map((f) => {
                   const v = data[f.name]
                   const masked = lockedFields.has(f.name)
+                  const resolved = f.type === 'reference' ? resolveRef(f, v) : null
                   return (
                     <div
                       key={f.name}
@@ -104,6 +111,8 @@ export function AssetDrawer({
                           <MaskedValue />
                         ) : v == null || v === '' ? (
                           <span className="text-[13px] text-muted-foreground">—</span>
+                        ) : resolved ? (
+                          <ReferenceValue resolved={resolved} className="text-[13px]" />
                         ) : (
                           <span
                             className={cn(
@@ -151,7 +160,7 @@ export function AssetDrawer({
 
         {/* footer */}
         <div className="flex gap-2 border-t px-[22px] py-3">
-          {canManage && (
+          {canUpdate && (
             <Button variant="outline" className="flex-1" onClick={onEdit}>
               <Pencil className="size-4" />
               {t('entities.edit')}

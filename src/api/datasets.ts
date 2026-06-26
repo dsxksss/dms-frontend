@@ -74,6 +74,8 @@ export interface FromRegistryInput {
   fields?: string[]
   /** 默认 true 剔除敏感字段；false=导出原始敏感字段(需 Manager + approved 电子签名)。 */
   mask_sensitive?: boolean
+  /** 引用列导出形态：name(默认,记录名) / content(主内容字段,如序列/SMILES,敏感受脱敏约束) / id(业务编号) / raw(原始 uuid)。 */
+  reference_mode?: 'name' | 'content' | 'id' | 'raw'
   description?: string
   tags?: string[]
   author?: string

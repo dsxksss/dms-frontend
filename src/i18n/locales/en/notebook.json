@@ -18,7 +18,8 @@
   "placeholder": "Document your experiment in Markdown — steps, results, conclusions…",
   "previewEmpty": "Preview appears here",
   "lastSaved": "Last edited",
-  "list": { "empty": "No entries" },
+  "conflict": "This entry was changed by someone else. The latest version was loaded — review your content and save again (your content will overwrite).",
+  "list": { "empty": "No entries", "loadMore": "Load more" },
   "empty": {
     "title": "Select or create a notebook entry",
     "hint": "Document your experiments — steps, results, conclusions — in Markdown."

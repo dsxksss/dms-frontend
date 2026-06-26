@@ -12,7 +12,7 @@ export const notebookKeys = {
 
 export function useNotebookEntries(
   projectId: string,
-  params: { include_archived?: boolean } = {},
+  params: { include_archived?: boolean; limit?: number; offset?: number } = {},
 ) {
   return useQuery({
     queryKey: notebookKeys.list(projectId, params),

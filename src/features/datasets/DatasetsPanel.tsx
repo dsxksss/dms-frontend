@@ -1,14 +1,27 @@
 import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Grid3x3, Plus } from 'lucide-react'
+import { toast } from 'sonner'
+import { Download, Grid3x3, MoreHorizontal, Plus, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { PageHeader } from '@/components/page-header'
 import { GridHeader, GridRow, TableCard, Th } from '@/components/data-grid'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { cn } from '@/lib/utils'
-import { useDatasets, useDatasetTags } from '@/hooks/use-datasets'
+import { roleAtLeast } from '@/lib/roles'
+import { useProjectRole } from '@/hooks/use-projects'
+import { useToastError } from '@/hooks/use-toast-error'
+import { useDatasets, useDatasetTags, useDeleteDataset } from '@/hooks/use-datasets'
+import { datasetsApi, type Dataset } from '@/api/datasets'
 import { useFirstRunTour } from '@/features/onboarding/onboarding'
 import { CreateDatasetDialog } from './CreateDatasetDialog'
 
@@ -16,13 +29,29 @@ const COLS = '1.6fr 1fr 130px 110px'
 
 /** 项目数据集列表（成员可见，Contributor+ 可写）。 */
 export function DatasetsPanel({ projectId }: { projectId: string }) {
-  const { t } = useTranslation('datasets')
+  const { t } = useTranslation(['datasets', 'common'])
   const navigate = useNavigate()
+  const role = useProjectRole(projectId)
+  const canWrite = roleAtLeast(role, 'contributor')
+  const del = useDeleteDataset(projectId)
+  const toastError = useToastError()
   const [tag, setTag] = useState<string | undefined>(undefined)
   const query = useDatasets(projectId, tag)
   const tags = useDatasetTags(projectId)
   const [createOpen, setCreateOpen] = useState(false)
+  const [delTarget, setDelTarget] = useState<Dataset | null>(null)
   const data = query.data ?? []
+
+  const onDelete = () => {
+    if (!delTarget) return
+    del
+      .mutateAsync({ id: delTarget.id, version: delTarget.version })
+      .then(() => {
+        toast.success(t('toast.deleted'))
+        setDelTarget(null)
+      })
+      .catch(toastError)
+  }
 
   useFirstRunTour('datasets', !query.isLoading && !query.isError)
 
@@ -81,7 +110,7 @@ export function DatasetsPanel({ projectId }: { projectId: string }) {
               key={ds.id}
               cols={COLS}
               onClick={() =>
-                navigate(`projects/${projectId}/datasets/${ds.id}`)
+                navigate(`/projects/${projectId}/datasets/${ds.id}`)
               }
             >
               <div className="flex min-w-0 items-center gap-2.5">
@@ -108,13 +137,65 @@ export function DatasetsPanel({ projectId }: { projectId: string }) {
               <div className="mono text-[12px] text-muted-foreground">
                 v{ds.version}
               </div>
-              <div className="text-right text-[12px] font-semibold text-brand">
-                {t('row.open')} →
+              <div
+                className="flex items-center justify-end gap-1"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="text-[12px] font-semibold text-brand">
+                  {t('row.open')} →
+                </span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon-sm" title={t('actions.more', { ns: 'common' })}>
+                      <MoreHorizontal className="size-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() =>
+                        navigate(`/projects/${projectId}/datasets/${ds.id}`)
+                      }
+                    >
+                      {t('row.open')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        datasetsApi.exportDownload(projectId, ds.id, 'csv')
+                      }
+                    >
+                      <Download className="size-4" />
+                      {t('preview.exportCsv')}
+                    </DropdownMenuItem>
+                    {canWrite && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => setDelTarget(ds)}
+                        >
+                          <Trash2 className="size-4" />
+                          {t('row.delete')}
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </GridRow>
           ))}
         </TableCard>
       )}
+
+      <ConfirmDialog
+        open={!!delTarget}
+        onOpenChange={(o) => !o && setDelTarget(null)}
+        title={t('delete.title')}
+        description={t('delete.description', { name: delTarget?.name })}
+        destructive
+        confirmText={t('delete.confirm')}
+        loading={del.isPending}
+        onConfirm={onDelete}
+      />
 
       <CreateDatasetDialog
         projectId={projectId}

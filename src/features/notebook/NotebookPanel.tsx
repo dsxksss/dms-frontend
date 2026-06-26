@@ -38,7 +38,6 @@ import { EmptyState, ErrorState } from '@/components/states'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
-import { formatDateTime } from '@/lib/format'
 import { roleAtLeast } from '@/lib/roles'
 import { useProjectRole } from '@/hooks/use-projects'
 import {
@@ -49,7 +48,8 @@ import {
   useUpdateNotebookEntry,
 } from '@/hooks/use-notebook'
 import { useToastError } from '@/hooks/use-toast-error'
-import type { NotebookEntry } from '@/api/notebook'
+import { AppError } from '@/lib/errors'
+import { notebookApi, type NotebookEntry } from '@/api/notebook'
 import { MarkdownPreview } from './MarkdownPreview'
 
 type View = 'edit' | 'preview' | 'split'
@@ -62,11 +62,16 @@ export function NotebookPanel({ projectId }: { projectId: string }) {
   const canDelete = roleAtLeast(role, 'manager')
   const [showArchived, setShowArchived] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const query = useNotebookEntries(projectId, { include_archived: showArchived })
+  const [limit, setLimit] = useState(100)
+  const query = useNotebookEntries(projectId, {
+    include_archived: showArchived,
+    limit,
+  })
   const create = useCreateNotebookEntry(projectId)
   const toastError = useToastError()
 
   const entries = query.data?.items ?? []
+  const total = query.data?.total ?? 0
   const selected = entries.find((e) => e.id === selectedId) ?? null
 
   const onNew = () =>
@@ -136,6 +141,17 @@ export function NotebookPanel({ projectId }: { projectId: string }) {
                 )}
               </button>
             ))
+          )}
+          {entries.length < total && (
+            <button
+              type="button"
+              onClick={() => setLimit((l) => l + 100)}
+              disabled={query.isFetching}
+              className="mt-1 w-full rounded-[9px] px-2.5 py-2 text-center text-[12px] font-semibold text-muted-foreground transition hover:bg-surface-2 hover:text-foreground disabled:opacity-50"
+            >
+              {t('list.loadMore', { defaultValue: '加载更多' })} ({entries.length}/
+              {total})
+            </button>
           )}
         </div>
 
@@ -212,6 +228,17 @@ function EntryEditor({
   const [view, setView] = useState<View>('split')
   const [delOpen, setDelOpen] = useState(false)
 
+  // 409 乐观锁冲突：拉服务端最新版本号，提示用户确认后再次保存（以其内容覆盖）。
+  const onConflict = async () => {
+    try {
+      const latest = await notebookApi.get(projectId, entry.id)
+      setVersion(latest.version)
+    } catch {
+      /* 拉取最新失败则保持原 version，下次保存仍会 409 */
+    }
+    toast.warning(t('conflict'))
+  }
+
   const save = () => {
     if (!dirty) return
     update
@@ -221,7 +248,10 @@ function EntryEditor({
         setDirty(false)
         toast.success(t('saved'))
       })
-      .catch(toastError)
+      .catch((e) => {
+        if (e instanceof AppError && e.status === 409) onConflict()
+        else toastError(e)
+      })
   }
 
   const onArchive = () =>
@@ -470,8 +500,9 @@ function EntryEditor({
         )}
       </div>
 
+      {/* NotebookEntry 无时间戳字段，故展示真实的保存状态 + 版本，不伪造日期。 */}
       <div className="border-t px-5 py-1.5 text-[11px] text-muted-foreground">
-        {t('lastSaved')} · {formatDateTime(new Date().toISOString()).split(' ')[0]}
+        {dirty ? t('unsaved') : t('saved')} · v{version}
       </div>
 
       <ConfirmDialog
@@ -490,7 +521,12 @@ function EntryEditor({
               setDelOpen(false)
               onDeleted()
             })
-            .catch(toastError)
+            .catch((e) => {
+              if (e instanceof AppError && e.status === 409) {
+                setDelOpen(false)
+                onConflict()
+              } else toastError(e)
+            })
         }
       />
     </div>

@@ -4,6 +4,7 @@ import { useQueries } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   Database,
+  Eye,
   FileUp,
   Lock,
   MoreHorizontal,
@@ -20,6 +21,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu'
 import { PageHeader } from '@/components/page-header'
 import { TableCard, GridFooter } from '@/components/data-grid'
 import { Pagination } from '@/components/pagination'
@@ -33,11 +41,13 @@ import {
   useRecords,
   useDeleteRecord,
   useMyFieldAccess,
+  useImportEntities,
 } from '@/hooks/use-registry'
 import { useToastError } from '@/hooks/use-toast-error'
 import { registryApi } from '@/api/registry'
 import type { Entity, EntityType, TypeKind } from '@/api/registry'
 import { MaskedValue } from './MaskedValue'
+import { ReferenceValue, useRefResolver } from './ReferenceValue'
 import { AssetDrawer } from './AssetDrawer'
 import { EntityDialog } from './EntityDialog'
 import { EntityTypeDialog } from './EntityTypeDialog'
@@ -72,6 +82,11 @@ export function RegistryTab({
   const activeType = showTypes
     ? undefined
     : (kindTypes.find((ty) => ty.id === tab) ?? kindTypes[0])
+  const importer = useImportEntities(projectId, activeType?.id ?? '')
+  // 当前用户对**当前类型**记录的有效增/改/删（角色 OR 细粒度授权）——授了「新增」却没按钮即此处之前只看角色所致。
+  // 与 RecordsGrid 同 queryKey，React Query 去重，不会多发请求。
+  const access = useMyFieldAccess(projectId, kind, activeType?.id ?? '')
+  const canCreateRecord = access.data?.can_create ?? canCreate
 
   const counts = useQueries({
     queries: kindTypes.map((ty) => ({
@@ -93,24 +108,33 @@ export function RegistryTab({
         description={isAsset ? t('subtitle') : t('dataSubtitle')}
         size="md"
         actions={
-          canManage && (
-            <div className="flex items-center gap-2">
-              {/* 高频动作直出：转数据集 + 新建记录(主)；建类型/批量导入收进「更多」。 */}
-              {!showTypes && activeType && (
-                <Button variant="outline" onClick={() => setConvertOpen(true)}>
-                  <Database className="size-4" />
-                  {t('fromRegistry.button', {
-                    ns: 'datasets',
-                    defaultValue: '转数据集',
-                  })}
-                </Button>
-              )}
-              {!showTypes && activeType && canCreate && (
-                <Button onClick={() => setCreateOpen(true)}>
-                  <Plus className="size-4" />
-                  {t('entities.create')}
-                </Button>
-              )}
+          <div className="flex items-center gap-2">
+            {/* 高频动作直出：转数据集 + 类型 + 新建记录(Contributor)；建类型(Manager)/批量导入(Contributor)收进「更多」。 */}
+            {canCreate && !showTypes && activeType && (
+              <Button variant="outline" onClick={() => setConvertOpen(true)}>
+                <Database className="size-4" />
+                {t('fromRegistry.button', {
+                  ns: 'datasets',
+                  defaultValue: '转数据集',
+                })}
+              </Button>
+            )}
+            {/* 类型管理：放在「转数据集」右侧，所有成员可见；再次点击返回记录视图。 */}
+            <Button
+              variant="outline"
+              onClick={() => setTab(showTypes ? '' : TYPES_TAB)}
+              className={cn(showTypes && 'border-brand text-brand')}
+            >
+              <Settings2 className="size-4" />
+              {t('tabs.types')}
+            </Button>
+            {canCreateRecord && !showTypes && activeType && (
+              <Button onClick={() => setCreateOpen(true)}>
+                <Plus className="size-4" />
+                {t('entities.create')}
+              </Button>
+            )}
+            {canCreate && (canManage || (!showTypes && activeType && isAsset)) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon" title={t('more')}>
@@ -118,10 +142,15 @@ export function RegistryTab({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setCreateTypeOpen(true)}>
-                    <Wand2 className="size-4" />
-                    {isAsset ? t('types.createAsset') : t('types.createTemplate')}
-                  </DropdownMenuItem>
+                  {/* 建类型 = Manager；批量导入 = Contributor */}
+                  {canManage && (
+                    <DropdownMenuItem onClick={() => setCreateTypeOpen(true)}>
+                      <Wand2 className="size-4" />
+                      {isAsset
+                        ? t('types.createAsset')
+                        : t('types.createTemplate')}
+                    </DropdownMenuItem>
+                  )}
                   {!showTypes && activeType && isAsset && (
                     <DropdownMenuItem onClick={() => setImportOpen(true)}>
                       <FileUp className="size-4" />
@@ -130,12 +159,12 @@ export function RegistryTab({
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
-          )
+            )}
+          </div>
         }
       />
 
-      {/* type sub-tabs + 类型管理 tab */}
+      {/* type sub-tabs */}
       <div className="mb-4 flex flex-wrap items-center gap-1.5 border-b">
         {kindTypes.map((ty, i) => {
           const on = !showTypes && activeType?.id === ty.id
@@ -163,19 +192,6 @@ export function RegistryTab({
             </button>
           )
         })}
-        <button
-          type="button"
-          onClick={() => setTab(TYPES_TAB)}
-          className={cn(
-            '-mb-px ml-auto flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-[13px] font-semibold transition',
-            showTypes
-              ? 'border-brand text-brand'
-              : 'border-transparent text-muted-foreground hover:text-foreground',
-          )}
-        >
-          <Settings2 className="size-4" />
-          {t('tabs.types')}
-        </button>
       </div>
 
       {showTypes ? (
@@ -198,8 +214,7 @@ export function RegistryTab({
           projectId={projectId}
           kind={kind}
           type={activeType}
-          canManage={canManage}
-          canCreate={canCreate}
+          canCreate={canCreateRecord}
           onCreate={() => setCreateOpen(true)}
         />
       ) : null}
@@ -215,8 +230,7 @@ export function RegistryTab({
         <>
           {isAsset && (
             <ImportEntitiesDialog
-              projectId={projectId}
-              typeId={activeType.id}
+              importer={importer}
               open={importOpen}
               onOpenChange={setImportOpen}
             />
@@ -245,14 +259,12 @@ function RecordsGrid({
   projectId,
   kind,
   type,
-  canManage,
   canCreate,
   onCreate,
 }: {
   projectId: string
   kind: TypeKind
   type: EntityType
-  canManage: boolean
   canCreate: boolean
   onCreate: () => void
 }) {
@@ -262,6 +274,9 @@ function RecordsGrid({
   const access = useMyFieldAccess(projectId, kind, type.id)
   // 列级锁定字段：权威来自 my-field-access，不再靠「单元格值为空」猜。
   const lockedFields = new Set(access.data?.locked_fields ?? [])
+  // 记录的改/删按钮按**有效权限**（角色 OR 细粒度授权）显示——之前错按 Manager 角色，贡献者/被授权者都看不到。
+  const canUpdate = access.data?.can_update ?? false
+  const canDelete = access.data?.can_delete ?? false
   const del = useDeleteRecord(projectId, kind)
   const toastError = useToastError()
   const [selected, setSelected] = useState<Entity | null>(null)
@@ -270,6 +285,11 @@ function RecordsGrid({
   const shown = type.fields.slice(0, 4)
   const cols = `108px ${shown.map(() => 'minmax(0,1fr)').join(' ')} 48px`
   const records = query.data?.items ?? []
+
+  // 引用字段：软引用存的是目标记录 uuid。把可见列里的引用解析成被引用记录的「name」，
+  // 否则用户看到一串 uuid。ref_type 是目标资产类型 key → 找到其 type.id → 拉该类型记录建 id→name。
+  // 引用字段：软引用存目标 uuid。解析成目标记录名 + 悬浮卡片（见 ReferenceValue，含权限脱敏）。
+  const resolveRef = useRefResolver(projectId, shown)
 
   const onDelete = (r: Entity) =>
     del
@@ -316,8 +336,9 @@ function RecordsGrid({
         </div>
 
         {records.map((r) => (
+          <ContextMenu key={r.id}>
+            <ContextMenuTrigger asChild>
           <div
-            key={r.id}
             className="trow grid cursor-pointer items-center border-b border-divider px-4 py-3 text-[13px] last:border-b-0"
             style={{ gridTemplateColumns: cols }}
             onClick={() => setSelected(r)}
@@ -328,12 +349,15 @@ function RecordsGrid({
             {shown.map((f) => {
               const v = r.data[f.name]
               const locked = lockedFields.has(f.name)
+              const resolved = f.type === 'reference' ? resolveRef(f, v) : null
               return (
                 <div key={f.name} className="truncate pr-2">
                   {locked ? (
                     <MaskedValue />
                   ) : v == null || v === '' ? (
                     <span className="text-muted-foreground">—</span>
+                  ) : resolved ? (
+                    <ReferenceValue resolved={resolved} />
                   ) : (
                     <span className={cn(f.type === 'sequence' && 'mono text-[12px]')}>
                       {String(v)}
@@ -343,7 +367,7 @@ function RecordsGrid({
               )
             })}
             <div onClick={(e) => e.stopPropagation()}>
-              {canManage && (
+              {(canUpdate || canDelete) && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon-sm">
@@ -351,22 +375,49 @@ function RecordsGrid({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setEditTarget(r)}>
-                      <Pencil className="size-4" />
-                      {t('entities.edit')}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="text-destructive"
-                      onClick={() => onDelete(r)}
-                    >
-                      <Trash2 className="size-4" />
-                      {t('actions.delete', { ns: 'common', defaultValue: '删除' })}
-                    </DropdownMenuItem>
+                    {canUpdate && (
+                      <DropdownMenuItem onClick={() => setEditTarget(r)}>
+                        <Pencil className="size-4" />
+                        {t('entities.edit')}
+                      </DropdownMenuItem>
+                    )}
+                    {canDelete && (
+                      <DropdownMenuItem
+                        className="text-destructive"
+                        onClick={() => onDelete(r)}
+                      >
+                        <Trash2 className="size-4" />
+                        {t('actions.delete', { ns: 'common', defaultValue: '删除' })}
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
             </div>
           </div>
+            </ContextMenuTrigger>
+            <ContextMenuContent className="w-40">
+              <ContextMenuItem onClick={() => setSelected(r)}>
+                <Eye className="size-4" />
+                {t('actions.open', { ns: 'common', defaultValue: '查看' })}
+              </ContextMenuItem>
+              {canUpdate && (
+                <ContextMenuItem onClick={() => setEditTarget(r)}>
+                  <Pencil className="size-4" />
+                  {t('entities.edit')}
+                </ContextMenuItem>
+              )}
+              {canDelete && (
+                <>
+                  <ContextMenuSeparator />
+                  <ContextMenuItem variant="destructive" onClick={() => onDelete(r)}>
+                    <Trash2 className="size-4" />
+                    {t('actions.delete', { ns: 'common', defaultValue: '删除' })}
+                  </ContextMenuItem>
+                </>
+              )}
+            </ContextMenuContent>
+          </ContextMenu>
         ))}
 
         <GridFooter>

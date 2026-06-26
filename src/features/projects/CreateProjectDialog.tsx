@@ -25,11 +25,12 @@ import {
 import { useCreateProject } from '@/hooks/use-projects'
 import { useOrgs } from '@/hooks/use-orgs'
 import { useToastError } from '@/hooks/use-toast-error'
+import { projectsApi } from '@/api/projects'
 
-/** 归属默认值：留空交后端回退到默认组织「我的工作区」。 */
+/** 归属默认值：留空交后端回退到默认组织「我的组织」。 */
 const DEFAULT_WS = ''
 
-/** 新建项目对话框：名称 + 描述 + 归属组织（默认「我的工作区」，可改其他组织）。 */
+/** 新建项目对话框：名称 + 描述 + 归属组织（默认「我的组织」，可改其他组织）。 */
 export function CreateProjectDialog({
   open,
   onOpenChange,
@@ -45,6 +46,7 @@ export function CreateProjectDialog({
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [org, setOrg] = useState(DEFAULT_WS)
+  const [visibility, setVisibility] = useState<'private' | 'org'>('private')
   const orgList = orgs.data ?? []
   const defaultOrg = orgList.find((o) => o.is_default)
   // 选中值：空=默认工作区（用默认组织 id 回显，否则交后端兜底）。
@@ -58,11 +60,18 @@ export function CreateProjectDialog({
         description: description.trim() || undefined,
         organization_id: org || undefined,
       })
+      // 组织内公开 = 把项目共享给它所属组织（该组织成员只读可见）；私有则不共享。
+      if (visibility === 'org' && project.organization_id) {
+        await projectsApi
+          .addShare(project.id, { org_id: project.organization_id, role: 'viewer' })
+          .catch(() => {})
+      }
       toast.success(t('toast.created'))
       onOpenChange(false)
       setName('')
       setDescription('')
       setOrg(DEFAULT_WS)
+      setVisibility('private')
       navigate(`/projects/${project.id}`)
     } catch (e) {
       toastError(e)
@@ -116,6 +125,26 @@ export function CreateProjectDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t('visibility.label')}</Label>
+            <Select
+              value={visibility}
+              onValueChange={(v) => setVisibility(v as 'private' | 'org')}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="private">{t('visibility.private')}</SelectItem>
+                <SelectItem value="org">{t('visibility.org')}</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground">
+              {visibility === 'org'
+                ? t('visibility.orgDesc')
+                : t('visibility.privateDesc')}
+            </p>
           </div>
         </div>
         <DialogFooter>

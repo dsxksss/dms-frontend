@@ -11,8 +11,7 @@
   "filter": { "includeArchived": "Show archived" },
   "card": {
     "orgProject": "Org project",
-    "personalProject": "Personal project",
-    "defaultWorkspace": "My Workspace",
+    "defaultWorkspace": "My Organization",
     "open": "Open project"
   },
   "back": "Back to projects",
@@ -94,6 +93,7 @@
     "you": "(you)",
     "added": "Member added",
     "removed": "Member removed",
+    "roleUpdated": "Role updated",
     "userIdRequired": "User ID is required"
   },
   "roles": {
@@ -101,6 +101,37 @@
     "manager": "Manager",
     "contributor": "Contributor",
     "viewer": "Viewer"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Project visibility, members and roles."
+  },
+  "join": {
+    "request": "Request to join",
+    "pending": "Requested",
+    "requested": "Request submitted",
+    "pendingTitle": "Join requests",
+    "approve": "Approve",
+    "reject": "Reject",
+    "approved": "Request approved",
+    "rejected": "Request rejected"
+  },
+  "grants": {
+    "title": "Fine-grained access",
+    "subtitle": "Roles grant project-wide CRUD. Here you can override roles per content type — give a specific member create/read/update/delete on a single drug-asset type or data template (e.g. a viewer who may add to \"Antibody\" but not delete).",
+    "empty": "No content types yet",
+    "emptyHint": "Create drug-asset types or data templates first; then you can grant per-member access here.",
+    "assetType": "Drug asset type",
+    "dataTemplate": "Data template",
+    "manage": "Manage access"
+  },
+  "visibility": {
+    "label": "Visibility",
+    "private": "Private",
+    "org": "Organization",
+    "privateDesc": "Only invited members can see and enter; others in the org can't see it.",
+    "orgDesc": "Everyone in the organization can see and read it; editing still requires being invited as a member. Other organizations in the company can't see it.",
+    "set": "Visibility updated"
   },
   "shares": {
     "title": "Cross-org sharing",

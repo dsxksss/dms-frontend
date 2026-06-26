@@ -79,11 +79,20 @@ export function useImportOrgEntities(orgId: string, assetTypeId: string) {
   return useMutation({
     mutationFn: ({
       body,
-      params,
+      format,
+      name_field,
+      seq_field,
     }: {
       body: string
-      params: { format: 'csv' | 'fasta'; name_field?: string; seq_field?: string }
-    }) => orgRegistryApi.importEntities(orgId, assetTypeId, body, params),
+      format: 'csv' | 'fasta'
+      name_field?: string
+      seq_field?: string
+    }) =>
+      orgRegistryApi.importEntities(orgId, assetTypeId, body, {
+        format,
+        name_field,
+        seq_field,
+      }),
     onSuccess: invalidate,
   })
 }

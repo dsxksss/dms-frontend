@@ -1,25 +1,23 @@
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
-import { useIsZh } from '@/components/bilingual'
 
 /**
- * 页面标题区（原型 H1）：中文大标题 + 浅色英文副名（仅中文 locale）+ 描述 + 右侧操作。
- * title 传已本地化的串；titleEn 传固定英文短名（如 "Projects"）。
+ * 页面标题区（原型 H1）：只显示当前语言的标题 + 描述 + 右侧操作（与侧栏 BiLabel 口径一致，
+ * 不再中英并排）。title 传已本地化的串；titleEn 仅为兼容旧调用而保留，不渲染。
  */
 export function PageHeader({
   title,
-  titleEn,
   description,
   actions,
   size = 'lg',
 }: {
   title: string
+  /** @deprecated 不再渲染——中文模式只显示中文标题，避免中英并排冗余。 */
   titleEn?: string
   description?: ReactNode
   actions?: ReactNode
   size?: 'lg' | 'md'
 }) {
-  const isZh = useIsZh()
   return (
     <div className="mb-5 flex flex-wrap items-end gap-x-3.5 gap-y-2.5">
       <div className="min-w-0 flex-1">
@@ -30,16 +28,6 @@ export function PageHeader({
           )}
         >
           {title}
-          {isZh && titleEn && (
-            <span
-              className={cn(
-                'ml-2 font-semibold text-muted-foreground',
-                size === 'lg' ? 'text-[18px]' : 'text-[17px]',
-              )}
-            >
-              {titleEn}
-            </span>
-          )}
         </h1>
         {description && (
           <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted-foreground">

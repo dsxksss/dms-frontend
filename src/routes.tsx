@@ -1,5 +1,6 @@
 import { lazy } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { isStandalone } from '@/lib/edition'
 import { ProtectedRoute } from '@/auth/ProtectedRoute'
 import { AppLayout } from '@/components/app-layout'
 import { LoginPage } from '@/features/auth/LoginPage'
@@ -35,10 +36,6 @@ const ProjectDataSection = lazyPage(
   () => import('@/features/projects/ProjectWorkspace'),
   'ProjectDataSection',
 )
-const ProjectProtocolsSection = lazyPage(
-  () => import('@/features/projects/ProjectWorkspace'),
-  'ProjectProtocolsSection',
-)
 const ProjectNotebookSection = lazyPage(
   () => import('@/features/projects/ProjectWorkspace'),
   'ProjectNotebookSection',
@@ -54,10 +51,6 @@ const ProjectFilesSection = lazyPage(
 const ProjectMembersSection = lazyPage(
   () => import('@/features/projects/ProjectWorkspace'),
   'ProjectMembersSection',
-)
-const ProjectSignaturesSection = lazyPage(
-  () => import('@/features/projects/ProjectWorkspace'),
-  'ProjectSignaturesSection',
 )
 const DatasetDetailPage = lazyPage(
   () => import('@/features/datasets/DatasetDetailPage'),
@@ -104,7 +97,11 @@ const PlatformSettingsPage = lazyPage(
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
-  { path: '/signup', element: <SignupPage /> },
+  // 自助注册仅自定义租户版（standalone）；WeMol 配套版重定向回登录。
+  {
+    path: '/signup',
+    element: isStandalone ? <SignupPage /> : <Navigate to="/login" replace />,
+  },
   {
     element: <PlatformRoot />,
     children: [
@@ -148,16 +145,11 @@ export const router = createBrowserRouter([
           { path: 'projects/:id', element: <ProjectOverviewSection /> },
           { path: 'projects/:id/registry', element: <ProjectRegistrySection /> },
           { path: 'projects/:id/data', element: <ProjectDataSection /> },
-          { path: 'projects/:id/protocols', element: <ProjectProtocolsSection /> },
           { path: 'projects/:id/notebook', element: <ProjectNotebookSection /> },
           { path: 'projects/:id/datasets', element: <ProjectDatasetsSection /> },
           { path: 'projects/:id/datasets/:dsId', element: <DatasetDetailPage /> },
           { path: 'projects/:id/files', element: <ProjectFilesSection /> },
           { path: 'projects/:id/members', element: <ProjectMembersSection /> },
-          {
-            path: 'projects/:id/signatures',
-            element: <ProjectSignaturesSection />,
-          },
         ],
       },
     ],

@@ -24,7 +24,7 @@
     },
     "newProject": {
       "title": "② New project",
-      "desc": "Create your first project here. Leave the org unset and it lands in \"My Workspace\" — zero setup to get going."
+      "desc": "Create your first project here. Leave the org unset and it lands in \"My Organization\" — zero setup to get going."
     },
     "orgs": {
       "title": "③ Organizations",

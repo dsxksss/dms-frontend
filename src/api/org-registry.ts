@@ -81,7 +81,8 @@ export const orgRegistryApi = {
         method: 'POST',
         raw: body,
         query: { ...params },
-        headers: { 'content-type': 'text/plain' },
+        // 后端 import 仅声明 text/csv / application/octet-stream（FASTA 亦为文本）。
+        headers: { 'content-type': 'text/csv' },
       },
     ),
 }

@@ -5,6 +5,20 @@
     "tagline": "药物研发的数据资产平台"
   },
   "comingSoon": "即将上线",
+  "search": {
+    "trigger": "搜索 Search…",
+    "placeholder": "搜索项目、组织、数据集、资产、文件…",
+    "searching": "搜索中…",
+    "projects": "项目",
+    "organizations": "组织",
+    "datasets": "数据集",
+    "assets": "药物资产",
+    "data": "药物数据",
+    "files": "文件",
+    "notebook": "实验记录本",
+    "protocols": "实验方案",
+    "empty": "没有匹配的结果"
+  },
   "settings": {
     "appearance": "外观",
     "appearanceDesc": "主题与界面语言偏好",
@@ -37,6 +51,9 @@
     "user": "用户",
     "action": "操作",
     "add": "授权",
+    "addUser": "授权给其他人（按姓名 / 邮箱搜索）",
+    "matrixDesc": "勾选即在该成员角色之外额外放行此动作，取消勾选即撤销；角色本身已覆盖的动作显示为锁定。",
+    "noMembers": "暂无成员",
     "empty": "暂无单独授权",
     "granted": "已授权",
     "revoked": "已撤销",
@@ -46,7 +63,14 @@
       "update": "修改",
       "delete": "删除",
       "manage": "管理"
-    }
+    },
+    "permissions": "权限",
+    "fromRole": "来自成员角色（不可在此撤销）",
+    "presets": "快捷角色",
+    "presetViewer": "查看者",
+    "presetContributor": "贡献者",
+    "presetManager": "管理者",
+    "presetClear": "清空"
   },
   "actions": {
     "getStarted": "开始使用",

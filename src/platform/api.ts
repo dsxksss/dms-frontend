@@ -151,7 +151,13 @@ export const platformApi = {
 
   // ---- 系统级公共数据集（平台维护，全企业只读）----
   listDatasets: () => platformRequest<SystemDataset[]>(`${base}/datasets`),
-  createDataset: (body: { name: string; description?: string }) =>
+  createDataset: (body: {
+    name: string
+    description?: string
+    tags?: string[]
+    author?: string
+    references?: string[]
+  }) =>
     platformRequest<SystemDataset>(`${base}/datasets`, {
       method: 'POST',
       body,

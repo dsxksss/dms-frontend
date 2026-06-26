@@ -2,7 +2,6 @@ import { request } from '@/api/client'
 import type { LoginRequest, Me, SessionTokens } from '@/api/types'
 
 export interface UserSignupRequest {
-  tenant?: string
   email: string
   password: string
   name?: string

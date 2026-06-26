@@ -28,6 +28,12 @@ import {
 import { platformApi } from '@/platform/api'
 import { useToastError } from '@/hooks/use-toast-error'
 import type { SystemDataset } from '@/api/datasets'
+import {
+  DatasetMetaFields,
+  emptyMeta,
+  normalizeMeta,
+  type DatasetMetaValue,
+} from '@/features/datasets/DatasetMetaFields'
 
 const COLS = '1.8fr 90px 120px 110px'
 
@@ -159,6 +165,7 @@ function UploadDatasetDialog({
   const fileRef = useRef<HTMLInputElement>(null)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [meta, setMeta] = useState<DatasetMetaValue>(emptyMeta())
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
 
@@ -166,6 +173,7 @@ function UploadDatasetDialog({
   const reset = () => {
     setName('')
     setDescription('')
+    setMeta(emptyMeta())
     setFile(null)
     if (fileRef.current) fileRef.current.value = ''
   }
@@ -173,9 +181,13 @@ function UploadDatasetDialog({
   const submit = async () => {
     if (!name.trim()) return
     try {
+      const m = normalizeMeta(meta)
       const ds = await create.mutateAsync({
         name: name.trim(),
         description: description.trim() || undefined,
+        tags: m.tags,
+        author: m.author || undefined,
+        references: m.references,
       })
       // 选了文件就追加首个 CSV 版本：上传需新建数据集的 id，故直接调 api（hook 的 id 在调用期已绑定）。
       if (file) {
@@ -219,6 +231,7 @@ function UploadDatasetDialog({
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
+          <DatasetMetaFields value={meta} onChange={setMeta} />
           <div className="space-y-1.5">
             <Label htmlFor="ds-file">{t('datasets.upload')}</Label>
             <Input

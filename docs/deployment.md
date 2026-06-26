@@ -50,13 +50,14 @@ registry、orgs、dataset、esign、audit、platform、**sso-wemol** 等。
 
 | 变量 | 说明 | 默认 |
 |---|---|---|
+| `VITE_EDITION` | 产品版本：`wemol`（默认，仅 WeMol SSO+关注册+藏企业/租户）/ `standalone`（邮箱密码+注册）。**须与后端 `edition` 配对** | 空(=wemol) |
 | `VITE_API_BASE_URL` | API 基址。**留空=同源**（经 nginx 反代，推荐） | 空 |
 | `VITE_API_PROXY` | 仅开发期 vite proxy 目标 | `http://127.0.0.1:8080` |
 | `VITE_DEFAULT_TENANT` | 单租户部署设它后登录页隐藏租户输入 | 空 |
 | `VITE_TENANT_HOST_SUFFIX` | SaaS 子域名取租户后缀（须与后端 `tenant_host_suffix` 一致） | 空 |
-| `VITE_WEMOL_SSO` | `off` 时登录页默认邮箱+密码、WeMol 作次选；默认 WeMol 优先 | 空(=on) |
+| `VITE_WEMOL_SSO` | （仅 `standalone` 版有效）`on` 时附带 WeMol 登录入口 | 空 |
 
-完整说明见 [`.env.example`](../.env.example)。
+完整说明见 [`.env.example`](../.env.example)。两套产物：`VITE_EDITION=wemol npm run build` / `VITE_EDITION=standalone npm run build`。
 
 ---
 
@@ -169,22 +170,25 @@ base_url = "https://wemol.example.com"   # 你的 WeMol 平台
 # login_path = "/api/sys/login"          # 系统用户改这个；普通用户默认 /api/user/login
 ```
 
-前端：默认 WeMol 为首选登录入口；未配 WeMol 的部署设 `VITE_WEMOL_SSO=off` 默认走邮箱+密码。
+前端：用 `VITE_EDITION=wemol`（默认）构建——登录页仅 WeMol SSO（邮箱密码为隐蔽管理员兜底）、隐藏自助注册。
+自定义租户版用 `VITE_EDITION=standalone`（默认邮箱密码 + 注册；如需附带 WeMol 入口再加 `VITE_WEMOL_SSO=on`）。
 
-> ⚠️ **WeMol/SSO 用户落地是"零权限"的**：JIT 映射进企业后没有任何基础角色，登录后看不到组织/项目。
-> 需由企业管理员授予基础租户角色（owner/admin/member）。这是当前后端的 onboarding 行为，
-> 部署时请知悉（可在 [frontend-sync](../../dms-backend/docs/frontend-sync.md) 反馈给后端补默认角色）。
+> ✅ **WeMol/SSO 用户登入即可用**：JIT 首次映射进企业时**自动授予基线 `member` 角色**（含 `org:read`），
+> 登录后即可见默认组织「我的工作区」并能建项目——与邮箱自助注册加入企业一致。无需管理员手动授权。
+> （需要更高权限如 admin/owner 时，再由管理员经 `/v1/role-grants` 授予。）
 
 ---
 
-## 6. 可选：后端单体托管 dist（`web-ui` 档，离线/单容器）
+## 6. 【默认部署形态】后端单端口托管 dist（`web-ui` 档，**不依赖 Docker**）
 
-私有化离线、希望"一个容器搞定"时，可让**后端进程同时托管前端 dist**（去掉 nginx）。
-**后端已支持**（`web-ui` 编译档，不进 `full`；云端走 CDN 时无需背 `tower-http/fs`）。
+云端 / 私有化的**默认部署**：**后端进程同时托管前端 dist**，单端口（8080）出前端 + API，去掉独立 nginx。
+本质是「`full,web-ui` 后端二进制 + 前端 `dist` + `static_dir`」——**与 Docker 无关**，目标机无 Docker 也能跑。
+独立 nginx/CDN（本目录 `Dockerfile`/`nginx.conf`）改为**备选**（前端与后端分域/多端口时才用）。
 
-两个条件，缺一则不托管（前端照常可独立 nginx/CDN）：
+一键打包自包含 bundle（后端在 `dms-backend/scripts/package-web-ui.sh`，产出 二进制+web+config，拷到目标机即跑）。
+手动则两个条件，缺一则不托管：
 1. **用 `full,web-ui` 构建**后端；
-2. 配 **`server.static_dir`** 指向前端 `npm run build` 的 `dist`。
+2. 配 **`server.static_dir`**（或 env `DMS__SERVER__STATIC_DIR`）指向前端 `npm run build` 的 `dist`。
 
 ```bash
 # 后端：含 web-ui 档构建

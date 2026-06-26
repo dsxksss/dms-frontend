@@ -1,7 +1,7 @@
 {
   "title": "组织",
   "subtitle": "企业内的组织与团队、作用域角色授予",
-  "defaultBadge": "我的工作区",
+  "defaultBadge": "我的组织",
   "notMemberDesc": "你不是该组织的成员，无法查看其成员、团队、资产与数据。如需访问，请联系组织管理员邀请你加入。",
   "create": {
     "title": "新建组织",
@@ -21,6 +21,7 @@
   "created": "组织已创建",
   "addMember": {
     "title": "添加组织成员",
+    "alreadyMember": "已是成员",
     "user": "用户",
     "userPlaceholder": "搜索姓名或邮箱…",
     "role": "角色",
@@ -28,6 +29,13 @@
     "added": "成员已添加",
     "userRequired": "请选择用户",
     "empty": "该组织暂无可选成员"
+  },
+  "members": {
+    "you": "（你）",
+    "removeTitle": "移除成员？",
+    "removeDescription": "将该成员从组织中移除。",
+    "remove": "移除",
+    "removed": "成员已移除"
   },
   "orgRole": { "admin": "管理员", "member": "成员" },
   "teams": {
@@ -116,6 +124,13 @@
     "assets": "组织资产",
     "data": "组织数据",
     "grants": "角色授予",
-    "join": "加入申请"
+    "join": "加入申请",
+    "settings": "设置"
+  },
+  "settings": {
+    "title": "组织设置",
+    "discoverable": "允许被搜索并申请加入",
+    "discoverableHint": "开启后，本企业其他用户可搜索到该组织并申请加入；关闭则只能由管理员邀请。",
+    "saved": "已保存"
   }
 }

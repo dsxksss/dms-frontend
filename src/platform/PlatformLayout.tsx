@@ -120,7 +120,7 @@ export function PlatformLayout() {
     <div className="flex h-screen overflow-hidden">
       <PlatformSidebar />
       <div className="relative flex min-w-0 flex-1 flex-col">
-        <Topbar crumbs={crumbs} />
+        <Topbar crumbs={crumbs} search={false} />
         <div className="flex-1 overflow-auto">
           <Suspense
             fallback={

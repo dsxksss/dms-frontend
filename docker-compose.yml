@@ -1,7 +1,9 @@
-# 前端独立部署。前端通过 nginx 反代 /v1 到 `backend:8080`（同源、无 CORS）。
-# 后端在另一仓库（dms-backend）。联合本地运行有两种方式：
-#   A) 取消下方 backend / db 注释，先在 dms-backend 构建镜像 `dms-backend:latest`；
-#   B) 仅起前端，并把后端跑在同一 docker 网络、服务名为 `backend`。
+# 【备选】前端独立 nginx 部署（仅当前后端分域/多端口时用）。
+# 默认部署是**后端单端口托管前端**（见 docs/deployment.md 第 6 节 + dms-backend/scripts/package-web-ui.sh），
+# 那种情况下不需要本 compose / 本仓库的 Dockerfile / nginx.conf。
+#
+# 本独立部署：前端经 nginx 反代 /v1 到 `backend:8080`（同源、无 CORS）。后端在另一仓库（dms-backend）。
+# 联合本地：A) 取消下方 backend/db 注释并先构建后端镜像；B) 仅起前端，后端在同一 docker 网络、服务名 `backend`。
 services:
   web:
     build: .

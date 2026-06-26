@@ -25,6 +25,7 @@ import { useToastError } from '@/hooks/use-toast-error'
 import { datasetsApi, type DatasetVersion } from '@/api/datasets'
 import { roleAtLeast } from '@/lib/roles'
 import { shortId } from '@/lib/format'
+import { ResourceGrantsPanel } from '@/features/grants/ResourceGrantsPanel'
 import { CreateDatasetDialog } from './CreateDatasetDialog'
 import { DatasetMetaBadges } from './DatasetMetaBadges'
 import { DatasetPreviewPanel } from './DatasetPreviewPanel'
@@ -55,7 +56,7 @@ export function DatasetDetailPage() {
 
   const backLink = (
     <Link
-      to={`projects/${projectId}/datasets`}
+      to={`/projects/${projectId}/datasets`}
       className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-muted-foreground hover:text-foreground"
     >
       <ChevronLeft className="size-3.5" />
@@ -82,7 +83,7 @@ export function DatasetDetailPage() {
     try {
       await remove.mutateAsync({ id: ds.id, version: ds.version })
       toast.success(t('toast.deleted'))
-      navigate(`projects/${projectId}/datasets`)
+      navigate(`/projects/${projectId}/datasets`)
     } catch (e) {
       toastError(e)
     }
@@ -132,10 +133,14 @@ export function DatasetDetailPage() {
             <Download className="size-4" />
             {t('preview.exportCsv')}
           </Button>
-          <Button onClick={() => onExport('parquet')}>
-            <Download className="size-4" />
-            {t('preview.exportParquet')}
-          </Button>
+          {/* Parquet 导出仅在该部署启用了 Parquet 引擎时可用——存储格式即引擎标志
+              （CSV 引擎存 csv/xlsx，Parquet 引擎存 parquet）。否则后端会 422。 */}
+          {latest?.format === 'parquet' && (
+            <Button onClick={() => onExport('parquet')}>
+              <Download className="size-4" />
+              {t('preview.exportParquet')}
+            </Button>
+          )}
           {canWrite && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -165,7 +170,9 @@ export function DatasetDetailPage() {
           <TabsTrigger value="versions">{t('tabs.versions')}</TabsTrigger>
           <TabsTrigger value="lineage">{t('lineage.title')}</TabsTrigger>
           {canManage && (
-            <TabsTrigger value="collab">{t('links.title')}</TabsTrigger>
+            <TabsTrigger value="collab">
+              {t('resourceGrants.title', { ns: 'common' })}
+            </TabsTrigger>
           )}
         </TabsList>
 
@@ -187,11 +194,13 @@ export function DatasetDetailPage() {
           <LineageTab projectId={projectId} datasetId={dsId} />
         </TabsContent>
         {canManage && (
-          <TabsContent value="collab" className="mt-4">
-            {/* 资源级协作授权在项目设置统一管理。 */}
-            <p className="text-[12.5px] text-muted-foreground">
-              {t('collab.managedInSettings')}
-            </p>
+          <TabsContent value="collab" className="mt-4 max-w-[560px]">
+            {/* 数据集级细粒度授权：给具体人按 CRUD 叠加放行（resource_type=dataset） */}
+            <ResourceGrantsPanel
+              resourceType="dataset"
+              resourceId={dsId}
+              projectId={projectId}
+            />
           </TabsContent>
         )}
       </Tabs>

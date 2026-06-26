@@ -34,7 +34,11 @@ export function DatasetMetaFields({
 
   const addTag = () => {
     const tag = tagDraft.trim()
-    if (tag && !value.tags.some((x) => x.toLowerCase() === tag.toLowerCase())) {
+    if (
+      tag &&
+      value.tags.length < 50 && // 后端各 ≤50 项，前端先拦避免静默 422
+      !value.tags.some((x) => x.toLowerCase() === tag.toLowerCase())
+    ) {
       onChange({ ...value, tags: [...value.tags, tag] })
     }
     setTagDraft('')
@@ -99,7 +103,8 @@ export function DatasetMetaFields({
           onChange={(e) =>
             onChange({
               ...value,
-              references: e.target.value.split('\n'),
+              // 后端参考文献 ≤50 项，前端先截断避免静默 422。
+              references: e.target.value.split('\n').slice(0, 50),
             })
           }
         />

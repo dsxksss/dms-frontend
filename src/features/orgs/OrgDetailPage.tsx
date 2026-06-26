@@ -31,8 +31,13 @@ import { tintOf } from '@/components/brand-tile'
 import { roleTone } from '@/components/tone'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/auth/auth-context'
-import { useOrgs, useTeams, useCreateTeam, useGrantRole } from '@/hooks/use-orgs'
-import { GRANTABLE_ROLES } from '@/lib/roles'
+import {
+  useOrgs,
+  useTeams,
+  useCreateTeam,
+  useUpdateOrg,
+} from '@/hooks/use-orgs'
+import { Switch } from '@/components/ui/switch'
 import { AppError } from '@/lib/errors'
 import { OrgRegistryTab } from './OrgRegistryTab'
 import { useFirstRunTour } from '@/features/onboarding/onboarding'
@@ -140,12 +145,10 @@ export function OrgDetailPage() {
             {t('tabs.assets')}
           </TabsTrigger>
           <TabsTrigger value="data">{t('tabs.data')}</TabsTrigger>
-          {isAdmin && (
-            <TabsTrigger value="grants" data-tour="org-grants">
-              {t('tabs.grants')}
-            </TabsTrigger>
-          )}
           {isAdmin && <TabsTrigger value="join">{t('tabs.join')}</TabsTrigger>}
+          {isAdmin && (
+            <TabsTrigger value="settings">{t('tabs.settings')}</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="members" className="mt-4">
@@ -161,13 +164,13 @@ export function OrgDetailPage() {
           <OrgRegistryTab orgId={id} kind="template" isAdmin={isAdmin} />
         </TabsContent>
         {isAdmin && (
-          <TabsContent value="grants" className="mt-4">
-            <GrantsTab orgId={id} />
+          <TabsContent value="join" className="mt-4">
+            <JoinTab orgId={id} />
           </TabsContent>
         )}
         {isAdmin && (
-          <TabsContent value="join" className="mt-4">
-            <JoinTab orgId={id} />
+          <TabsContent value="settings" className="mt-4">
+            <SettingsTab orgId={id} discoverable={!!org.discoverable} />
           </TabsContent>
         )}
       </Tabs>
@@ -387,74 +390,40 @@ function JoinTab({ orgId }: { orgId: string }) {
   )
 }
 
-/**
- * 角色授予：把作用域角色（含审计管理员 auditor）授予某组织成员。
- * 经 `/v1/role-grants` 写入；后端无列表端点，故为「授予即生效」无回显（成功即提示）。
- */
-function GrantsTab({ orgId }: { orgId: string }) {
+/** 组织设置：discoverable「允许被搜索并申请加入」开关（org admin）。 */
+function SettingsTab({
+  orgId,
+  discoverable,
+}: {
+  orgId: string
+  discoverable: boolean
+}) {
   const { t } = useTranslation('orgs')
-  const members = useOrgMembers(orgId)
-  const grant = useGrantRole()
+  const update = useUpdateOrg(orgId)
   const toastError = useToastError()
-  const [userId, setUserId] = useState('')
-  const [roleKey, setRoleKey] = useState<string>('auditor')
-  const data = members.data ?? []
 
-  const submit = () => {
-    if (!userId) return
-    grant
-      .mutateAsync({
-        principal_type: 'user',
-        principal_id: userId,
-        role_key: roleKey,
-        scope_type: 'organization',
-        scope_id: orgId,
-      })
-      .then(() => {
-        toast.success(t('grants.granted'))
-        setUserId('')
-      })
+  const toggle = (next: boolean) =>
+    update
+      .mutateAsync({ discoverable: next })
+      .then(() => toast.success(t('settings.saved')))
       .catch(toastError)
-  }
 
   return (
     <div className="max-w-xl space-y-4">
-      <p className="text-[12.5px] text-muted-foreground">{t('grants.desc')}</p>
-      <div className="space-y-1.5">
-        <Label>{t('grants.selectUser')}</Label>
-        <Select value={userId} onValueChange={setUserId}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder={t('grants.selectUser')} />
-          </SelectTrigger>
-          <SelectContent>
-            {data.map((m) => (
-              <SelectItem key={m.user_id} value={m.user_id}>
-                {m.display_name} · {m.email}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="space-y-1.5">
-        <Label>{t('grants.roleKey')}</Label>
-        <Select value={roleKey} onValueChange={setRoleKey}>
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {GRANTABLE_ROLES.map((r) => (
-              <SelectItem key={r} value={r}>
-                {t(`grants.roles.${r}`)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="flex items-center gap-2">
-        <Badge variant="neutral">{t('grants.scope.organization')}</Badge>
-        <Button onClick={submit} disabled={!userId || grant.isPending}>
-          {t('grants.grant')}
-        </Button>
+      <div className="flex items-start justify-between gap-4 rounded-[11px] border p-4">
+        <div className="space-y-1">
+          <Label className="text-[13px] font-semibold">
+            {t('settings.discoverable')}
+          </Label>
+          <p className="text-[12.5px] text-muted-foreground">
+            {t('settings.discoverableHint')}
+          </p>
+        </div>
+        <Switch
+          checked={discoverable}
+          disabled={update.isPending}
+          onCheckedChange={toggle}
+        />
       </div>
     </div>
   )
@@ -476,6 +445,12 @@ function InviteOrgDialog({
   const debounced = useDebounce(search, 300)
   const results = useUserSearch(debounced)
   const invite = useInviteToOrg(orgId)
+  const members = useOrgMembers(orgId)
+  // 已是组织成员的人不应再被邀请 → 在结果里灰显「已是成员」。
+  const memberIds = useMemo(
+    () => new Set((members.data ?? []).map((m) => m.user_id)),
+    [members.data],
+  )
   const toastError = useToastError()
   const ids = useMemo(
     () => Object.keys(selected).filter((k) => selected[k]),
@@ -513,6 +488,29 @@ function InviteOrgDialog({
         <div className="max-h-[240px] overflow-auto">
           {(results.data ?? []).map((u) => {
             const on = !!selected[u.id]
+            if (memberIds.has(u.id)) {
+              // 已是组织成员：灰显、不可选。
+              return (
+                <div
+                  key={u.id}
+                  className="flex w-full items-center gap-2.5 rounded-[9px] px-1.5 py-2 opacity-60"
+                >
+                  <UserAvatar name={u.display_name || u.email} seed={u.id} size={32} />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[13px] font-semibold">
+                      {u.display_name || u.email.split('@')[0]}
+                    </div>
+                    <div className="truncate text-[11.5px] text-muted-foreground">
+                      {u.email}
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[#15803D]">
+                    <Check className="size-3.5" />
+                    {t('addMember.alreadyMember')}
+                  </span>
+                </div>
+              )
+            }
             return (
               <button
                 type="button"

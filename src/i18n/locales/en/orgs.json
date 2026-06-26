@@ -1,7 +1,7 @@
 {
   "title": "Organizations",
   "subtitle": "Organizations, teams and scoped role grants",
-  "defaultBadge": "My Workspace",
+  "defaultBadge": "My Organization",
   "notMemberDesc": "You are not a member of this organization, so its members, teams, assets and data are not visible. Ask an org admin to invite you.",
   "create": {
     "title": "New organization",
@@ -21,6 +21,7 @@
   "created": "Organization created",
   "addMember": {
     "title": "Add organization member",
+    "alreadyMember": "Already a member",
     "user": "User",
     "userPlaceholder": "Search name or email…",
     "role": "Role",
@@ -28,6 +29,13 @@
     "added": "Member added",
     "userRequired": "Select a user",
     "empty": "No selectable members in this organization"
+  },
+  "members": {
+    "you": "(you)",
+    "removeTitle": "Remove member?",
+    "removeDescription": "This removes the member from the organization.",
+    "remove": "Remove",
+    "removed": "Member removed"
   },
   "orgRole": { "admin": "Admin", "member": "Member" },
   "teams": {
@@ -116,6 +124,13 @@
     "assets": "Org assets",
     "data": "Org data",
     "grants": "Role grants",
-    "join": "Join requests"
+    "join": "Join requests",
+    "settings": "Settings"
+  },
+  "settings": {
+    "title": "Organization settings",
+    "discoverable": "Allow search & join requests",
+    "discoverableHint": "When on, other users in this tenant can find this organization and request to join; when off, members can only be added by invitation.",
+    "saved": "Saved"
   }
 }

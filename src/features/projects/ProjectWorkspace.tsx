@@ -4,11 +4,10 @@ import { useQueries } from '@tanstack/react-query'
 import {
   Boxes,
   Database,
-  FlaskConical,
   FolderClosed,
   LayoutGrid,
   Notebook,
-  PenLine,
+  Settings,
   Table2,
   Users,
 } from 'lucide-react'
@@ -34,7 +33,6 @@ import {
 } from '@/features/onboarding/onboarding'
 import { useEntityTypes } from '@/hooks/use-registry'
 import { useDatasets } from '@/hooks/use-datasets'
-import { useRuns } from '@/hooks/use-protocols'
 import { useFilesSummary } from '@/hooks/use-files'
 import { useAudit } from '@/hooks/use-audit'
 import { useCan } from '@/auth/auth-context'
@@ -42,8 +40,6 @@ import { registryApi } from '@/api/registry'
 import { formatDateTime } from '@/lib/format'
 import { RegistryTab } from '@/features/registry/RegistryTab'
 import { DatasetsPanel } from '@/features/datasets/DatasetsPanel'
-import { ProtocolsTab } from '@/features/protocols/ProtocolsTab'
-import { SignaturesPanel } from '@/features/signatures/SignaturesPanel'
 import { FilesPanel } from '@/features/files/FilesPanel'
 import { MembersPanel } from '@/features/projects/MembersPanel'
 import { NotebookPanel } from '@/features/notebook/NotebookPanel'
@@ -53,11 +49,9 @@ const NAV = [
   { seg: '/registry', icon: <Boxes />, zh: '药物资产', en: 'Drug Assets' },
   { seg: '/data', icon: <Table2 />, zh: '数据资产', en: 'Data Assets' },
   { seg: '/datasets', icon: <Database />, zh: '数据集', en: 'Datasets', count: 'datasets' },
-  { seg: '/protocols', icon: <FlaskConical />, zh: '实验方案', en: 'ELN' },
   { seg: '/notebook', icon: <Notebook />, zh: '实验记录本', en: 'Notebook' },
   { seg: '/files', icon: <FolderClosed />, zh: '文件', en: 'Files', count: 'files' },
-  { seg: '/members', icon: <Users />, zh: '成员', en: 'Members', count: 'members' },
-  { seg: '/signatures', icon: <PenLine />, zh: '签名', en: 'Signatures' },
+  { seg: '/members', icon: <Settings />, zh: '设置', en: 'Settings' },
 ] as const
 
 function useProjectId() {
@@ -71,7 +65,7 @@ export function ProjectLayout() {
   const project = useProject(projectId)
   const role = useProjectRole(projectId)
   const orgs = useOrgs()
-  // 项目统一归属组织；展示其组织名（默认组织即「我的工作区」）。
+  // 项目统一归属组织；展示其组织名（默认组织即「我的组织」）。
   const orgName = orgs.data?.find(
     (o) => o.id === project.data?.organization_id,
   )?.name
@@ -106,7 +100,7 @@ export function ProjectLayout() {
             <div className="min-w-0 flex-1">
               <div className="truncate text-[13px] font-bold">{name}</div>
               <div className="truncate text-[10.5px] text-muted-foreground">
-                {orgName ?? (isZh ? '我的工作区' : 'My Workspace')}
+                {orgName ?? (isZh ? '我的组织' : 'My Organization')}
               </div>
             </div>
           </div>
@@ -163,9 +157,6 @@ export function ProjectDataSection() {
 export function ProjectDatasetsSection() {
   return <DatasetsPanel projectId={useProjectId()} />
 }
-export function ProjectProtocolsSection() {
-  return <ProtocolsTab projectId={useProjectId()} />
-}
 export function ProjectNotebookSection() {
   return <NotebookPanel projectId={useProjectId()} />
 }
@@ -174,9 +165,6 @@ export function ProjectFilesSection() {
 }
 export function ProjectMembersSection() {
   return <MembersPanel projectId={useProjectId()} />
-}
-export function ProjectSignaturesSection() {
-  return <SignaturesPanel projectId={useProjectId()} />
 }
 
 /* ============ overview dashboard ============ */
@@ -194,7 +182,6 @@ export function ProjectOverviewSection() {
   const project = useProject(projectId)
   const members = useMembers(projectId)
   const datasets = useDatasets(projectId)
-  const runs = useRuns(projectId, { limit: 1 })
   const types = useEntityTypes(projectId)
   const assetTypes = (types.data ?? []).filter((ty) => ty.kind === 'asset')
 
@@ -242,7 +229,7 @@ export function ProjectOverviewSection() {
         }
       />
 
-      <div className="mb-[18px] grid grid-cols-2 gap-3.5 lg:grid-cols-4">
+      <div className="mb-[18px] grid grid-cols-2 gap-3.5 lg:grid-cols-3">
         <StatCard
           label={t('tabs.registry')}
           value={assetTotal}
@@ -254,12 +241,6 @@ export function ProjectOverviewSection() {
           value={datasets.data?.length ?? 0}
           tint={STAT_TINT}
           icon={<Database />}
-        />
-        <StatCard
-          label={t('overview.runs')}
-          value={runs.data?.total ?? 0}
-          tint={STAT_TINT}
-          icon={<FlaskConical />}
         />
         <StatCard
           label={t('members.title')}

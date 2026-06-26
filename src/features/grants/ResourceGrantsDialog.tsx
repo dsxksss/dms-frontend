@@ -13,12 +13,14 @@ import { ResourceGrantsPanel } from './ResourceGrantsPanel'
 export function ResourceGrantsDialog({
   resourceType,
   resourceId,
+  projectId,
   name,
   open,
   onOpenChange,
 }: {
   resourceType: GrantResourceType
   resourceId: string
+  projectId: string
   name: string
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -35,6 +37,7 @@ export function ResourceGrantsDialog({
           <ResourceGrantsPanel
             resourceType={resourceType}
             resourceId={resourceId}
+            projectId={projectId}
           />
         )}
       </DialogContent>

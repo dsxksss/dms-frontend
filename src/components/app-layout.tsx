@@ -12,7 +12,11 @@ import { BrandMark } from '@/components/brand-mark'
 import { BiLabel, useIsZh } from '@/components/bilingual'
 import { SidebarUser } from '@/components/sidebar-user'
 import { useCan } from '@/auth/auth-context'
-import { useMyInvitations } from '@/hooks/use-membership'
+import {
+  useIncomingOrgJoinRequests,
+  useMyInvitations,
+} from '@/hooks/use-membership'
+import { useIncomingProjectJoinRequests } from '@/hooks/use-projects'
 import { useFirstRunTour, useTourReplay } from '@/features/onboarding/onboarding'
 
 /** 路由首段 → 面包屑标签。 */
@@ -29,7 +33,13 @@ function GlobalSidebar() {
   const isZh = useIsZh()
   const canAudit = useCan('audit:read')
   const invites = useMyInvitations()
-  const inviteCount = invites.data?.length ?? 0
+  const incomingProjects = useIncomingProjectJoinRequests()
+  const incomingOrgs = useIncomingOrgJoinRequests()
+  // 收件箱红点 = 待我处理的邀请 + 待我审批的（项目 + 组织）加入申请。
+  const inboxCount =
+    (invites.data?.length ?? 0) +
+    (incomingProjects.data?.length ?? 0) +
+    (incomingOrgs.data?.length ?? 0)
 
   return (
     <Sidebar>
@@ -48,7 +58,7 @@ function GlobalSidebar() {
         <SidebarNavItem
           to="/inbox"
           icon={<Mail />}
-          badge={inviteCount || undefined}
+          badge={inboxCount || undefined}
           badgeRed
         >
           <BiLabel zh="邀请" en="Invitations" />

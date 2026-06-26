@@ -19,10 +19,11 @@ export const projectKeys = {
   members: (id: string) => ['projects', id, 'members'] as const,
 }
 
-export function useProjects(params: ListProjectsParams) {
+export function useProjects(params: ListProjectsParams, enabled = true) {
   return useQuery({
     queryKey: projectKeys.list(params),
     queryFn: () => projectsApi.list(params),
+    enabled,
   })
 }
 
@@ -82,6 +83,16 @@ export function useRemoveMember(id: string) {
   })
 }
 
+/** 改已有成员角色（Manager）。 */
+export function useSetMemberRole(id: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: ProjectRole }) =>
+      projectsApi.setMemberRole(id, userId, role),
+    onSuccess: () => qc.invalidateQueries({ queryKey: projectKeys.members(id) }),
+  })
+}
+
 export function useShares(id: string) {
   return useQuery({
     queryKey: ['projects', id, 'shares'],
@@ -105,6 +116,92 @@ export function useRemoveShare(id: string) {
     mutationFn: (shareId: string) => projectsApi.removeShare(id, shareId),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ['projects', id, 'shares'] }),
+  })
+}
+
+// ---- 申请加入（组织内可见项目）----
+
+/** 某项目的待审批申请列表（项目 Manager 可见）。 */
+export function useProjectJoinRequests(id: string, enabled = true) {
+  return useQuery({
+    queryKey: ['projects', id, 'join-requests'],
+    queryFn: () => projectsApi.listJoinRequests(id, 'pending'),
+    enabled,
+  })
+}
+
+/** 当前用户自己发起的项目申请（用于在项目卡片上显示「申请中」）。 */
+export function useMyProjectJoinRequests() {
+  return useQuery({
+    queryKey: ['projects', 'my-join-requests'],
+    queryFn: () => projectsApi.myJoinRequests('pending'),
+  })
+}
+
+/** 收件箱聚合：我有权审批的待处理申请（跨我管理的所有项目）。 */
+export function useIncomingProjectJoinRequests() {
+  return useQuery({
+    queryKey: ['projects', 'incoming-join-requests'],
+    queryFn: () => projectsApi.incomingJoinRequests(),
+  })
+}
+
+/** 收件箱内审批：批准/拒绝后刷新聚合列表（不绑定单一 projectId）。 */
+export function useDecideIncomingJoinRequest() {
+  const qc = useQueryClient()
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['projects', 'incoming-join-requests'] })
+    qc.invalidateQueries({ queryKey: projectKeys.all })
+  }
+  const approve = useMutation({
+    mutationFn: ({ reqId, role }: { reqId: string; role: ProjectRole }) =>
+      projectsApi.approveJoinRequest(reqId, role),
+    onSuccess: invalidate,
+  })
+  const reject = useMutation({
+    mutationFn: (reqId: string) => projectsApi.rejectJoinRequest(reqId),
+    onSuccess: invalidate,
+  })
+  return { approve, reject }
+}
+
+export function useRequestJoinProject() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, message }: { id: string; message?: string }) =>
+      projectsApi.requestJoin(id, message ?? ''),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ['projects', 'my-join-requests'] }),
+  })
+}
+
+export function useApproveProjectJoinRequest(projectId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ reqId, role }: { reqId: string; role: ProjectRole }) =>
+      projectsApi.approveJoinRequest(reqId, role),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['projects', projectId, 'join-requests'] })
+      qc.invalidateQueries({ queryKey: projectKeys.members(projectId) })
+    },
+  })
+}
+
+export function useRejectProjectJoinRequest(projectId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (reqId: string) => projectsApi.rejectJoinRequest(reqId),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ['projects', projectId, 'join-requests'] }),
+  })
+}
+
+export function useCancelProjectJoinRequest() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (reqId: string) => projectsApi.cancelJoinRequest(reqId),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ['projects', 'my-join-requests'] }),
   })
 }
 

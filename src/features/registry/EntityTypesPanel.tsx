@@ -9,19 +9,22 @@ import {
   Plus,
   ShieldCheck,
   Sparkles,
+  Trash2,
   Users,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState, ErrorState, GridSkeleton } from '@/components/states'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { useProjectRole } from '@/hooks/use-projects'
-import { useEntityTypes, useSeedDrugRd } from '@/hooks/use-registry'
+import { useEntityTypes, useDeleteType } from '@/hooks/use-registry'
 import { useToastError } from '@/hooks/use-toast-error'
 import { roleAtLeast } from '@/lib/roles'
 import type { EntityType, TypeKind } from '@/api/registry'
 import { ResourceGrantsDialog } from '@/features/grants/ResourceGrantsDialog'
 import { EntityTypeDialog } from './EntityTypeDialog'
 import { FieldGrantsDialog } from './FieldGrantsDialog'
+import { ImportTypesDialog } from './ImportTypesDialog'
 
 /** 类型管理：药物资产类型 + 数据模版（卡片网格）。kindFilter 限定只管理一种。 */
 export function EntityTypesPanel({
@@ -35,24 +38,35 @@ export function EntityTypesPanel({
   const role = useProjectRole(projectId)
   const canManage = roleAtLeast(role, 'manager')
   const query = useEntityTypes(projectId)
-  const seed = useSeedDrugRd(projectId)
+  const del = useDeleteType(projectId)
   const toastError = useToastError()
 
   const [createKind, setCreateKind] = useState<TypeKind | null>(null)
   const [editTarget, setEditTarget] = useState<EntityType | null>(null)
   const [grantsTarget, setGrantsTarget] = useState<EntityType | null>(null)
   const [collabTarget, setCollabTarget] = useState<EntityType | null>(null)
+  const [delTarget, setDelTarget] = useState<EntityType | null>(null)
+  const [importOpen, setImportOpen] = useState(false)
+
+  const onDelete = () => {
+    if (!delTarget) return
+    del
+      .mutateAsync({
+        kind: delTarget.kind,
+        typeId: delTarget.id,
+        version: delTarget.version,
+      })
+      .then(() => {
+        toast.success(t('types.deleted'))
+        setDelTarget(null)
+      })
+      .catch(toastError)
+  }
 
   const all = query.data ?? []
   const assets = all.filter((ty) => ty.kind === 'asset')
   const templates = all.filter((ty) => ty.kind === 'template')
   const nameOf = (id: string) => all.find((ty) => ty.id === id)?.name ?? id
-
-  const onSeed = () =>
-    seed
-      .mutateAsync()
-      .then((types) => toast.success(t('types.seeded', { count: types.length })))
-      .catch(toastError)
 
   const section = (title: string, kind: TypeKind, items: EntityType[]) => (
     <div className="space-y-3">
@@ -80,6 +94,7 @@ export function EntityTypesPanel({
               onEdit={() => setEditTarget(ty)}
               onGrants={() => setGrantsTarget(ty)}
               onCollab={() => setCollabTarget(ty)}
+              onDelete={() => setDelTarget(ty)}
             />
           ))}
         </div>
@@ -92,7 +107,7 @@ export function EntityTypesPanel({
       <div className="flex items-center justify-between">
         <h2 className="text-[15px] font-bold">{t('types.title')}</h2>
         {canManage && (
-          <Button variant="outline" onClick={onSeed} disabled={seed.isPending}>
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
             <Sparkles className="size-4" />
             {t('types.seed')}
           </Button>
@@ -114,6 +129,11 @@ export function EntityTypesPanel({
         </>
       )}
 
+      <ImportTypesDialog
+        projectId={projectId}
+        open={importOpen}
+        onOpenChange={setImportOpen}
+      />
       <EntityTypeDialog
         projectId={projectId}
         kind={createKind ?? 'asset'}
@@ -139,11 +159,22 @@ export function EntityTypesPanel({
         <ResourceGrantsDialog
           resourceType={collabTarget.kind === 'asset' ? 'asset_type' : 'template_type'}
           resourceId={collabTarget.id}
+          projectId={projectId}
           name={collabTarget.name}
           open={!!collabTarget}
           onOpenChange={(o) => !o && setCollabTarget(null)}
         />
       )}
+      <ConfirmDialog
+        open={!!delTarget}
+        onOpenChange={(o) => !o && setDelTarget(null)}
+        title={t('types.delete')}
+        description={t('types.deleteDesc', { name: delTarget?.name })}
+        destructive
+        confirmText={t('types.delete')}
+        loading={del.isPending}
+        onConfirm={onDelete}
+      />
     </div>
   )
 }
@@ -155,6 +186,7 @@ function TypeCard({
   onEdit,
   onGrants,
   onCollab,
+  onDelete,
 }: {
   ty: EntityType
   boundName: (id: string) => string
@@ -162,6 +194,7 @@ function TypeCard({
   onEdit: () => void
   onGrants: () => void
   onCollab: () => void
+  onDelete: () => void
 }) {
   const { t } = useTranslation('registry')
   const sensitive = ty.fields.filter((f) => f.sensitive).length
@@ -215,6 +248,15 @@ function TypeCard({
           )}
           <Button variant="ghost" size="icon-sm" onClick={onEdit}>
             <Pencil className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            title={t('types.delete')}
+            className="text-destructive hover:text-destructive"
+            onClick={onDelete}
+          >
+            <Trash2 className="size-4" />
           </Button>
         </div>
       )}

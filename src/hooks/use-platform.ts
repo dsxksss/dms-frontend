@@ -71,8 +71,13 @@ export function usePlatformDatasets() {
 export function useCreatePlatformDataset() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: { name: string; description?: string }) =>
-      platformApi.createDataset(body),
+    mutationFn: (body: {
+      name: string
+      description?: string
+      tags?: string[]
+      author?: string
+      references?: string[]
+    }) => platformApi.createDataset(body),
     onSuccess: () => qc.invalidateQueries({ queryKey: [...root, 'datasets'] }),
   })
 }
