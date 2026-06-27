@@ -1,14 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Eye } from 'lucide-react'
-
-import { PageHeader } from '@/components/page-header'
-import { DataTable } from '@/components/data-table'
-import { EmptyState } from '@/components/states'
-import { Button } from '@/components/ui/button'
+import { Activity, ShieldCheck } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -16,18 +9,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { UserPicker } from '@/features/membership/UserPicker'
-import { ChangesView } from '@/features/audit/ChangesView'
+import { PageHeader } from '@/components/page-header'
+import { TableCard } from '@/components/data-grid'
+import { Pagination } from '@/components/pagination'
+import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
+import { TONE_HEX, type Tone } from '@/components/tone'
 import { useAudit } from '@/hooks/use-audit'
-import { shortId, formatDateTime } from '@/lib/format'
+import { formatDateTime, shortId } from '@/lib/format'
+import { ChangesView } from './ChangesView'
 import type { AuditEntry } from '@/api/audit'
-import type { UserCard } from '@/api/membership'
 
 const ENTITY_TYPES = [
   'project',
@@ -41,180 +31,143 @@ const ENTITY_TYPES = [
   'organization',
   'team',
 ]
-const ALL = '__all'
+
+const ALL = '__all__'
+
+/** 动作动词 → tone。 */
+function actionTone(action: string): Tone {
+  const v = action.split('.').pop() ?? action
+  if (/creat|add|grant|invit|sign|approv|restor|activat/.test(v)) {
+    if (/sign/.test(v)) return 'purple'
+    if (/grant|invit|approv/.test(v)) return 'info'
+    if (/creat|add|restor|activat/.test(v)) return 'success'
+  }
+  if (/updat|edit|chang|patch|rename/.test(v)) return 'warning'
+  if (/delet|remov|revok|abort|suspend|reject/.test(v)) return 'danger'
+  return 'neutral'
+}
 
 export function AuditPage() {
   const { t } = useTranslation('audit')
-  const [entityType, setEntityType] = useState('')
-  const [actorUser, setActorUser] = useState<UserCard[]>([])
-  const [filters, setFilters] = useState({ entity_type: '', actor_id: '' })
-  const [page, setPage] = useState({ limit: 20, offset: 0 })
-  const [changesOf, setChangesOf] = useState<AuditEntry | null>(null)
-
+  const [entityType, setEntityType] = useState(ALL)
+  const [page, setPage] = useState({ limit: 30, offset: 0 })
   const query = useAudit({
-    entity_type: filters.entity_type || undefined,
-    actor_id: filters.actor_id || undefined,
+    entity_type: entityType === ALL ? undefined : entityType,
     ...page,
   })
-
-  const columns = useMemo<ColumnDef<AuditEntry, unknown>[]>(
-    () => [
-      {
-        id: 'time',
-        header: t('columns.time'),
-        cell: ({ row }) => (
-          <span className="text-muted-foreground whitespace-nowrap text-xs tabular-nums">
-            {formatDateTime(row.original.occurred_at)}
-          </span>
-        ),
-      },
-      {
-        id: 'user',
-        header: t('columns.user'),
-        cell: ({ row }) => {
-          const e = row.original
-          return (
-            <div className="flex flex-col">
-              <span className="text-sm">{e.user_name ?? t('none')}</span>
-              {e.user_handle && (
-                <span className="text-muted-foreground font-mono text-xs">
-                  {e.user_handle}
-                </span>
-              )}
-            </div>
-          )
-        },
-      },
-      {
-        id: 'ip',
-        header: t('columns.ip'),
-        cell: ({ row }) => (
-          <span className="font-mono text-xs">{row.original.ip_address ?? t('none')}</span>
-        ),
-      },
-      {
-        id: 'action',
-        header: t('columns.action'),
-        cell: ({ row }) => <Badge variant="secondary">{row.original.action}</Badge>,
-      },
-      {
-        id: 'event',
-        header: t('columns.event'),
-        cell: ({ row }) => (
-          <span className="text-sm">{row.original.event_description ?? t('none')}</span>
-        ),
-      },
-      {
-        id: 'entity',
-        header: t('columns.entity'),
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <span className="text-sm">{row.original.entity_type}</span>
-            <span className="text-muted-foreground font-mono text-xs">
-              {shortId(row.original.entity_id)}
-            </span>
-            {row.original.parent_type && (
-              <span className="text-muted-foreground text-xs">
-                ↳ {row.original.parent_type} {shortId(row.original.parent_id)}
-              </span>
-            )}
-          </div>
-        ),
-      },
-      {
-        id: 'changes',
-        header: t('columns.changes'),
-        cell: ({ row }) => (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setChangesOf(row.original)}
-          >
-            <Eye className="size-4" />
-            {t('viewChanges')}
-          </Button>
-        ),
-      },
-    ],
-    [t],
-  )
+  const entries = query.data?.items ?? []
 
   return (
-    <div>
-      <PageHeader title={t('title')} description={t('subtitle')} />
-
-      <div className="flex flex-wrap items-end gap-3 pb-3">
-        <div className="space-y-1.5">
-          <Label>{t('filters.entityType')}</Label>
+    <div className="mx-auto max-w-[900px] px-8 py-7">
+      <PageHeader
+        title={t('title')}
+        titleEn="Audit"
+        description={t('subtitle')}
+        size="md"
+        actions={
           <Select
-            value={entityType || ALL}
-            onValueChange={(v) => setEntityType(v === ALL ? '' : v)}
+            value={entityType}
+            onValueChange={(v) => {
+              setEntityType(v)
+              setPage((p) => ({ ...p, offset: 0 }))
+            }}
           >
             <SelectTrigger className="w-48">
-              <SelectValue />
+              <SelectValue placeholder={t('filters.entityTypeAll')} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={ALL}>{t('filters.entityTypeAll')}</SelectItem>
-              {ENTITY_TYPES.map((et) => (
-                <SelectItem key={et} value={et}>
-                  {t(`entityTypes.${et}`, et)}
+              {ENTITY_TYPES.map((e) => (
+                <SelectItem key={e} value={e}>
+                  {t(`entityTypes.${e}`, { defaultValue: e })}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        </div>
-        <div className="w-64 space-y-1.5">
-          <Label>{t('filters.actor')}</Label>
-          <UserPicker value={actorUser} onChange={setActorUser} max={1} />
-        </div>
-        <Button
-          variant="outline"
-          onClick={() => {
-            setFilters({
-              entity_type: entityType,
-              actor_id: actorUser[0]?.id ?? '',
-            })
-            setPage((p) => ({ ...p, offset: 0 }))
-          }}
-        >
-          {t('filters.apply')}
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={() => {
-            setEntityType('')
-            setActorUser([])
-            setFilters({ entity_type: '', actor_id: '' })
-            setPage((p) => ({ ...p, offset: 0 }))
-          }}
-        >
-          {t('filters.clear')}
-        </Button>
-      </div>
-
-      <DataTable
-        columns={columns}
-        data={query.data?.items ?? []}
-        loading={query.isLoading}
-        error={query.isError ? query.error : undefined}
-        onRetry={() => query.refetch()}
-        empty={<EmptyState title={t('empty')} />}
-        pagination={{
-          limit: page.limit,
-          offset: page.offset,
-          total: query.data?.total ?? 0,
-          onChange: setPage,
-        }}
+        }
       />
 
-      <Dialog open={!!changesOf} onOpenChange={(o) => !o && setChangesOf(null)}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{t('changesTitle')}</DialogTitle>
-          </DialogHeader>
-          <ChangesView changes={changesOf?.changes} />
-        </DialogContent>
-      </Dialog>
+      {query.isLoading ? (
+        <TableSkeleton rows={7} />
+      ) : query.isError ? (
+        <ErrorState error={query.error} onRetry={() => query.refetch()} />
+      ) : entries.length === 0 ? (
+        <EmptyState title={t('empty')} />
+      ) : (
+        <>
+          <TableCard className="py-1.5">
+            {entries.map((a) => (
+              <AuditRow key={a.id} entry={a} />
+            ))}
+          </TableCard>
+          <div className="mt-4 flex justify-end">
+            <Pagination
+              limit={page.limit}
+              offset={page.offset}
+              total={query.data?.total ?? 0}
+              onChange={setPage}
+            />
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function AuditRow({ entry }: { entry: AuditEntry }) {
+  const { t } = useTranslation('audit')
+  const tone = actionTone(entry.action)
+  const [bg, fg] = TONE_HEX[tone]
+  const verb = entry.action.split('.').pop() ?? entry.action
+  const actor = entry.user_name || entry.user_handle || t('none')
+
+  return (
+    <div className="flex gap-3 border-b border-divider px-5 py-[13px] last:border-b-0">
+      <div
+        className="flex size-8 shrink-0 items-center justify-center rounded-[9px]"
+        style={{ background: bg, color: fg }}
+      >
+        <Activity className="size-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-[13px]">
+          <b>{actor}</b>{' '}
+          <span className="text-[#5a6473]">
+            {entry.event_description || verb}
+          </span>{' '}
+          <span className="mono text-[11.5px] font-semibold text-brand">
+            {entry.entity_type}/{shortId(entry.entity_id)}
+          </span>
+        </div>
+        <div className="mt-[3px] flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+          <span>{formatDateTime(entry.occurred_at)}</span>
+          {entry.ip_address && <span className="mono">IP {entry.ip_address}</span>}
+          {entry.user_agent && (
+            <span className="max-w-[200px] truncate" title={entry.user_agent}>
+              {t('meta.userAgent')} {entry.user_agent}
+            </span>
+          )}
+          {entry.request_id && <span className="mono">{entry.request_id}</span>}
+          {entry.hash && (
+            <span
+              className="inline-flex items-center gap-1 text-[#15803D]"
+              title={`${t('meta.integrity')}\nhash: ${entry.hash}`}
+            >
+              <ShieldCheck className="size-3" />
+              {t('meta.integrityShort')}
+            </span>
+          )}
+          <ChangesView entry={entry} />
+        </div>
+      </div>
+      <div className="flex h-fit shrink-0 items-center gap-1.5">
+        {entry.result === 'failure' && (
+          <Badge variant="danger">{t('meta.failure')}</Badge>
+        )}
+        <Badge variant={tone}>
+          {t(`actionLabels.${verb}`, { defaultValue: verb })}
+        </Badge>
+      </div>
     </div>
   )
 }

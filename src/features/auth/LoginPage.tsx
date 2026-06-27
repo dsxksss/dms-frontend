@@ -1,141 +1,163 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
-
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ThemeToggle } from '@/components/theme-toggle'
-import { LangToggle } from '@/components/lang-toggle'
 import { useAuth } from '@/auth/auth-context'
-import { errorI18nKey, isAppError } from '@/lib/errors'
-import { resolveTenant } from '@/lib/tenant'
+import { isWemol, isStandalone } from '@/lib/edition'
+import { AuthBrandPanel } from './AuthBrandPanel'
 
 export function LoginPage() {
   const { t } = useTranslation('auth')
-  const { t: tc } = useTranslation('common')
-  const { login } = useAuth()
+  const { login, loginWemol, status } = useAuth()
   const navigate = useNavigate()
-  const location = useLocation()
-  const [searchParams] = useSearchParams()
-  const from = (location.state as { from?: string } | null)?.from ?? '/'
+  // 版本决定登录形态：
+  // - wemol 版：默认 WeMol SSO，邮箱密码作隐蔽的「管理员登录」兜底（首装 / 超管）。
+  // - standalone 版：默认邮箱密码；仅当 VITE_WEMOL_SSO=on 时附带 WeMol 入口。
+  const wemolAvailable = isWemol || import.meta.env.VITE_WEMOL_SSO === 'on'
+  const [mode, setMode] = useState<'wemol' | 'password'>(
+    isWemol ? 'wemol' : 'password',
+  )
+  const [account, setAccount] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-  // 企业由后端按邮箱反查 / 子域名 / ?tenant= / 默认 自动解析，用户无需在登录时指定。
-  const resolvedTenant = resolveTenant(searchParams.get('tenant')) || undefined
+  if (status === 'authed') return <Navigate to="/projects" replace />
 
-  const schema = z.object({
-    email: z
-      .string()
-      .min(1, t('login.required.email'))
-      .email(t('login.required.emailFormat')),
-    password: z.string().min(1, t('login.required.password')),
-  })
-  type Values = z.infer<typeof schema>
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<Values>({
-    resolver: zodResolver(schema),
-    defaultValues: { email: '', password: '' },
-  })
-  const [formError, setFormError] = useState<string | null>(null)
-
-  const onSubmit = async (values: Values) => {
-    setFormError(null)
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setSubmitting(true)
     try {
-      await login({ tenant: resolvedTenant, email: values.email, password: values.password })
-      navigate(from, { replace: true })
-    } catch (e) {
-      if (isAppError(e) && e.kind === 'unauthorized') {
-        setFormError(t('login.invalid'))
-      } else if (isAppError(e) && e.kind === 'validation') {
-        // 极少数：后端无法识别企业（云端邮箱反查通常已覆盖）。给出指引而非要求手填。
-        setFormError(t('login.tenantNeeded'))
+      if (mode === 'wemol') {
+        await loginWemol({ name: account, passwd: password })
       } else {
-        setFormError(tc(errorI18nKey(e)))
+        await login({ email, password })
       }
+      navigate('/projects')
+    } catch {
+      setError(mode === 'wemol' ? t('login.wemol.invalid') : t('login.invalid'))
+    } finally {
+      setSubmitting(false)
     }
   }
 
   return (
-    <main className="bg-background relative flex min-h-[100dvh] items-center justify-center p-6">
-      <div className="absolute top-4 right-4 flex items-center gap-1">
-        <LangToggle />
-        <ThemeToggle />
-      </div>
-
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-2 text-center">
-          <div className="bg-brand text-brand-foreground flex size-10 items-center justify-center rounded-lg font-semibold">
-            D
+    <div className="flex h-screen">
+      <AuthBrandPanel />
+      <div className="flex flex-1 items-center justify-center bg-white px-6 md:max-w-[480px] md:flex-none">
+        <form className="w-[340px]" onSubmit={onSubmit}>
+          <div className="text-[22px] font-extrabold">
+            {t('login.welcome')}{' '}
+            <span className="text-[16px] font-semibold text-muted-foreground">
+              {t('login.welcomeEn')}
+            </span>
           </div>
-          <h1 className="text-xl font-semibold tracking-tight">
-            {t('login.title')}
-          </h1>
-          <p className="text-muted-foreground text-sm">{t('login.subtitle')}</p>
-        </div>
-
-        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">{t('login.email')}</Label>
-            <Input
-              id="email"
-              type="email"
-              autoFocus
-              autoComplete="username"
-              aria-invalid={!!errors.email}
-              {...register('email')}
-            />
-            {errors.email && (
-              <p className="text-destructive text-sm">{errors.email.message}</p>
-            )}
+          <div className="mt-1.5 text-[13px] text-muted-foreground">
+            {t('login.welcomeSub')}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">{t('login.password')}</Label>
+          {mode === 'wemol' ? (
+            <div className="mt-[26px] space-y-1.5">
+              <Label htmlFor="wemol-account" className="text-[12px] text-[#5a6473]">
+                {t('login.wemol.account')}
+              </Label>
+              <Input
+                id="wemol-account"
+                autoComplete="username"
+                value={account}
+                onChange={(e) => setAccount(e.target.value)}
+              />
+            </div>
+          ) : (
+            <div className="mt-[26px] space-y-1.5">
+              <Label htmlFor="email" className="text-[12px] text-[#5a6473]">
+                {t('login.email')}
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+          )}
+          <div className="mt-4 space-y-1.5">
+            <Label htmlFor="password" className="text-[12px] text-[#5a6473]">
+              {mode === 'wemol' ? t('login.wemol.password') : t('login.password')}
+            </Label>
             <Input
               id="password"
               type="password"
               autoComplete="current-password"
-              aria-invalid={!!errors.password}
-              {...register('password')}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
-            {errors.password && (
-              <p className="text-destructive text-sm">
-                {errors.password.message}
-              </p>
-            )}
           </div>
 
-          {formError && (
-            <div
-              role="alert"
-              className="border-destructive/30 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm"
-            >
-              {formError}
-            </div>
+          {error && (
+            <div className="mt-3 text-[12px] text-destructive">{error}</div>
           )}
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-            {isSubmitting ? t('login.submitting') : t('login.submit')}
+          <Button
+            type="submit"
+            className="mt-6 h-11 w-full text-[14px]"
+            disabled={submitting}
+          >
+            {submitting && <Loader2 className="size-4 animate-spin" />}
+            {submitting
+              ? t('login.submitting')
+              : mode === 'wemol'
+                ? t('login.wemol.submit')
+                : t('login.submit')}
           </Button>
-        </form>
 
-        {import.meta.env.VITE_SIGNUP_ENABLED !== 'false' && (
-          <div className="text-muted-foreground mt-4 flex justify-center gap-4 text-sm">
-            <Link to="/signup" className="text-brand hover:underline">
-              {t('signup.createAccount')}
-            </Link>
+          {wemolAvailable && (
+            <button
+              type="button"
+              className="mt-3 w-full text-center text-[12.5px] font-semibold text-brand"
+              onClick={() => {
+                setError('')
+                setMode((m) => (m === 'wemol' ? 'password' : 'wemol'))
+              }}
+            >
+              {mode === 'wemol'
+                ? isWemol
+                  ? t('login.adminLogin')
+                  : t('login.wemol.useEmail')
+                : t('login.wemol.useWemol')}
+            </button>
+          )}
+
+          {/* 自助注册仅自定义租户版（standalone）开放；WeMol 版用户来自 WeMol，无注册入口。 */}
+          {isStandalone && (
+            <div className="mt-4 text-center text-[12.5px] text-muted-foreground">
+              {t('signup.haveAccount')}{' '}
+              <button
+                type="button"
+                className="font-semibold text-brand"
+                onClick={() => navigate('/signup')}
+              >
+                {t('signup.createAccount')} →
+              </button>
+            </div>
+          )}
+          <div className="mt-[22px] border-t pt-[18px] text-center">
+            <button
+              type="button"
+              className="text-[12.5px] text-muted-foreground hover:text-foreground"
+              onClick={() => navigate('/system/login')}
+            >
+              {t('login.platformConsole')}
+            </button>
           </div>
-        )}
+        </form>
       </div>
-    </main>
+    </div>
   )
 }

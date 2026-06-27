@@ -1,173 +1,110 @@
-import { Suspense, useState, type ComponentType } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
+import { Outlet, useLocation } from 'react-router-dom'
+import { Activity, Building2, FolderClosed, Mail, Settings } from 'lucide-react'
 import {
-  Building2,
-  FolderKanban,
-  Globe,
-  Loader2,
-  LogOut,
-  Mail,
-  Menu,
-  ScrollText,
-  Settings,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
+  Sidebar,
+  SidebarCaption,
+  SidebarFooter,
+  SidebarNav,
+  SidebarNavItem,
+} from '@/components/sidebar'
+import { Topbar, type Crumb } from '@/components/topbar'
+import { BrandMark } from '@/components/brand-mark'
+import { BiLabel, useIsZh } from '@/components/bilingual'
+import { SidebarUser } from '@/components/sidebar-user'
+import { useCan } from '@/auth/auth-context'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { ThemeToggle } from '@/components/theme-toggle'
-import { LangToggle } from '@/components/lang-toggle'
-import { useAuth, hasPerm } from '@/auth/auth-context'
-import { useHasOrgs } from '@/hooks/use-orgs'
-import { cn } from '@/lib/utils'
+  useIncomingOrgJoinRequests,
+  useMyInvitations,
+} from '@/hooks/use-membership'
+import { useIncomingProjectJoinRequests } from '@/hooks/use-projects'
+import { useFirstRunTour, useTourReplay } from '@/features/onboarding/onboarding'
 
-interface NavItem {
-  to: string
-  labelKey: string
-  icon: ComponentType<{ className?: string }>
-  perm?: string
-  /** 仅在用户拥有组织时显示（组织/审计等管理类入口）。 */
-  requiresOrg?: boolean
+/** 路由首段 → 面包屑标签。 */
+const SECTION: Record<string, [string, string]> = {
+  projects: ['我的项目', 'Projects'],
+  orgs: ['组织', 'Organizations'],
+  inbox: ['邀请', 'Invitations'],
+  audit: ['审计', 'Audit'],
+  settings: ['设置', 'Settings'],
+  'public-datasets': ['公共数据集', 'Public datasets'],
 }
 
-const NAV: NavItem[] = [
-  { to: '/projects', labelKey: 'nav.projects', icon: FolderKanban },
-  { to: '/public-datasets', labelKey: 'nav.publicDatasets', icon: Globe },
-  { to: '/inbox', labelKey: 'nav.inbox', icon: Mail },
-  {
-    to: '/orgs',
-    labelKey: 'nav.organizations',
-    icon: Building2,
-    perm: 'org:read',
-    requiresOrg: true,
-  },
-  {
-    to: '/audit',
-    labelKey: 'nav.audit',
-    icon: ScrollText,
-    perm: 'audit:read',
-    requiresOrg: true,
-  },
-  { to: '/settings', labelKey: 'nav.settings', icon: Settings },
-]
-
-function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
-  const { t } = useTranslation()
-  const { me } = useAuth()
-  const hasOrgs = useHasOrgs()
-  const items = NAV.filter(
-    (i) => (!i.perm || hasPerm(me, i.perm)) && (!i.requiresOrg || hasOrgs),
-  )
+function GlobalSidebar() {
+  const isZh = useIsZh()
+  const canAudit = useCan('audit:read')
+  const invites = useMyInvitations()
+  const incomingProjects = useIncomingProjectJoinRequests()
+  const incomingOrgs = useIncomingOrgJoinRequests()
+  // 收件箱红点 = 待我处理的邀请 + 待我审批的（项目 + 组织）加入申请。
+  const inboxCount =
+    (invites.data?.length ?? 0) +
+    (incomingProjects.data?.length ?? 0) +
+    (incomingOrgs.data?.length ?? 0)
 
   return (
-    <nav className="flex flex-col gap-1 p-3">
-      <div className="flex items-center gap-2 px-2 py-3">
-        <div className="bg-brand text-brand-foreground flex size-7 items-center justify-center rounded-md text-sm font-semibold">
-          D
-        </div>
-        <span className="font-semibold tracking-tight">{t('app.shortName')}</span>
+    <Sidebar>
+      <div className="flex items-center gap-2.5 px-4 pt-[18px] pb-3.5">
+        <BrandMark size={30} />
+        <span className="text-[15px] font-extrabold">Bio-Data OS</span>
       </div>
-      {items.map((item) => (
-        <NavLink
-          key={item.to}
-          to={item.to}
-          onClick={onNavigate}
-          className={({ isActive }) =>
-            cn(
-              'flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors',
-              isActive
-                ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-                : 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground',
-            )
-          }
+      <SidebarNav>
+        <SidebarCaption>{isZh ? '工作区 WORKSPACE' : 'WORKSPACE'}</SidebarCaption>
+        <SidebarNavItem to="/projects" icon={<FolderClosed />} tourId="nav-projects">
+          <BiLabel zh="我的项目" en="Projects" />
+        </SidebarNavItem>
+        <SidebarNavItem to="/orgs" icon={<Building2 />} tourId="nav-orgs">
+          <BiLabel zh="组织" en="Organizations" />
+        </SidebarNavItem>
+        <SidebarNavItem
+          to="/inbox"
+          icon={<Mail />}
+          badge={inboxCount || undefined}
+          badgeRed
         >
-          <item.icon className="size-4" />
-          {t(item.labelKey)}
-        </NavLink>
-      ))}
-    </nav>
+          <BiLabel zh="邀请" en="Invitations" />
+        </SidebarNavItem>
+
+        {canAudit && (
+          <>
+            <div className="h-2.5" />
+            <SidebarCaption>{isZh ? '系统 SYSTEM' : 'SYSTEM'}</SidebarCaption>
+            <SidebarNavItem to="/audit" icon={<Activity />} tourId="nav-audit">
+              <BiLabel zh="审计" en="Audit" />
+            </SidebarNavItem>
+          </>
+        )}
+        <SidebarNavItem to="/settings" icon={<Settings />}>
+          <BiLabel zh="设置" en="Settings" />
+        </SidebarNavItem>
+      </SidebarNav>
+
+      <SidebarFooter>
+        <SidebarUser />
+      </SidebarFooter>
+    </Sidebar>
   )
 }
 
-function UserMenu() {
-  const { t } = useTranslation('auth')
-  const { me, logout } = useAuth()
-  const initial = (me?.user_id ?? '?').slice(0, 1).toUpperCase()
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="bg-muted size-8 rounded-full text-xs font-medium"
-        >
-          {initial}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-52">
-        <DropdownMenuLabel className="flex flex-col">
-          <span>{t('account')}</span>
-          <span className="text-muted-foreground truncate font-mono text-xs">
-            {me?.tenant_id}
-          </span>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => void logout()}>
-          <LogOut className="size-4" />
-          {t('logout')}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
-
+/** 全局上下文外壳：白侧栏 + 顶栏 + 内容（原型 ctxGlobal）。 */
 export function AppLayout() {
-  const [mobileOpen, setMobileOpen] = useState(false)
-
+  const { pathname } = useLocation()
+  const isZh = useIsZh()
+  const seg = pathname.split('/')[1] || 'projects'
+  const label = SECTION[seg]
+  const crumbs: Crumb[] = [
+    { label: label ? (isZh ? label[0] : label[1]) : 'Bio-Data OS' },
+  ]
+  const { replayApp } = useTourReplay()
+  // 首登 /projects 自动起一轮全局导航引导（看过即不再弹）。
+  useFirstRunTour('app', seg === 'projects')
   return (
-    <div className="flex min-h-[100dvh]">
-      <aside className="bg-sidebar hidden w-60 shrink-0 border-r md:block">
-        <SidebarNav />
-      </aside>
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 items-center gap-2 border-b px-4">
-          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden">
-                <Menu className="size-4" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-60 p-0">
-              <SidebarNav onNavigate={() => setMobileOpen(false)} />
-            </SheetContent>
-          </Sheet>
-
-          <div className="flex-1" />
-          <LangToggle />
-          <ThemeToggle />
-          <UserMenu />
-        </header>
-
-        <main className="flex-1 overflow-auto p-6">
-          <Suspense
-            fallback={
-              <div className="flex h-full items-center justify-center">
-                <Loader2 className="text-muted-foreground size-6 animate-spin" />
-              </div>
-            }
-          >
-            <Outlet />
-          </Suspense>
-        </main>
+    <div className="flex h-screen overflow-hidden">
+      <GlobalSidebar />
+      <div className="relative flex min-w-0 flex-1 flex-col">
+        <Topbar crumbs={crumbs} onHelp={replayApp} />
+        <div className="flex-1 overflow-auto">
+          <Outlet />
+        </div>
       </div>
     </div>
   )

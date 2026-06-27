@@ -1,125 +1,123 @@
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { Loader2 } from 'lucide-react'
-
+import { Loader2, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ThemeToggle } from '@/components/theme-toggle'
-import { LangToggle } from '@/components/lang-toggle'
+import { useIsZh } from '@/components/bilingual'
 import { usePlatformAuth } from '@/platform/platform-auth'
-import { errorI18nKey, isAppError } from '@/lib/errors'
 
+/**
+ * 平台控制台登录（原型：居中深色强调卡，非品牌分栏）。
+ * 登录走独立平台会话；已登录则直接进概览。
+ */
 export function PlatformLoginPage() {
   const { t } = useTranslation('platform')
-  const { t: tc } = useTranslation('common')
-  const { login } = usePlatformAuth()
+  const isZh = useIsZh()
+  const { me, login } = usePlatformAuth()
   const navigate = useNavigate()
-  const location = useLocation()
-  const from = (location.state as { from?: string } | null)?.from ?? '/system'
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-  const schema = z.object({
-    email: z
-      .string()
-      .min(1, t('login.required.email'))
-      .email(t('login.required.emailFormat')),
-    password: z.string().min(1, t('login.required.password')),
-  })
-  type Values = z.infer<typeof schema>
+  if (me) return <Navigate to="/system" replace />
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<Values>({
-    resolver: zodResolver(schema),
-    defaultValues: { email: '', password: '' },
-  })
-  const [formError, setFormError] = useState<string | null>(null)
-
-  const onSubmit = async (values: Values) => {
-    setFormError(null)
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setSubmitting(true)
     try {
-      await login(values.email, values.password)
-      navigate(from, { replace: true })
-    } catch (e) {
-      if (isAppError(e) && (e.kind === 'unauthorized' || e.kind === 'forbidden')) {
-        setFormError(t('login.invalid'))
-      } else {
-        setFormError(tc(errorI18nKey(e)))
-      }
+      await login(email, password)
+      navigate('/system')
+    } catch {
+      setError(t('login.invalid'))
+    } finally {
+      setSubmitting(false)
     }
   }
 
   return (
-    <main className="bg-background relative flex min-h-[100dvh] items-center justify-center p-6">
-      <div className="absolute top-4 right-4 flex items-center gap-1">
-        <LangToggle />
-        <ThemeToggle />
-      </div>
-
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-2 text-center">
-          <div className="bg-brand text-brand-foreground flex size-10 items-center justify-center rounded-lg font-semibold">
-            P
+    <div className="flex min-h-screen items-center justify-center bg-[#0F1424] px-6 py-10">
+      <form
+        className="card-shadow w-[360px] rounded-[16px] border bg-card p-7"
+        onSubmit={onSubmit}
+      >
+        <div className="flex items-center gap-2.5">
+          <span
+            className="flex size-9 shrink-0 items-center justify-center rounded-[10px] [&>svg]:size-5"
+            style={{
+              background: 'linear-gradient(135deg,#6D5BD0,#8E7DE8)',
+              color: '#fff',
+            }}
+          >
+            <ShieldCheck />
+          </span>
+          <div className="leading-tight">
+            <div className="text-[16px] font-extrabold">
+              {isZh ? '平台控制台' : 'Platform Console'}
+            </div>
+            {isZh && (
+              <div className="text-[11px] text-muted-foreground">
+                Platform Console
+              </div>
+            )}
           </div>
-          <h1 className="text-xl font-semibold tracking-tight">
-            {t('login.title')}
-          </h1>
-          <p className="text-muted-foreground text-sm">{t('login.subtitle')}</p>
+        </div>
+        <p className="mt-2.5 text-[12px] text-muted-foreground">
+          {t('login.subtitle')}
+        </p>
+
+        <div className="mt-6 space-y-1.5">
+          <Label htmlFor="pf-email" className="text-[12px] text-[#5a6473]">
+            {t('login.email')}
+          </Label>
+          <Input
+            id="pf-email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoFocus
+          />
+        </div>
+        <div className="mt-4 space-y-1.5">
+          <Label htmlFor="pf-password" className="text-[12px] text-[#5a6473]">
+            {t('login.password')}
+          </Label>
+          <Input
+            id="pf-password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">{t('login.email')}</Label>
-            <Input
-              id="email"
-              type="email"
-              autoFocus
-              autoComplete="username"
-              aria-invalid={!!errors.email}
-              {...register('email')}
-            />
-            {errors.email && (
-              <p className="text-destructive text-sm">{errors.email.message}</p>
-            )}
-          </div>
+        {error && (
+          <div className="mt-3 text-[12px] text-destructive">{error}</div>
+        )}
 
-          <div className="space-y-2">
-            <Label htmlFor="password">{t('login.password')}</Label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              aria-invalid={!!errors.password}
-              {...register('password')}
-            />
-            {errors.password && (
-              <p className="text-destructive text-sm">
-                {errors.password.message}
-              </p>
-            )}
-          </div>
+        <Button
+          type="submit"
+          className="mt-6 h-11 w-full text-[14px]"
+          disabled={submitting}
+        >
+          {submitting && <Loader2 className="size-4 animate-spin" />}
+          {submitting ? t('login.submitting') : t('login.submit')}
+        </Button>
 
-          {formError && (
-            <div
-              role="alert"
-              className="border-destructive/30 bg-destructive/10 text-destructive rounded-md border px-3 py-2 text-sm"
-            >
-              {formError}
-            </div>
-          )}
-
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-            {isSubmitting ? t('login.submitting') : t('login.submit')}
-          </Button>
-        </form>
-      </div>
-    </main>
+        <div className="mt-[22px] border-t pt-[18px] text-center">
+          <button
+            type="button"
+            className="text-[12.5px] text-muted-foreground hover:text-foreground"
+            onClick={() => navigate('/login')}
+          >
+            ← {t('login.backToApp')}
+          </button>
+        </div>
+      </form>
+    </div>
   )
 }

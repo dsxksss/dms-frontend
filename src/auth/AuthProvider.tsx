@@ -48,8 +48,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await applySession(req.tenant ?? '', await authApi.login(req))
   }
 
+  const loginWemol = async (req: {
+    name: string
+    passwd: string
+    tenant?: string
+  }) => {
+    // token 为 JSON 凭据；DMS 代向 WeMol 换会话并 JIT 映射本地用户。
+    const tokens = await authApi.tokenExchange({
+      provider: 'wemol',
+      token: JSON.stringify({ name: req.name, passwd: req.passwd }),
+      tenant: req.tenant,
+    })
+    await applySession(req.tenant ?? '', tokens)
+  }
+
   const signupUser = async (req: UserSignupRequest) => {
-    await applySession(req.tenant ?? '', await authApi.signupUser(req))
+    // tenant 由后端在注册响应里回传（applySession 优先用 tokens.tenant）。
+    await applySession('', await authApi.signupUser(req))
   }
 
   const signupTenant = async (req: TenantSignupRequest) => {
@@ -72,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ status, me, login, signupUser, signupTenant, logout }}
+      value={{ status, me, login, loginWemol, signupUser, signupTenant, logout }}
     >
       {children}
     </AuthContext.Provider>

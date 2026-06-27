@@ -136,6 +136,9 @@ export const membershipApi = {
     }),
   myJoinRequests: (status = 'pending') =>
     request<JoinRequest[]>('/v1/me/join-requests', { query: { status } }),
+  /** 收件箱聚合：待我审批的组织加入申请（跨我为 admin 的所有组织）。 */
+  incomingJoinRequests: () =>
+    request<JoinRequest[]>('/v1/me/incoming-join-requests'),
   cancelJoinRequest: (id: string) =>
     request<void>(`/v1/org-join-requests/${id}`, {
       method: 'DELETE',

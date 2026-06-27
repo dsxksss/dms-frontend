@@ -1,16 +1,19 @@
-import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useMemo, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Loader2, Plus, Trash2, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
-
+import { ArrowLeft, Building2, Check, Plus, Search, Trash2 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
@@ -18,556 +21,547 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { EmptyState, TableSkeleton } from '@/components/states'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { PageHeader } from '@/components/page-header'
+import { TableCard, GridHeader, GridRow, Th } from '@/components/data-grid'
+import { EmptyState } from '@/components/states'
+import { UserAvatar } from '@/components/user-avatar'
 import { ConfirmDialog } from '@/components/confirm-dialog'
-import { useCan } from '@/auth/auth-context'
-import { useToastError } from '@/hooks/use-toast-error'
-import { useCreateTeam, useGrantRole, useOrgs, useTeams } from '@/hooks/use-orgs'
+import { tintOf } from '@/components/brand-tile'
+import { roleTone } from '@/components/tone'
+import { cn } from '@/lib/utils'
+import { useAuth } from '@/auth/auth-context'
+import {
+  useOrgs,
+  useTeams,
+  useCreateTeam,
+  useUpdateOrg,
+} from '@/hooks/use-orgs'
+import { Switch } from '@/components/ui/switch'
+import { AppError } from '@/lib/errors'
+import { OrgRegistryTab } from './OrgRegistryTab'
+import { useFirstRunTour } from '@/features/onboarding/onboarding'
 import {
   useApproveJoinRequest,
   useInviteToOrg,
-  useOrgInvitations,
   useOrgJoinRequests,
   useOrgMembers,
   useRejectJoinRequest,
   useRemoveOrgMember,
-  useRevokeInvitation,
   useSetOrgMemberRole,
+  useUserSearch,
 } from '@/hooks/use-membership'
-import { membershipApi } from '@/api/membership'
-import { orgsApi, type GrantRequest } from '@/api/orgs'
+import { useDebounce } from '@/hooks/use-debounce'
+import { useToastError } from '@/hooks/use-toast-error'
 import { autoSlug } from '@/lib/slug'
-import { UserName } from '@/components/user-name'
-import { UserPicker } from '@/features/membership/UserPicker'
-import type { UserCard } from '@/api/membership'
-import { InvitePanel } from '@/features/membership/InvitePanel'
-import { AddMemberDialog } from './AddMemberDialog'
 
-const ORG_ROLES = ['admin', 'member']
-
-function MembersTab({ orgId }: { orgId: string }) {
-  const { t } = useTranslation('membership')
-  const { t: to } = useTranslation('orgs')
-  const canManage = useCan('org:write')
-  const members = useOrgMembers(orgId)
-  const setRole = useSetOrgMemberRole(orgId)
-  const removeM = useRemoveOrgMember(orgId)
-  const invitations = useOrgInvitations(orgId)
-  const invite = useInviteToOrg(orgId)
-  const revoke = useRevokeInvitation()
-  const toastError = useToastError()
-  const [removeId, setRemoveId] = useState<string | null>(null)
-
-  return (
-    <div className="grid gap-8 lg:grid-cols-2">
-      <div className="space-y-3">
-        <h2 className="font-medium">{t('members.title')}</h2>
-        {members.isLoading ? (
-          <TableSkeleton rows={3} cols={2} />
-        ) : members.data && members.data.length > 0 ? (
-          <ul className="divide-y rounded-md border">
-            {members.data.map((m) => (
-              <li
-                key={m.user_id}
-                className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
-              >
-                <span className="flex flex-col">
-                  <span>{m.display_name || m.email}</span>
-                  <span className="text-muted-foreground text-xs">{m.email}</span>
-                </span>
-                <span className="flex items-center gap-2">
-                  {canManage ? (
-                    <Select
-                      value={m.role}
-                      onValueChange={async (role) => {
-                        try {
-                          await setRole.mutateAsync({ userId: m.user_id, role })
-                          toast.success(t('members.roleUpdated'))
-                        } catch (e) {
-                          toastError(e)
-                        }
-                      }}
-                    >
-                      <SelectTrigger size="sm" className="w-28">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ORG_ROLES.map((r) => (
-                          <SelectItem key={r} value={r}>
-                            {to(`orgRole.${r}`)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Badge variant="secondary">{to(`orgRole.${m.role}`)}</Badge>
-                  )}
-                  {canManage && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-8"
-                      onClick={() => setRemoveId(m.user_id)}
-                    >
-                      <Trash2 className="text-destructive size-4" />
-                    </Button>
-                  )}
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <EmptyState title={t('members.empty')} />
-        )}
-      </div>
-
-      <InvitePanel
-        canInvite={canManage}
-        invite={invite}
-        invitations={invitations.data ?? []}
-        isLoading={invitations.isLoading}
-        onRevoke={async (id) => {
-          try {
-            await revoke.mutateAsync(id)
-            toast.success(t('inbox.cancelled'))
-          } catch (e) {
-            toastError(e)
-          }
-        }}
-        revoking={revoke.isPending}
-        roleOptions={ORG_ROLES}
-        defaultRole="member"
-        roleLabel={(r) => to(`orgRole.${r}`)}
-      />
-
-      <ConfirmDialog
-        open={!!removeId}
-        onOpenChange={(o) => !o && setRemoveId(null)}
-        title={t('members.removeTitle')}
-        description={t('members.removeDesc')}
-        destructive
-        loading={removeM.isPending}
-        onConfirm={async () => {
-          if (removeId) {
-            try {
-              await removeM.mutateAsync(removeId)
-              toast.success(t('members.removed'))
-            } catch (e) {
-              toastError(e)
-            }
-          }
-          setRemoveId(null)
-        }}
-      />
-    </div>
-  )
-}
-
-function JoinRequestsTab({
-  orgId,
-  discoverable,
-}: {
-  orgId: string
-  discoverable?: boolean
-}) {
-  const { t } = useTranslation('membership')
-  const canManage = useCan('org:write')
-  const jr = useOrgJoinRequests(orgId)
-  const approve = useApproveJoinRequest()
-  const reject = useRejectJoinRequest()
-  const toastError = useToastError()
-
-  // 以服务端值为初始；切换乐观更新，失败回滚。
-  const [on, setOn] = useState(!!discoverable)
-  useEffect(() => setOn(!!discoverable), [discoverable])
-
-  const toggleDiscoverable = async (next: boolean) => {
-    setOn(next)
-    try {
-      await membershipApi.updateOrg(orgId, { discoverable: next })
-      toast.success(t('org.updated'))
-    } catch (e) {
-      setOn(!next)
-      toastError(e)
-    }
-  }
-
-  return (
-    <div className="space-y-4">
-      {canManage && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
-          <div className="space-y-0.5">
-            <Label htmlFor="org-discoverable">{t('org.discoverable')}</Label>
-            <p className="text-muted-foreground text-xs">
-              {t('org.discoverableHint')}
-            </p>
-          </div>
-          <Switch
-            id="org-discoverable"
-            checked={on}
-            onCheckedChange={toggleDiscoverable}
-          />
-        </div>
-      )}
-
-      <h2 className="font-medium">{t('joinAdmin.title')}</h2>
-      {jr.isLoading ? (
-        <TableSkeleton rows={2} cols={2} />
-      ) : jr.data && jr.data.length > 0 ? (
-        <ul className="divide-y rounded-md border">
-          {jr.data.map((r) => (
-            <li
-              key={r.id}
-              className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
-            >
-              <span className="flex flex-col">
-                <UserName id={r.user_id} className="text-sm" />
-                {r.message && (
-                  <span className="text-muted-foreground text-xs">{r.message}</span>
-                )}
-              </span>
-              {canManage && (
-                <span className="flex gap-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={async () => {
-                      try {
-                        await approve.mutateAsync({ id: r.id })
-                        toast.success(t('joinAdmin.approved'))
-                      } catch (e) {
-                        toastError(e)
-                      }
-                    }}
-                  >
-                    {t('joinAdmin.approve')}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={async () => {
-                      try {
-                        await reject.mutateAsync(r.id)
-                        toast.success(t('joinAdmin.rejected'))
-                      } catch (e) {
-                        toastError(e)
-                      }
-                    }}
-                  >
-                    {t('joinAdmin.reject')}
-                  </Button>
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <EmptyState title={t('joinAdmin.empty')} />
-      )}
-    </div>
-  )
-}
-
-function TeamsTab({ orgId }: { orgId: string }) {
-  const { t } = useTranslation('orgs')
-  const { t: tm } = useTranslation('membership')
-  const teams = useTeams(orgId)
-  const createTeam = useCreateTeam(orgId)
-  const toastError = useToastError()
-  const [slug, setSlug] = useState('')
-  const [name, setName] = useState('')
-  const [memberTeam, setMemberTeam] = useState<string | null>(null)
-
-  const create = async () => {
-    if (!name.trim()) return
-    try {
-      // slug 留空时按名称自动派生（中文名回退随机），无需手填。
-      await createTeam.mutateAsync({ slug: slug.trim() || autoSlug(name, 'team'), name })
-      toast.success(t('teams.created'))
-      setSlug('')
-      setName('')
-    } catch (e) {
-      toastError(e)
-    }
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-2 rounded-lg border p-3">
-        <div className="space-y-1.5">
-          <Label>{t('teams.name')}</Label>
-          <Input className="w-48" value={name} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label>{t('teams.slug')}</Label>
-          <Input
-            className="w-40"
-            placeholder={t('teams.slugAuto')}
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-          />
-        </div>
-        <Button onClick={create} disabled={createTeam.isPending}>
-          {createTeam.isPending ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Plus className="size-4" />
-          )}
-          {t('teams.create')}
-        </Button>
-      </div>
-
-      {teams.isLoading ? (
-        <TableSkeleton rows={2} cols={2} />
-      ) : teams.data && teams.data.length > 0 ? (
-        <ul className="divide-y rounded-md border">
-          {teams.data.map((tm2) => (
-            <li
-              key={tm2.id}
-              className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
-            >
-              <span className="flex items-center gap-2">
-                <span className="font-medium">{tm2.name}</span>
-                <span className="text-muted-foreground font-mono text-xs">
-                  {tm2.slug}
-                </span>
-              </span>
-              <Button variant="ghost" size="sm" onClick={() => setMemberTeam(tm2.id)}>
-                <UserPlus className="size-4" />
-                {t('teams.addMember')}
-              </Button>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <EmptyState title={t('teams.empty')} />
-      )}
-
-      <AddMemberDialog
-        orgId={orgId}
-        open={!!memberTeam}
-        onOpenChange={(o) => !o && setMemberTeam(null)}
-        title={t('teams.addMember')}
-        onSubmit={async (userId, role) => {
-          try {
-            await orgsApi.addTeamMember(memberTeam!, { user_id: userId, role })
-            toast.success(tm('members.roleUpdated'))
-          } catch (e) {
-            toastError(e)
-          }
-        }}
-      />
-    </div>
-  )
-}
-
-const ROLE_KEYS = ['admin', 'member', 'owner', 'manager', 'contributor', 'viewer']
-
-function GrantsTab({ orgId }: { orgId: string }) {
-  const { t } = useTranslation('orgs')
-  const grant = useGrantRole()
-  const teams = useTeams(orgId)
-  const toastError = useToastError()
-
-  const [principalType, setPrincipalType] = useState('user')
-  const [users, setUsers] = useState<UserCard[]>([])
-  const [principalTeam, setPrincipalTeam] = useState('')
-  const [roleKey, setRoleKey] = useState('member')
-  const [scopeType, setScopeType] = useState('organization')
-  const [scopeTeam, setScopeTeam] = useState('')
-
-  const principalId =
-    principalType === 'user' ? (users[0]?.id ?? '') : principalTeam
-  const scopeId =
-    scopeType === 'organization'
-      ? orgId
-      : scopeType === 'team'
-        ? scopeTeam
-        : undefined
-
-  const body = (): GrantRequest => ({
-    principal_type: principalType,
-    principal_id: principalId,
-    role_key: roleKey,
-    scope_type: scopeType,
-    scope_id: scopeId || undefined,
-    resource_type: scopeType === 'resource' ? 'project' : undefined,
-  })
-
-  const run = async (fn: (b: GrantRequest) => Promise<void>, okKey: string) => {
-    if (!principalId) {
-      toastError(new Error(t('grants.selectUser')))
-      return
-    }
-    try {
-      await fn(body())
-      toast.success(t(okKey))
-    } catch (e) {
-      toastError(e)
-    }
-  }
-
-  return (
-    <Card className="max-w-2xl">
-      <CardHeader>
-        <CardTitle className="text-base">{t('grants.title')}</CardTitle>
-        <p className="text-muted-foreground text-sm">{t('grants.desc')}</p>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label>{t('grants.principalType')}</Label>
-            <Select value={principalType} onValueChange={setPrincipalType}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="user">{t('grants.principal.user')}</SelectItem>
-                <SelectItem value="team">{t('grants.principal.team')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t('grants.roleKey')}</Label>
-            <Select value={roleKey} onValueChange={setRoleKey}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ROLE_KEYS.map((r) => (
-                  <SelectItem key={r} value={r}>
-                    {t(`grants.roles.${r}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* 主体：用户→搜索选人；团队→下拉选团队（不再手填 UUID） */}
-        <div className="space-y-1.5">
-          <Label>
-            {principalType === 'user'
-              ? t('grants.selectUser')
-              : t('grants.selectTeam')}
-          </Label>
-          {principalType === 'user' ? (
-            <UserPicker value={users} onChange={setUsers} max={1} />
-          ) : (
-            <Select value={principalTeam} onValueChange={setPrincipalTeam}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={t('grants.selectTeam')} />
-              </SelectTrigger>
-              <SelectContent>
-                {(teams.data ?? []).map((tm) => (
-                  <SelectItem key={tm.id} value={tm.id}>
-                    {tm.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label>{t('grants.scopeType')}</Label>
-            <Select value={scopeType} onValueChange={setScopeType}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="tenant">{t('grants.scope.tenant')}</SelectItem>
-                <SelectItem value="organization">
-                  {t('grants.scope.organization')}
-                </SelectItem>
-                <SelectItem value="team">{t('grants.scope.team')}</SelectItem>
-                <SelectItem value="resource">{t('grants.scope.resource')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {scopeType === 'team' && (
-            <div className="space-y-1.5">
-              <Label>{t('grants.scope.team')}</Label>
-              <Select value={scopeTeam} onValueChange={setScopeTeam}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t('grants.selectTeam')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {(teams.data ?? []).map((tm) => (
-                    <SelectItem key={tm.id} value={tm.id}>
-                      {tm.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-        </div>
-
-        <div className="flex gap-2">
-          <Button
-            onClick={() => run((b) => grant.mutateAsync(b), 'grants.granted')}
-            disabled={grant.isPending}
-          >
-            {grant.isPending && <Loader2 className="size-4 animate-spin" />}
-            {t('grants.grant')}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => run((b) => orgsApi.revokeRole(b), 'grants.revoked')}
-          >
-            {t('grants.revoke')}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
+const MCOLS = '1.8fr 1fr 150px 70px'
 
 export function OrgDetailPage() {
   const { id = '' } = useParams()
   const { t } = useTranslation('orgs')
-  const navigate = useNavigate()
+  const { me } = useAuth()
   const orgs = useOrgs()
   const org = orgs.data?.find((o) => o.id === id)
+  const members = useOrgMembers(id)
+  const myRole = members.data?.find((m) => m.user_id === me?.user_id)?.role
+  const isAdmin = myRole === 'admin'
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const [tintBg, tintFg] = tintOf(id)
+  // 非成员：成员/资产等端点 403。整页提示，且不自动起组织引导。
+  const notMember =
+    members.isError &&
+    members.error instanceof AppError &&
+    members.error.status === 403
+  useFirstRunTour('org', !!org && !notMember && !members.isLoading)
+
+  if (!org) {
+    return (
+      <div className="mx-auto max-w-[920px] px-8 py-7">
+        <EmptyState title={t('empty')} />
+      </div>
+    )
+  }
+
+  // 非成员整页提示，避免逐个 Tab 报通用 forbidden（租户 owner 仅在列表「看得到」组织）。
+  if (notMember) {
+    return (
+      <div className="mx-auto max-w-[920px] px-8 py-7">
+        <Link
+          to="/orgs"
+          className="mb-2 inline-flex items-center gap-1 text-[12.5px] text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="size-3.5" />
+          {t('title')}
+        </Link>
+        <PageHeader title={org.name} size="md" description={`@${org.slug}`} />
+        <div className="mt-4">
+          <EmptyState
+            title={t('registry.notMember')}
+            hint={t('notMemberDesc')}
+          />
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate('..', { relative: 'path' })}>
-          <ArrowLeft className="size-4" />
-        </Button>
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">{org?.name ?? id}</h1>
-          {org && (
-            <Badge variant="secondary" className="font-mono text-xs">
-              {org.slug}
-            </Badge>
-          )}
+    <div className="mx-auto max-w-[920px] px-8 py-7">
+      <Link
+        to="/orgs"
+        className="mb-2 inline-flex items-center gap-1 text-[12.5px] text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="size-3.5" />
+        {t('title')}
+      </Link>
+      <PageHeader
+        title={org.name}
+        size="md"
+        description={`@${org.slug}`}
+        actions={
+          isAdmin && (
+            <Button onClick={() => setInviteOpen(true)}>
+              <Plus className="size-4" />
+              {t('addMember.title')}
+            </Button>
+          )
+        }
+      />
+      <div className="mb-4 flex items-center gap-3">
+        <div
+          className="flex size-[42px] items-center justify-center rounded-[11px]"
+          style={{ background: tintBg, color: tintFg }}
+        >
+          <Building2 className="size-5" />
         </div>
+        {myRole && <Badge variant={roleTone(myRole)}>{t(`orgRole.${myRole}`)}</Badge>}
       </div>
 
       <Tabs defaultValue="members">
         <TabsList>
           <TabsTrigger value="members">{t('tabs.members')}</TabsTrigger>
           <TabsTrigger value="teams">{t('tabs.teams')}</TabsTrigger>
-          <TabsTrigger value="join">{t('tabs.join')}</TabsTrigger>
-          <TabsTrigger value="grants">{t('tabs.grants')}</TabsTrigger>
+          <TabsTrigger value="assets" data-tour="org-assets">
+            {t('tabs.assets')}
+          </TabsTrigger>
+          <TabsTrigger value="data">{t('tabs.data')}</TabsTrigger>
+          {isAdmin && <TabsTrigger value="join">{t('tabs.join')}</TabsTrigger>}
+          {isAdmin && (
+            <TabsTrigger value="settings">{t('tabs.settings')}</TabsTrigger>
+          )}
         </TabsList>
-        <TabsContent value="members" className="pt-4">
-          <MembersTab orgId={id} />
+
+        <TabsContent value="members" className="mt-4">
+          <MembersTab orgId={id} canManage={isAdmin} meId={me?.user_id ?? null} />
         </TabsContent>
-        <TabsContent value="teams" className="pt-4">
-          <TeamsTab orgId={id} />
+        <TabsContent value="teams" className="mt-4">
+          <TeamsTab orgId={id} canManage={isAdmin} />
         </TabsContent>
-        <TabsContent value="join" className="pt-4">
-          <JoinRequestsTab orgId={id} discoverable={org?.discoverable} />
+        <TabsContent value="assets" className="mt-4">
+          <OrgRegistryTab orgId={id} kind="asset" isAdmin={isAdmin} />
         </TabsContent>
-        <TabsContent value="grants" className="pt-4">
-          <GrantsTab orgId={id} />
+        <TabsContent value="data" className="mt-4">
+          <OrgRegistryTab orgId={id} kind="template" isAdmin={isAdmin} />
         </TabsContent>
+        {isAdmin && (
+          <TabsContent value="join" className="mt-4">
+            <JoinTab orgId={id} />
+          </TabsContent>
+        )}
+        {isAdmin && (
+          <TabsContent value="settings" className="mt-4">
+            <SettingsTab orgId={id} discoverable={!!org.discoverable} />
+          </TabsContent>
+        )}
       </Tabs>
+
+      <InviteOrgDialog orgId={id} open={inviteOpen} onOpenChange={setInviteOpen} />
     </div>
+  )
+}
+
+function MembersTab({
+  orgId,
+  canManage,
+  meId,
+}: {
+  orgId: string
+  canManage: boolean
+  meId: string | null
+}) {
+  const { t } = useTranslation('orgs')
+  const members = useOrgMembers(orgId)
+  const setRole = useSetOrgMemberRole(orgId)
+  const remove = useRemoveOrgMember(orgId)
+  const toastError = useToastError()
+  const [removeId, setRemoveId] = useState<string | null>(null)
+  const data = members.data ?? []
+
+  if (data.length === 0) return <EmptyState title={t('addMember.empty')} />
+
+  return (
+    <>
+      <TableCard>
+        <GridHeader cols={MCOLS}>
+          <Th>{t('columns.name')}</Th>
+          <Th>Email</Th>
+          <Th>{t('grants.roleKey')}</Th>
+          <Th />
+        </GridHeader>
+        {data.map((m) => (
+          <GridRow key={m.user_id} cols={MCOLS}>
+            <div className="flex items-center gap-2.5">
+              <UserAvatar name={m.display_name || m.email} seed={m.user_id} size={30} />
+              <span className="truncate font-bold">
+                {m.display_name || m.email.split('@')[0]}
+                {m.user_id === meId && (
+                  <span className="ml-1 text-[11px] font-medium text-muted-foreground">
+                    {t('members.you')}
+                  </span>
+                )}
+              </span>
+            </div>
+            <span className="truncate text-[12px] text-muted-foreground">
+              {m.email}
+            </span>
+            <div>
+              {canManage ? (
+                <Select
+                  value={m.role}
+                  onValueChange={(role) =>
+                    setRole
+                      .mutateAsync({ userId: m.user_id, role })
+                      .then(() => toast.success(t('grants.granted')))
+                      .catch(toastError)
+                  }
+                >
+                  <SelectTrigger className="h-8 w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">{t('orgRole.admin')}</SelectItem>
+                    <SelectItem value="member">{t('orgRole.member')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Badge variant={roleTone(m.role)}>{t(`orgRole.${m.role}`)}</Badge>
+              )}
+            </div>
+            <div>
+              {canManage && m.user_id !== meId && (
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => setRemoveId(m.user_id)}
+                >
+                  <Trash2 className="size-4 text-destructive" />
+                </Button>
+              )}
+            </div>
+          </GridRow>
+        ))}
+      </TableCard>
+      <ConfirmDialog
+        open={!!removeId}
+        onOpenChange={(o) => !o && setRemoveId(null)}
+        title={t('members.removeTitle')}
+        description={t('members.removeDescription')}
+        destructive
+        confirmText={t('members.remove')}
+        loading={remove.isPending}
+        onConfirm={() =>
+          remove
+            .mutateAsync(removeId!)
+            .then(() => {
+              toast.success(t('members.removed'))
+              setRemoveId(null)
+            })
+            .catch(toastError)
+        }
+      />
+    </>
+  )
+}
+
+function TeamsTab({ orgId, canManage }: { orgId: string; canManage: boolean }) {
+  const { t } = useTranslation('orgs')
+  const teams = useTeams(orgId)
+  const create = useCreateTeam(orgId)
+  const toastError = useToastError()
+  const [name, setName] = useState('')
+  const data = teams.data ?? []
+
+  const add = () => {
+    if (!name.trim()) return
+    create
+      .mutateAsync({ name: name.trim(), slug: autoSlug(name, 'team') })
+      .then(() => {
+        toast.success(t('teams.created'))
+        setName('')
+      })
+      .catch(toastError)
+  }
+
+  return (
+    <div className="space-y-3">
+      {canManage && (
+        <div className="flex gap-2">
+          <Input
+            placeholder={t('teams.name')}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && add()}
+          />
+          <Button onClick={add} disabled={!name.trim() || create.isPending}>
+            <Plus className="size-4" />
+            {t('teams.create')}
+          </Button>
+        </div>
+      )}
+      {data.length === 0 ? (
+        <EmptyState title={t('teams.empty')} />
+      ) : (
+        <TableCard>
+          {data.map((tm) => (
+            <GridRow key={tm.id} cols="1fr 120px">
+              <span className="font-bold">{tm.name}</span>
+              <span className="mono text-[12px] text-muted-foreground">@{tm.slug}</span>
+            </GridRow>
+          ))}
+        </TableCard>
+      )}
+    </div>
+  )
+}
+
+function JoinTab({ orgId }: { orgId: string }) {
+  const { t } = useTranslation('orgs')
+  const requests = useOrgJoinRequests(orgId, true)
+  const approve = useApproveJoinRequest()
+  const reject = useRejectJoinRequest()
+  const toastError = useToastError()
+  const data = requests.data ?? []
+
+  if (data.length === 0) return <EmptyState title={t('tabs.join')} />
+
+  return (
+    <TableCard>
+      {data.map((r) => (
+        <GridRow key={r.id} cols="1fr 160px">
+          <div className="flex items-center gap-2.5">
+            <UserAvatar name={r.user_id} seed={r.user_id} size={28} />
+            <div className="min-w-0">
+              <div className="truncate text-[13px] font-semibold">
+                {r.user_id.slice(0, 8)}
+              </div>
+              <div className="truncate text-[11.5px] text-muted-foreground">
+                {r.message}
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button
+              size="sm"
+              onClick={() =>
+                approve
+                  .mutateAsync({ id: r.id })
+                  .then(() => toast.success(t('grants.granted')))
+                  .catch(toastError)
+              }
+            >
+              {t('grants.grant')}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                reject
+                  .mutateAsync(r.id)
+                  .then(() => toast.success(t('grants.revoked')))
+                  .catch(toastError)
+              }
+            >
+              {t('grants.revoke')}
+            </Button>
+          </div>
+        </GridRow>
+      ))}
+    </TableCard>
+  )
+}
+
+/** 组织设置：discoverable「允许被搜索并申请加入」开关（org admin）。 */
+function SettingsTab({
+  orgId,
+  discoverable,
+}: {
+  orgId: string
+  discoverable: boolean
+}) {
+  const { t } = useTranslation('orgs')
+  const update = useUpdateOrg(orgId)
+  const toastError = useToastError()
+
+  const toggle = (next: boolean) =>
+    update
+      .mutateAsync({ discoverable: next })
+      .then(() => toast.success(t('settings.saved')))
+      .catch(toastError)
+
+  return (
+    <div className="max-w-xl space-y-4">
+      <div className="flex items-start justify-between gap-4 rounded-[11px] border p-4">
+        <div className="space-y-1">
+          <Label className="text-[13px] font-semibold">
+            {t('settings.discoverable')}
+          </Label>
+          <p className="text-[12.5px] text-muted-foreground">
+            {t('settings.discoverableHint')}
+          </p>
+        </div>
+        <Switch
+          checked={discoverable}
+          disabled={update.isPending}
+          onCheckedChange={toggle}
+        />
+      </div>
+    </div>
+  )
+}
+
+function InviteOrgDialog({
+  orgId,
+  open,
+  onOpenChange,
+}: {
+  orgId: string
+  open: boolean
+  onOpenChange: (o: boolean) => void
+}) {
+  const { t } = useTranslation('orgs')
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState<Record<string, boolean>>({})
+  const [role, setRole] = useState('member')
+  const debounced = useDebounce(search, 300)
+  const results = useUserSearch(debounced)
+  const invite = useInviteToOrg(orgId)
+  const members = useOrgMembers(orgId)
+  // 已是组织成员的人不应再被邀请 → 在结果里灰显「已是成员」。
+  const memberIds = useMemo(
+    () => new Set((members.data ?? []).map((m) => m.user_id)),
+    [members.data],
+  )
+  const toastError = useToastError()
+  const ids = useMemo(
+    () => Object.keys(selected).filter((k) => selected[k]),
+    [selected],
+  )
+
+  const send = () => {
+    if (ids.length === 0) return
+    invite
+      .mutateAsync({ user_ids: ids, role })
+      .then(() => {
+        toast.success(t('addMember.added'))
+        onOpenChange(false)
+        setSelected({})
+        setSearch('')
+      })
+      .catch(toastError)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[480px]">
+        <DialogHeader>
+          <DialogTitle>{t('addMember.title')}</DialogTitle>
+        </DialogHeader>
+        <div className="relative">
+          <Search className="absolute top-2.5 left-3 size-[15px] text-muted-foreground" />
+          <Input
+            className="pl-9"
+            placeholder={t('addMember.userPlaceholder')}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="max-h-[240px] overflow-auto">
+          {(results.data ?? []).map((u) => {
+            const on = !!selected[u.id]
+            if (memberIds.has(u.id)) {
+              // 已是组织成员：灰显、不可选。
+              return (
+                <div
+                  key={u.id}
+                  className="flex w-full items-center gap-2.5 rounded-[9px] px-1.5 py-2 opacity-60"
+                >
+                  <UserAvatar name={u.display_name || u.email} seed={u.id} size={32} />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[13px] font-semibold">
+                      {u.display_name || u.email.split('@')[0]}
+                    </div>
+                    <div className="truncate text-[11.5px] text-muted-foreground">
+                      {u.email}
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[#15803D]">
+                    <Check className="size-3.5" />
+                    {t('addMember.alreadyMember')}
+                  </span>
+                </div>
+              )
+            }
+            return (
+              <button
+                type="button"
+                key={u.id}
+                onClick={() => setSelected((s) => ({ ...s, [u.id]: !s[u.id] }))}
+                className="flex w-full items-center gap-2.5 rounded-[9px] px-1.5 py-2 text-left hover:bg-surface-2"
+              >
+                <UserAvatar name={u.display_name || u.email} seed={u.id} size={32} />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[13px] font-semibold">
+                    {u.display_name || u.email.split('@')[0]}
+                  </div>
+                  <div className="truncate text-[11.5px] text-muted-foreground">
+                    {u.email}
+                  </div>
+                </div>
+                <span
+                  className={cn(
+                    'flex size-5 items-center justify-center rounded-md border',
+                    on ? 'border-brand bg-brand text-white' : 'border-[#c7cdd8]',
+                  )}
+                >
+                  {on && <Check className="size-3" />}
+                </span>
+              </button>
+            )
+          })}
+          {(results.data ?? []).length === 0 && (
+            <p className="py-6 text-center text-[12.5px] text-muted-foreground">
+              {t('addMember.empty')}
+            </p>
+          )}
+        </div>
+        <DialogFooter className="items-center gap-2 sm:justify-between">
+          <div className="flex items-center gap-2">
+            <Label className="text-[12.5px]">{t('addMember.role')}</Label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger className="h-8 w-28">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="member">{t('orgRole.member')}</SelectItem>
+                <SelectItem value="admin">{t('orgRole.admin')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={send} disabled={ids.length === 0 || invite.isPending}>
+            {t('addMember.submit')} ({ids.length})
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

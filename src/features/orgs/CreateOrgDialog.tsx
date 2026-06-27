@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -14,88 +15,76 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useCreateOrg } from '@/hooks/use-orgs'
 import { useToastError } from '@/hooks/use-toast-error'
-import { autoSlug } from '@/lib/slug'
+import { autoSlug, slugify } from '@/lib/slug'
 
+/** 新建组织：名称 + 可选 slug（留空按名称自动生成）。 */
 export function CreateOrgDialog({
   open,
   onOpenChange,
 }: {
   open: boolean
-  onOpenChange: (o: boolean) => void
+  onOpenChange: (open: boolean) => void
 }) {
   const { t } = useTranslation('orgs')
   const create = useCreateOrg()
   const toastError = useToastError()
-  const [slug, setSlug] = useState('')
   const [name, setName] = useState('')
-  const [err, setErr] = useState<{ slug?: boolean; name?: boolean }>({})
-
-  useEffect(() => {
-    if (open) {
-      setSlug('')
-      setName('')
-      setErr({})
-    }
-  }, [open])
+  const [slug, setSlug] = useState('')
 
   const submit = async () => {
-    const e = { slug: false, name: !name.trim() }
-    setErr(e)
-    if (e.name) return
+    if (!name.trim()) return
     try {
-      // slug 留空时由名称自动派生（中文名回退随机串），用户无需手填。
-      await create.mutateAsync({ slug: slug.trim() || autoSlug(name, 'org'), name })
+      await create.mutateAsync({
+        name: name.trim(),
+        slug: slug.trim() || slugify(name) || autoSlug(name, 'org'),
+      })
       toast.success(t('created'))
       onOpenChange(false)
-    } catch (ex) {
-      toastError(ex)
+      setName('')
+      setSlug('')
+    } catch (e) {
+      toastError(e)
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[440px]">
         <DialogHeader>
           <DialogTitle>{t('create.title')}</DialogTitle>
+          <DialogDescription>{t('subtitle')}</DialogDescription>
         </DialogHeader>
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault()
-            void submit()
-          }}
-        >
-          <div className="space-y-2">
-            <Label htmlFor="oname">{t('create.name')}</Label>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="o-name">{t('create.name')}</Label>
             <Input
-              id="oname"
-              autoFocus
+              id="o-name"
               placeholder={t('create.namePlaceholder')}
               value={name}
-              aria-invalid={err.name}
               onChange={(e) => setName(e.target.value)}
+              autoFocus
             />
-            {err.name && (
-              <p className="text-destructive text-sm">{t('create.nameRequired')}</p>
-            )}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="oslug">{t('create.slug')}</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="o-slug">{t('create.slug')}</Label>
             <Input
-              id="oslug"
-              placeholder={t('create.slugAuto')}
+              id="o-slug"
+              placeholder={t('create.slugPlaceholder')}
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
             />
-            <p className="text-muted-foreground text-xs">{t('create.slugHint')}</p>
+            <p className="text-[11px] text-muted-foreground">{t('create.slugHint')}</p>
           </div>
-          <DialogFooter>
-            <Button type="submit" disabled={create.isPending}>
-              {create.isPending && <Loader2 className="size-4 animate-spin" />}
-              {t('create.submit')}
-            </Button>
-          </DialogFooter>
-        </form>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t('actions.cancel', { ns: 'common', defaultValue: '取消' })}
+          </Button>
+          <Button onClick={submit} disabled={!name.trim() || create.isPending}>
+            {create.isPending && <Loader2 className="size-4 animate-spin" />}
+            {t('create.submit')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

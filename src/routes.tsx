@@ -1,5 +1,6 @@
 import { lazy } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { isStandalone } from '@/lib/edition'
 import { ProtectedRoute } from '@/auth/ProtectedRoute'
 import { AppLayout } from '@/components/app-layout'
 import { LoginPage } from '@/features/auth/LoginPage'
@@ -19,9 +20,37 @@ const ProjectsListPage = lazyPage(
   () => import('@/features/projects/ProjectsListPage'),
   'ProjectsListPage',
 )
-const ProjectDetailPage = lazyPage(
-  () => import('@/features/projects/ProjectDetailPage'),
-  'ProjectDetailPage',
+const ProjectLayout = lazyPage(
+  () => import('@/features/projects/ProjectWorkspace'),
+  'ProjectLayout',
+)
+const ProjectOverviewSection = lazyPage(
+  () => import('@/features/projects/ProjectWorkspace'),
+  'ProjectOverviewSection',
+)
+const ProjectRegistrySection = lazyPage(
+  () => import('@/features/projects/ProjectWorkspace'),
+  'ProjectRegistrySection',
+)
+const ProjectDataSection = lazyPage(
+  () => import('@/features/projects/ProjectWorkspace'),
+  'ProjectDataSection',
+)
+const ProjectNotebookSection = lazyPage(
+  () => import('@/features/projects/ProjectWorkspace'),
+  'ProjectNotebookSection',
+)
+const ProjectDatasetsSection = lazyPage(
+  () => import('@/features/projects/ProjectWorkspace'),
+  'ProjectDatasetsSection',
+)
+const ProjectFilesSection = lazyPage(
+  () => import('@/features/projects/ProjectWorkspace'),
+  'ProjectFilesSection',
+)
+const ProjectMembersSection = lazyPage(
+  () => import('@/features/projects/ProjectWorkspace'),
+  'ProjectMembersSection',
 )
 const DatasetDetailPage = lazyPage(
   () => import('@/features/datasets/DatasetDetailPage'),
@@ -68,7 +97,11 @@ const PlatformSettingsPage = lazyPage(
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
-  { path: '/signup', element: <SignupPage /> },
+  // 自助注册仅自定义租户版（standalone）；WeMol 配套版重定向回登录。
+  {
+    path: '/signup',
+    element: isStandalone ? <SignupPage /> : <Navigate to="/login" replace />,
+  },
   {
     element: <PlatformRoot />,
     children: [
@@ -98,14 +131,25 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="/projects" replace /> },
           { path: 'projects', element: <ProjectsListPage /> },
-          { path: 'projects/:id', element: <ProjectDetailPage /> },
-          { path: 'projects/:id/datasets/:dsId', element: <DatasetDetailPage /> },
           { path: 'public-datasets', element: <PublicDatasetsPage /> },
           { path: 'orgs', element: <OrgsListPage /> },
           { path: 'orgs/:id', element: <OrgDetailPage /> },
           { path: 'inbox', element: <InboxPage /> },
           { path: 'audit', element: <AuditPage /> },
           { path: 'settings', element: <SettingsPage /> },
+        ],
+      },
+      {
+        element: <ProjectLayout />,
+        children: [
+          { path: 'projects/:id', element: <ProjectOverviewSection /> },
+          { path: 'projects/:id/registry', element: <ProjectRegistrySection /> },
+          { path: 'projects/:id/data', element: <ProjectDataSection /> },
+          { path: 'projects/:id/notebook', element: <ProjectNotebookSection /> },
+          { path: 'projects/:id/datasets', element: <ProjectDatasetsSection /> },
+          { path: 'projects/:id/datasets/:dsId', element: <DatasetDetailPage /> },
+          { path: 'projects/:id/files', element: <ProjectFilesSection /> },
+          { path: 'projects/:id/members', element: <ProjectMembersSection /> },
         ],
       },
     ],

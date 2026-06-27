@@ -9,6 +9,14 @@
   },
   "status": { "active": "Active", "archived": "Archived" },
   "filter": { "includeArchived": "Show archived" },
+  "card": {
+    "orgProject": "Org project",
+    "defaultWorkspace": "My Organization",
+    "open": "Open project"
+  },
+  "back": "Back to projects",
+  "roleLabel": "My role",
+  "openSection": "Open",
   "create": {
     "title": "New project",
     "name": "Name",
@@ -65,7 +73,12 @@
     "version": "Version",
     "status": "Status",
     "description": "Description",
-    "none": "(none)"
+    "none": "(none)",
+    "runs": "Runs",
+    "byType": "By asset type",
+    "recent": "Recent",
+    "info": "Project info",
+    "noActivity": "No activity yet"
   },
   "members": {
     "title": "Members",
@@ -80,6 +93,7 @@
     "you": "(you)",
     "added": "Member added",
     "removed": "Member removed",
+    "roleUpdated": "Role updated",
     "userIdRequired": "User ID is required"
   },
   "roles": {
@@ -88,11 +102,43 @@
     "contributor": "Contributor",
     "viewer": "Viewer"
   },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Project visibility, members and roles."
+  },
+  "join": {
+    "request": "Request to join",
+    "pending": "Requested",
+    "requested": "Request submitted",
+    "pendingTitle": "Join requests",
+    "approve": "Approve",
+    "reject": "Reject",
+    "approved": "Request approved",
+    "rejected": "Request rejected"
+  },
+  "grants": {
+    "title": "Fine-grained access",
+    "subtitle": "Roles grant project-wide CRUD. Here you can override roles per content type — give a specific member create/read/update/delete on a single drug-asset type or data template (e.g. a viewer who may add to \"Antibody\" but not delete).",
+    "empty": "No content types yet",
+    "emptyHint": "Create drug-asset types or data templates first; then you can grant per-member access here.",
+    "assetType": "Drug asset type",
+    "dataTemplate": "Data template",
+    "manage": "Manage access"
+  },
+  "visibility": {
+    "label": "Visibility",
+    "private": "Private",
+    "org": "Organization",
+    "privateDesc": "Only invited members can see and enter; others in the org can't see it.",
+    "orgDesc": "Everyone in the organization can see and read it; editing still requires being invited as a member. Other organizations in the company can't see it.",
+    "set": "Visibility updated"
+  },
   "shares": {
     "title": "Cross-org sharing",
     "desc": "Share this project with an organization (its members get the granted role); no org = share with all orgs (group-wide).",
     "add": "Add share",
     "org": "Organization",
+    "scopeHint": "Pick an organization = share the project with it; its members access by the granted role. Pick \"All organizations\" = group-wide, every org in this company can access. Handy for cross-subsidiary collaboration.",
     "allOrgs": "All organizations (group-wide)",
     "role": "Role",
     "empty": "No cross-org shares",

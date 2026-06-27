@@ -1,113 +1,73 @@
 import { useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Loader2, Plus, Trash2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
-
-import { PageHeader } from '@/components/page-header'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import { Loader2, Plus, Trash2, Upload } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { ConfirmDialog } from '@/components/confirm-dialog'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { PageHeader } from '@/components/page-header'
+import { GridHeader, GridRow, TableCard, Th } from '@/components/data-grid'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import {
-  usePlatformDatasets,
   useCreatePlatformDataset,
-  useUploadPlatformDatasetVersion,
   useDeletePlatformDataset,
+  usePlatformDatasets,
 } from '@/hooks/use-platform'
+import { platformApi } from '@/platform/api'
 import { useToastError } from '@/hooks/use-toast-error'
 import type { SystemDataset } from '@/api/datasets'
+import {
+  DatasetMetaFields,
+  emptyMeta,
+  normalizeMeta,
+  type DatasetMetaValue,
+} from '@/features/datasets/DatasetMetaFields'
 
-function UploadButton({ datasetId }: { datasetId: string }) {
-  const { t } = useTranslation('platform')
-  const upload = useUploadPlatformDatasetVersion(datasetId)
-  const toastError = useToastError()
-  const fileRef = useRef<HTMLInputElement>(null)
-  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
-    try {
-      await upload.mutateAsync({ file, format: 'csv' })
-      toast.success(t('datasets.uploaded'))
-    } catch (err) {
-      toastError(err)
-    }
-  }
-  return (
-    <>
-      <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={onFile} />
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-8"
-        title={t('datasets.upload')}
-        onClick={() => fileRef.current?.click()}
-        disabled={upload.isPending}
-      >
-        {upload.isPending ? (
-          <Loader2 className="size-4 animate-spin" />
-        ) : (
-          <Upload className="size-4" />
-        )}
-      </Button>
-    </>
-  )
-}
+const COLS = '1.8fr 90px 120px 110px'
 
 export function PlatformDatasetsPage() {
   const { t } = useTranslation('platform')
   const query = usePlatformDatasets()
-  const create = useCreatePlatformDataset()
   const del = useDeletePlatformDataset()
   const toastError = useToastError()
+  const [uploadOpen, setUploadOpen] = useState(false)
+  const [toDelete, setToDelete] = useState<SystemDataset | null>(null)
+  const rows = query.data ?? []
 
-  const [createOpen, setCreateOpen] = useState(false)
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [delTarget, setDelTarget] = useState<SystemDataset | null>(null)
-
-  const submitCreate = async () => {
-    if (!name.trim()) return
-    try {
-      await create.mutateAsync({ name: name.trim(), description })
-      toast.success(t('datasets.created'))
-      setCreateOpen(false)
-      setName('')
-      setDescription('')
-    } catch (e) {
-      toastError(e)
-    }
+  const confirmDelete = () => {
+    if (!toDelete) return
+    del
+      .mutateAsync(toDelete.id)
+      .then(() => {
+        toast.success(t('datasets.deleted'))
+        setToDelete(null)
+      })
+      .catch((e) => {
+        setToDelete(null)
+        toastError(e)
+      })
   }
-
-  const onDelete = async () => {
-    if (!delTarget) return
-    try {
-      await del.mutateAsync(delTarget.id)
-      toast.success(t('datasets.deleted'))
-      setDelTarget(null)
-    } catch (e) {
-      toastError(e)
-    }
-  }
-
-  const items = query.data ?? []
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-[1180px] px-8 py-7">
       <PageHeader
         title={t('datasets.title')}
+        titleEn="System Datasets"
         description={t('datasets.desc')}
         actions={
-          <Button onClick={() => setCreateOpen(true)}>
+          <Button onClick={() => setUploadOpen(true)}>
             <Plus className="size-4" />
             {t('datasets.create')}
           </Button>
@@ -115,85 +75,191 @@ export function PlatformDatasetsPage() {
       />
 
       {query.isLoading ? (
-        <TableSkeleton rows={3} cols={2} />
+        <TableSkeleton rows={5} />
       ) : query.isError ? (
         <ErrorState error={query.error} onRetry={() => query.refetch()} />
-      ) : items.length === 0 ? (
-        <EmptyState title={t('datasets.empty')} description={t('datasets.emptyDesc')} />
+      ) : rows.length === 0 ? (
+        <EmptyState
+          title={t('datasets.empty')}
+          hint={t('datasets.emptyDesc')}
+          action={
+            <Button onClick={() => setUploadOpen(true)}>
+              <Plus className="size-4" />
+              {t('datasets.create')}
+            </Button>
+          }
+        />
       ) : (
-        <ul className="divide-y rounded-lg border">
-          {items.map((d) => (
-            <li key={d.id} className="flex items-center justify-between gap-3 px-4 py-3">
-              <div className="min-w-0">
-                <div className="font-medium">{d.name}</div>
-                <div className="text-muted-foreground truncate text-xs">
-                  {d.description || '—'} · v{d.version}
+        <TableCard>
+          <GridHeader cols={COLS}>
+            <Th>{t('datasets.name')}</Th>
+            <Th>{t('datasets.version')}</Th>
+            <Th>{t('datasets.rows')}</Th>
+            <Th>{t('datasets.visibility')}</Th>
+          </GridHeader>
+          {rows.map((d) => (
+            <GridRow key={d.id} cols={COLS}>
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span
+                  className="flex size-[34px] shrink-0 items-center justify-center rounded-[9px] text-[13px] font-extrabold"
+                  style={{ background: '#EFE9FB', color: '#6D5BD0' }}
+                >
+                  {(d.name[0] ?? '·').toUpperCase()}
+                </span>
+                <div className="min-w-0">
+                  <div className="truncate text-[13px] font-bold">{d.name}</div>
+                  {d.description && (
+                    <div className="truncate text-[11px] text-muted-foreground">
+                      {d.description}
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center gap-1">
-                <UploadButton datasetId={d.id} />
+              <div>
+                <Badge variant="neutral">v{d.version}</Badge>
+              </div>
+              <div className="mono text-[12.5px] text-muted-foreground">—</div>
+              <div className="flex items-center justify-between gap-2">
+                <Badge variant="success">{t('datasets.readonlyAll')}</Badge>
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="size-8"
-                  onClick={() => setDelTarget(d)}
+                  size="icon-sm"
+                  className="text-muted-foreground hover:text-destructive"
+                  onClick={() => setToDelete(d)}
                 >
-                  <Trash2 className="text-destructive size-4" />
+                  <Trash2 className="size-4" />
                 </Button>
               </div>
-            </li>
+            </GridRow>
           ))}
-        </ul>
+        </TableCard>
       )}
 
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('datasets.create')}</DialogTitle>
-          </DialogHeader>
-          <form
-            className="space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault()
-              void submitCreate()
-            }}
-          >
-            <div className="space-y-2">
-              <Label htmlFor="pdsname">{t('datasets.name')}</Label>
-              <Input
-                id="pdsname"
-                autoFocus
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="pdsdesc">{t('datasets.description')}</Label>
-              <Textarea
-                id="pdsdesc"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-            <DialogFooter>
-              <Button type="submit" disabled={create.isPending}>
-                {create.isPending && <Loader2 className="size-4 animate-spin" />}
-                {t('datasets.create')}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
+      <UploadDatasetDialog open={uploadOpen} onOpenChange={setUploadOpen} />
       <ConfirmDialog
-        open={!!delTarget}
-        onOpenChange={(o) => !o && setDelTarget(null)}
+        open={!!toDelete}
+        onOpenChange={(o) => !o && setToDelete(null)}
         title={t('datasets.deleteTitle')}
-        description={t('datasets.deleteConfirm', { name: delTarget?.name })}
+        description={t('datasets.deleteConfirm', { name: toDelete?.name ?? '' })}
+        confirmText={t('actions.delete', { ns: 'common', defaultValue: '删除' })}
         destructive
         loading={del.isPending}
-        onConfirm={onDelete}
+        onConfirm={confirmDelete}
       />
     </div>
+  )
+}
+
+/** 新建系统数据集（名称 + 描述）+ 可选首版 CSV 上传。 */
+function UploadDatasetDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const { t } = useTranslation('platform')
+  const qc = useQueryClient()
+  const create = useCreatePlatformDataset()
+  const toastError = useToastError()
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [meta, setMeta] = useState<DatasetMetaValue>(emptyMeta())
+  const [file, setFile] = useState<File | null>(null)
+  const [uploading, setUploading] = useState(false)
+
+  const busy = create.isPending || uploading
+  const reset = () => {
+    setName('')
+    setDescription('')
+    setMeta(emptyMeta())
+    setFile(null)
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
+  const submit = async () => {
+    if (!name.trim()) return
+    try {
+      const m = normalizeMeta(meta)
+      const ds = await create.mutateAsync({
+        name: name.trim(),
+        description: description.trim() || undefined,
+        tags: m.tags,
+        author: m.author || undefined,
+        references: m.references,
+      })
+      // 选了文件就追加首个 CSV 版本：上传需新建数据集的 id，故直接调 api（hook 的 id 在调用期已绑定）。
+      if (file) {
+        setUploading(true)
+        await platformApi.uploadDatasetVersion(ds.id, file, 'csv')
+        qc.invalidateQueries({ queryKey: ['platform', 'datasets'] })
+      }
+      toast.success(file ? t('datasets.uploaded') : t('datasets.created'))
+      onOpenChange(false)
+      reset()
+    } catch (e) {
+      toastError(e)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[460px]">
+        <DialogHeader>
+          <DialogTitle>{t('datasets.create')}</DialogTitle>
+          <DialogDescription>{t('datasets.desc')}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="ds-name">{t('datasets.name')}</Label>
+            <Input
+              id="ds-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="ds-desc">{t('datasets.description')}</Label>
+            <Textarea
+              id="ds-desc"
+              rows={2}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+          <DatasetMetaFields value={meta} onChange={setMeta} />
+          <div className="space-y-1.5">
+            <Label htmlFor="ds-file">{t('datasets.upload')}</Label>
+            <Input
+              id="ds-file"
+              ref={fileRef}
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              {t('datasets.uploadHint')}
+            </p>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t('actions.cancel', { ns: 'common', defaultValue: '取消' })}
+          </Button>
+          <Button onClick={submit} disabled={!name.trim() || busy}>
+            {busy ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Upload className="size-4" />
+            )}
+            {t('datasets.create')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

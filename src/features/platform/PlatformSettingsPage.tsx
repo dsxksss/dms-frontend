@@ -1,15 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Loader2, Lock } from 'lucide-react'
 import { toast } from 'sonner'
-
-import { PageHeader } from '@/components/page-header'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Loader2, Lock } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-import { Skeleton } from '@/components/ui/skeleton'
 import {
   Select,
   SelectContent,
@@ -17,13 +14,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { PageHeader } from '@/components/page-header'
 import { ErrorState } from '@/components/states'
+import { Skeleton } from '@/components/ui/skeleton'
+import { applyTone } from '@/components/tone'
 import {
   usePlatformSettings,
   useUpdatePlatformSettings,
 } from '@/hooks/use-platform'
 import { useToastError } from '@/hooks/use-toast-error'
-import { planSummary } from './plans'
 import type { PlatformSetting } from '@/platform/api'
 
 export function PlatformSettingsPage() {
@@ -31,50 +30,67 @@ export function PlatformSettingsPage() {
   const query = usePlatformSettings()
   const update = useUpdatePlatformSettings()
   const toastError = useToastError()
-  // 仅记录被改动的项；未改动的不发，避免把脱敏的 "***" 回写。
+  // 草稿：仅记录被改过的 key→新值；当前值 = draft[key] ?? setting.value。
   const [draft, setDraft] = useState<Record<string, unknown>>({})
 
-  const set = (key: string, v: unknown) => setDraft((d) => ({ ...d, [key]: v }))
-  const dirty = Object.keys(draft).length > 0
+  const settings = query.data ?? []
+  const dirtyKeys = Object.keys(draft).filter((k) => {
+    const s = settings.find((x) => x.key === k)
+    return s && draft[k] !== s.value
+  })
+  const dirty = dirtyKeys.length > 0
 
-  const save = async () => {
-    try {
-      await update.mutateAsync(draft)
-      toast.success(t('settings.saved'))
-      setDraft({})
-    } catch (e) {
-      toastError(e)
-    }
+  const setValue = (key: string, value: unknown) =>
+    setDraft((d) => ({ ...d, [key]: value }))
+
+  const save = () => {
+    if (!dirty) return
+    const body = Object.fromEntries(dirtyKeys.map((k) => [k, draft[k]]))
+    update
+      .mutateAsync(body)
+      .then(() => {
+        toast.success(t('settings.saved'))
+        setDraft({})
+      })
+      .catch(toastError)
   }
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-[1180px] px-8 py-7">
       <PageHeader
         title={t('settings.title')}
+        titleEn="Settings"
         description={t('settings.desc')}
         actions={
-          <Button onClick={() => void save()} disabled={!dirty || update.isPending}>
+          <Button onClick={save} disabled={!dirty || update.isPending}>
             {update.isPending && <Loader2 className="size-4 animate-spin" />}
             {t('settings.save')}
           </Button>
         }
       />
 
-      {query.isError ? (
+      {query.isLoading ? (
+        <Card className="mx-auto max-w-[840px] gap-0 p-0">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="border-b border-divider p-4 last:border-b-0">
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ))}
+        </Card>
+      ) : query.isError ? (
         <ErrorState error={query.error} onRetry={() => query.refetch()} />
-      ) : query.isLoading ? (
-        <Skeleton className="h-64 w-full" />
       ) : (
-        <div className="divide-y rounded-lg border">
-          {(query.data ?? []).map((s) => (
+        <Card className="mx-auto max-w-[840px] gap-0 py-0">
+          {settings.map((s, i) => (
             <SettingRow
               key={s.key}
               setting={s}
-              draftValue={s.key in draft ? draft[s.key] : undefined}
-              onChange={(v) => set(s.key, v)}
+              value={s.key in draft ? draft[s.key] : s.value}
+              onChange={(v) => setValue(s.key, v)}
+              last={i === settings.length - 1}
             />
           ))}
-        </div>
+        </Card>
       )}
     </div>
   )
@@ -82,79 +98,104 @@ export function PlatformSettingsPage() {
 
 function SettingRow({
   setting,
-  draftValue,
+  value,
+  onChange,
+  last,
+}: {
+  setting: PlatformSetting
+  value: unknown
+  onChange: (v: unknown) => void
+  last: boolean
+}) {
+  const { t } = useTranslation('platform')
+  const tone = applyTone(setting.apply)
+  const applyLabel =
+    setting.apply === 'restart' ? t('settings.restart') : t('settings.live')
+  // 字段说明（platform.settings.fields.<key>），缺省回退到接口给的 label。
+  const hint = t(`settings.fields.${setting.key}`, { defaultValue: '' })
+
+  return (
+    <div
+      className="flex flex-wrap items-start justify-between gap-4 border-b border-divider px-5 py-4 last:border-b-0"
+      style={last ? { borderBottom: 'none' } : undefined}
+    >
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[13px] font-bold">{setting.label}</span>
+          <Badge variant={tone}>{applyLabel}</Badge>
+          {!setting.editable && (
+            <span
+              className="inline-flex items-center"
+              title={t('settings.readonly')}
+            >
+              <Lock className="size-3.5 text-muted-foreground" />
+            </span>
+          )}
+        </div>
+        <div className="mono mt-1 text-[11px] text-muted-foreground">
+          {setting.key}
+        </div>
+        {hint && (
+          <p className="mt-1.5 max-w-[460px] text-[11.5px] leading-relaxed text-muted-foreground">
+            {hint}
+          </p>
+        )}
+      </div>
+      <div className="flex shrink-0 items-center justify-end pt-0.5">
+        <SettingControl setting={setting} value={value} onChange={onChange} />
+      </div>
+    </div>
+  )
+}
+
+function SettingControl({
+  setting,
+  value,
   onChange,
 }: {
   setting: PlatformSetting
-  draftValue: unknown
+  value: unknown
   onChange: (v: unknown) => void
 }) {
-  const { t } = useTranslation('platform')
-  const dirty = draftValue !== undefined
-  const current = dirty ? draftValue : setting.value
-  // 用人话说明替代原始 key；说明缺省时回退 key。原始 key 移到 ⓘ 悬浮提示里。
-  const desc = t(`settings.fields.${setting.key}`, { defaultValue: '' })
-  const isPlan = setting.key === 'signup.default_plan'
-  const enumLabel = (o: string) => (isPlan ? t(`plan.${o}`, { defaultValue: o }) : o)
+  // 只读项：脱敏值以灰字 mono 展示。
+  if (!setting.editable) {
+    const display = setting.secret
+      ? '***'
+      : value === '' || value == null
+        ? '—'
+        : String(value)
+    return <span className="mono text-[12.5px] text-muted-foreground">{display}</span>
+  }
+
+  if (setting.value_type === 'bool') {
+    return (
+      <Switch checked={Boolean(value)} onCheckedChange={(v) => onChange(v)} />
+    )
+  }
+
+  if (setting.value_type === 'enum') {
+    return (
+      <Select value={String(value ?? '')} onValueChange={onChange}>
+        <SelectTrigger className="w-[200px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {(setting.options ?? []).map((opt) => (
+            <SelectItem key={opt} value={opt}>
+              {opt}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    )
+  }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-3">
-      <div className="min-w-0 space-y-0.5">
-        <div className="flex items-center gap-2">
-          <Label className="font-medium">{setting.label}</Label>
-          {setting.apply === 'restart' && (
-            <Badge variant="outline" className="text-muted-foreground text-xs">
-              {t('settings.restart')}
-            </Badge>
-          )}
-          {!setting.editable && (
-            <Badge variant="outline" className="text-muted-foreground gap-1 text-xs">
-              <Lock className="size-3" />
-              {t('settings.readonly')}
-            </Badge>
-          )}
-        </div>
-        {desc && <p className="text-muted-foreground text-xs">{desc}</p>}
-      </div>
-
-      <div className="w-72 shrink-0">
-        {!setting.editable ? (
-          <p className="text-muted-foreground truncate text-right text-sm">
-            {setting.secret ? '***' : String(setting.value ?? '-')}
-          </p>
-        ) : setting.value_type === 'bool' ? (
-          <div className="flex justify-end">
-            <Switch
-              checked={Boolean(current)}
-              onCheckedChange={(c) => onChange(c)}
-            />
-          </div>
-        ) : setting.value_type === 'enum' ? (
-          <Select value={String(current ?? '')} onValueChange={onChange}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {(setting.options ?? []).map((o) => (
-                <SelectItem key={o} value={o}>
-                  {enumLabel(o)}
-                  {isPlan && (
-                    <span className="text-muted-foreground ml-1">
-                      · {planSummary(o, t)}
-                    </span>
-                  )}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <Input
-            value={String(current ?? '')}
-            placeholder={setting.secret ? '***' : undefined}
-            onChange={(e) => onChange(e.target.value)}
-          />
-        )}
-      </div>
-    </div>
+    <Input
+      className="w-[240px]"
+      value={setting.secret ? '' : String(value ?? '')}
+      placeholder={setting.secret ? '***' : undefined}
+      onChange={(e) => onChange(e.target.value)}
+    />
   )
 }

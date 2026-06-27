@@ -160,7 +160,11 @@ export async function download(
     applyAuthHeader(h2)
     res = await fetch(buildUrl(path, opts.query), { headers: h2 })
   }
-  if (!res.ok) throw await toAppError(res)
+  if (!res.ok) {
+    // 与 request() 对齐：会话过期(刷新后仍 401)时清会话，触发登出态。
+    if (res.status === 401) useSession.getState().clear()
+    throw await toAppError(res)
+  }
 
   const disposition = res.headers.get('content-disposition') ?? ''
   const match = /filename="?([^"]+)"?/.exec(disposition)

@@ -1,82 +1,59 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 
-export interface PaginationState {
-  limit: number
-  offset: number
-  total: number
-}
-
-const PAGE_SIZES = [10, 20, 50, 100]
-
+/** 分页条（原型 上一页 / 页码 / 下一页）。单页时不渲染。 */
 export function Pagination({
   limit,
   offset,
   total,
   onChange,
-}: PaginationState & { onChange: (next: { limit: number; offset: number }) => void }) {
-  const { t } = useTranslation()
+}: {
+  limit: number
+  offset: number
+  total: number
+  onChange: (p: { limit: number; offset: number }) => void
+}) {
+  const { t } = useTranslation('common')
+  const pages = Math.max(1, Math.ceil(total / limit))
   const page = Math.floor(offset / limit) + 1
-  const pageCount = Math.max(1, Math.ceil(total / limit))
-  const canPrev = offset > 0
-  const canNext = page < pageCount
+  if (pages <= 1) return null
+
+  const go = (p: number) =>
+    onChange({ limit, offset: Math.max(0, (p - 1) * limit) })
+
+  // 当前页附近的窗口（最多 5 个页码）
+  const start = Math.max(1, Math.min(page - 2, pages - 4))
+  const nums = Array.from({ length: Math.min(5, pages) }, (_, i) => start + i)
 
   return (
-    <div className="text-muted-foreground flex items-center justify-between gap-4 px-2 py-2 text-sm">
-      <span className="tabular-nums">{t('table.total', { total })}</span>
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <span>{t('table.rowsPerPage')}</span>
-          <Select
-            value={String(limit)}
-            onValueChange={(v) => onChange({ limit: Number(v), offset: 0 })}
-          >
-            <SelectTrigger size="sm" className="w-[4.5rem]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PAGE_SIZES.map((s) => (
-                <SelectItem key={s} value={String(s)}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <span className="tabular-nums">
-          {t('table.page', { page })} / {pageCount}
-        </span>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-8"
-            disabled={!canPrev}
-            onClick={() => onChange({ limit, offset: Math.max(0, offset - limit) })}
-            aria-label={t('table.prev')}
-          >
-            <ChevronLeft className="size-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="size-8"
-            disabled={!canNext}
-            onClick={() => onChange({ limit, offset: offset + limit })}
-            aria-label={t('table.next')}
-          >
-            <ChevronRight className="size-4" />
-          </Button>
-        </div>
-      </div>
+    <div className="flex items-center gap-1.5">
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={page <= 1}
+        onClick={() => go(page - 1)}
+      >
+        {t('pagination.prev', { defaultValue: '上一页' })}
+      </Button>
+      {nums.map((n) => (
+        <Button
+          key={n}
+          variant={n === page ? 'default' : 'outline'}
+          size="sm"
+          className="min-w-8"
+          onClick={() => go(n)}
+        >
+          {n}
+        </Button>
+      ))}
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={page >= pages}
+        onClick={() => go(page + 1)}
+      >
+        {t('pagination.next', { defaultValue: '下一页' })}
+      </Button>
     </div>
   )
 }

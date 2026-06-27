@@ -1,12 +1,12 @@
-import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -15,61 +15,64 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { toast } from 'sonner'
-import type { Project } from '@/api/projects'
-import { useCreateProject, useUpdateProject } from '@/hooks/use-projects'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useCreateProject } from '@/hooks/use-projects'
+import { useOrgs } from '@/hooks/use-orgs'
 import { useToastError } from '@/hooks/use-toast-error'
+import { projectsApi } from '@/api/projects'
 
+/** 归属默认值：留空交后端回退到默认组织「我的组织」。 */
+const DEFAULT_WS = ''
+
+/** 新建项目对话框：名称 + 描述 + 归属组织（默认「我的组织」，可改其他组织）。 */
 export function CreateProjectDialog({
   open,
   onOpenChange,
-  project,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  project?: Project | null
 }) {
   const { t } = useTranslation('projects')
-  const isEdit = !!project
+  const navigate = useNavigate()
   const create = useCreateProject()
-  const update = useUpdateProject(project?.id ?? '')
+  const orgs = useOrgs()
   const toastError = useToastError()
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [org, setOrg] = useState(DEFAULT_WS)
+  const [visibility, setVisibility] = useState<'private' | 'org'>('private')
+  const orgList = orgs.data ?? []
+  const defaultOrg = orgList.find((o) => o.is_default)
+  // 选中值：空=默认工作区（用默认组织 id 回显，否则交后端兜底）。
+  const selected = org || defaultOrg?.id || DEFAULT_WS
 
-  const schema = z.object({
-    name: z.string().min(1, t('create.nameRequired')),
-    description: z.string(),
-  })
-  type Values = z.infer<typeof schema>
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<Values>({
-    resolver: zodResolver(schema),
-    defaultValues: { name: '', description: '' },
-  })
-
-  useEffect(() => {
-    if (open) {
-      reset({
-        name: project?.name ?? '',
-        description: project?.description ?? '',
-      })
-    }
-  }, [open, project, reset])
-
-  const onSubmit = async (values: Values) => {
+  const submit = async () => {
+    if (!name.trim()) return
     try {
-      if (isEdit && project) {
-        await update.mutateAsync({ ...values, version: project.version })
-        toast.success(t('toast.updated'))
-      } else {
-        await create.mutateAsync(values)
-        toast.success(t('toast.created'))
+      const project = await create.mutateAsync({
+        name: name.trim(),
+        description: description.trim() || undefined,
+        organization_id: org || undefined,
+      })
+      // 组织内公开 = 把项目共享给它所属组织（该组织成员只读可见）；私有则不共享。
+      if (visibility === 'org' && project.organization_id) {
+        await projectsApi
+          .addShare(project.id, { org_id: project.organization_id, role: 'viewer' })
+          .catch(() => {})
       }
+      toast.success(t('toast.created'))
       onOpenChange(false)
+      setName('')
+      setDescription('')
+      setOrg(DEFAULT_WS)
+      setVisibility('private')
+      navigate(`/projects/${project.id}`)
     } catch (e) {
       toastError(e)
     }
@@ -77,39 +80,82 @@ export function CreateProjectDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[460px]">
         <DialogHeader>
-          <DialogTitle>{isEdit ? t('edit.title') : t('create.title')}</DialogTitle>
+          <DialogTitle>{t('create.title')}</DialogTitle>
+          <DialogDescription>{t('subtitle')}</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">{t('create.name')}</Label>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="p-name">{t('create.name')}</Label>
             <Input
-              id="name"
-              autoFocus
+              id="p-name"
               placeholder={t('create.namePlaceholder')}
-              aria-invalid={!!errors.name}
-              {...register('name')}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
             />
-            {errors.name && (
-              <p className="text-destructive text-sm">{errors.name.message}</p>
-            )}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="description">{t('create.description')}</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="p-desc">{t('create.description')}</Label>
             <Textarea
-              id="description"
+              id="p-desc"
+              rows={3}
               placeholder={t('create.descriptionPlaceholder')}
-              {...register('description')}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
             />
           </div>
-          <DialogFooter>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-              {isEdit ? t('actions.save', { ns: 'common' }) : t('create.submit')}
-            </Button>
-          </DialogFooter>
-        </form>
+          <div className="space-y-1.5">
+            <Label>{t('columns.organization')}</Label>
+            <Select value={selected} onValueChange={setOrg}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {!defaultOrg && (
+                  <SelectItem value={DEFAULT_WS}>
+                    {t('card.defaultWorkspace')}
+                  </SelectItem>
+                )}
+                {orgList.map((o) => (
+                  <SelectItem key={o.id} value={o.id}>
+                    {o.is_default ? `📌 ${o.name}` : o.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t('visibility.label')}</Label>
+            <Select
+              value={visibility}
+              onValueChange={(v) => setVisibility(v as 'private' | 'org')}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="private">{t('visibility.private')}</SelectItem>
+                <SelectItem value="org">{t('visibility.org')}</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground">
+              {visibility === 'org'
+                ? t('visibility.orgDesc')
+                : t('visibility.privateDesc')}
+            </p>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t('actions.cancel', { ns: 'common', defaultValue: '取消' })}
+          </Button>
+          <Button onClick={submit} disabled={!name.trim() || create.isPending}>
+            {create.isPending && <Loader2 className="size-4 animate-spin" />}
+            {t('create.submit')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

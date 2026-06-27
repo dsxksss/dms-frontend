@@ -9,6 +9,14 @@
   },
   "status": { "active": "活跃", "archived": "已归档" },
   "filter": { "includeArchived": "显示已归档" },
+  "card": {
+    "orgProject": "组织项目",
+    "defaultWorkspace": "我的组织",
+    "open": "打开项目"
+  },
+  "back": "返回项目列表",
+  "roleLabel": "我的角色",
+  "openSection": "进入",
   "create": {
     "title": "新建项目",
     "name": "名称",
@@ -65,7 +73,12 @@
     "version": "版本",
     "status": "状态",
     "description": "描述",
-    "none": "（无）"
+    "none": "（无）",
+    "runs": "执行实例",
+    "byType": "资产类型分布",
+    "recent": "最近活动",
+    "info": "项目信息",
+    "noActivity": "暂无活动"
   },
   "members": {
     "title": "成员",
@@ -80,19 +93,52 @@
     "you": "（你）",
     "added": "成员已添加",
     "removed": "成员已移除",
+    "roleUpdated": "角色已更新",
     "userIdRequired": "请输入用户 ID"
   },
   "roles": {
-    "owner": "Owner",
-    "manager": "Manager",
-    "contributor": "Contributor",
-    "viewer": "Viewer"
+    "owner": "拥有者",
+    "manager": "管理者",
+    "contributor": "贡献者",
+    "viewer": "查看者"
+  },
+  "settings": {
+    "title": "设置",
+    "subtitle": "项目可见性、成员与角色。"
+  },
+  "join": {
+    "request": "申请加入",
+    "pending": "申请中",
+    "requested": "申请已提交",
+    "pendingTitle": "加入申请",
+    "approve": "批准",
+    "reject": "拒绝",
+    "approved": "已批准申请",
+    "rejected": "已拒绝申请"
+  },
+  "grants": {
+    "title": "细粒度授权",
+    "subtitle": "角色给的是项目级的粗粒度增删改查；这里可按内容类型绕过角色，把 增/查/改/删 精确授予某成员（例：让某查看者只能对「抗体」类型新增、但不能删）。",
+    "empty": "暂无内容类型",
+    "emptyHint": "请先创建药物资产类型或数据模版；之后即可在此逐人授权。",
+    "assetType": "药物资产类型",
+    "dataTemplate": "数据模版",
+    "manage": "管理授权"
+  },
+  "visibility": {
+    "label": "可见性",
+    "private": "私有",
+    "org": "组织内公开",
+    "privateDesc": "仅受邀成员可见、可进入；同组织其他人看不到。",
+    "orgDesc": "同组织的人都能看到并只读浏览；想编辑仍需被邀请为成员。全公司其他组织看不到。",
+    "set": "可见性已更新"
   },
   "shares": {
     "title": "跨组织共享",
     "desc": "把项目共享给某组织（其成员按所授角色访问）；不选组织 = 集团共享（所有组织）。",
     "add": "新增共享",
     "org": "组织",
+    "scopeHint": "选某个组织 = 把项目共享给该组织，其成员按所授角色访问；选「所有组织」= 集团共享，本企业下所有组织都能访问。常用于集团内跨子公司协作。",
     "allOrgs": "所有组织（集团共享）",
     "role": "角色",
     "empty": "暂无跨组织共享",

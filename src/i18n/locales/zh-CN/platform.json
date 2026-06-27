@@ -11,6 +11,7 @@
     "submit": "登录",
     "submitting": "登录中…",
     "invalid": "邮箱或密码不正确，或该账号非平台管理员",
+    "backToApp": "返回登录",
     "required": {
       "email": "请输入邮箱",
       "emailFormat": "邮箱格式不正确",
@@ -37,6 +38,11 @@
     "empty": "暂无公共数据集",
     "emptyDesc": "点击「新建数据集」创建，再上传 CSV 版本。",
     "upload": "上传版本(CSV)",
+    "uploadHint": "可选；选择 CSV 文件作为首个版本一并上传。",
+    "version": "版本",
+    "rows": "行数",
+    "visibility": "可见性",
+    "readonlyAll": "全企业只读",
     "uploaded": "版本已上传",
     "created": "数据集已创建",
     "deleted": "数据集已删除",
@@ -49,6 +55,7 @@
     "save": "保存",
     "saved": "已保存",
     "restart": "需重部署",
+    "live": "即时生效",
     "readonly": "只读",
     "fields": {
       "signup.tenant_enabled": "开启后，访客可在登录页自助开通新企业；关闭则企业只能由平台管理员在此后台开通（推荐云端关闭）。",
@@ -71,7 +78,10 @@
   },
   "overview": {
     "title": "平台概览",
-    "desc": "全平台企业、用量与 License 状态。"
+    "desc": "全平台企业、用量与 License 状态。",
+    "orgsSub": "跨全部企业",
+    "usersSub": "全平台用户",
+    "storageSub": "去重后"
   },
   "stats": {
     "tenants": "企业总数",
@@ -83,6 +93,7 @@
   },
   "license": {
     "title": "License 状态",
+    "machineBound": "机器绑定",
     "tenants": "企业数（已用 / 上限）",
     "signed": "公钥",
     "baked": "已内置",
@@ -93,6 +104,7 @@
     "demo": "体验版",
     "standard": "标准版",
     "enterprise": "企业版",
+    "private": "私有化版",
     "onprem": "私有化",
     "summary": "{{orgs}} 组织 · 每组 {{users}} 人 · {{storage}}"
   },

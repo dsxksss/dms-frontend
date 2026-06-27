@@ -33,6 +33,12 @@
   },
   "empty": "暂无审计记录",
   "none": "—",
+  "meta": {
+    "failure": "失败",
+    "integrity": "已链入防篡改哈希链",
+    "integrityShort": "完整性",
+    "userAgent": "客户端"
+  },
   "viewChanges": "查看变更",
   "changesTitle": "前后变更",
   "changes": {
@@ -41,5 +47,23 @@
     "after": "变更后",
     "none": "无变更详情",
     "raw": "查看原始 JSON"
+  },
+  "actionLabels": {
+    "created": "创建",
+    "updated": "更新",
+    "deleted": "删除",
+    "signed": "签名",
+    "granted": "授权",
+    "revoked": "撤销",
+    "invited": "邀请",
+    "approved": "批准",
+    "rejected": "驳回",
+    "removed": "移除",
+    "added": "添加",
+    "archived": "归档",
+    "restored": "恢复",
+    "renamed": "重命名",
+    "suspended": "停用",
+    "activated": "启用"
   }
 }

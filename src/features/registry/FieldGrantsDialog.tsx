@@ -1,16 +1,16 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Loader2, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { Search, Trash2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -18,18 +18,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { EmptyState, TableSkeleton } from '@/components/states'
-import {
-  useFieldGrants,
-  useGrantField,
-  useRevokeField,
-} from '@/hooks/use-registry'
+import { EmptyState } from '@/components/states'
+import { UserAvatar } from '@/components/user-avatar'
+import { useFieldGrants, useGrantField, useRevokeField } from '@/hooks/use-registry'
+import { useUserSearch } from '@/hooks/use-membership'
+import { useDebounce } from '@/hooks/use-debounce'
 import { useToastError } from '@/hooks/use-toast-error'
-import { UserName } from '@/components/user-name'
+import { shortId } from '@/lib/format'
 import type { EntityType } from '@/api/registry'
-import type { UserCard } from '@/api/membership'
-import { UserPicker } from '@/features/membership/UserPicker'
 
+/** 敏感字段授权：把某敏感字段单独授权给指定用户可见。 */
 export function FieldGrantsDialog({
   projectId,
   type,
@@ -39,7 +37,7 @@ export function FieldGrantsDialog({
   projectId: string
   type: EntityType
   open: boolean
-  onOpenChange: (o: boolean) => void
+  onOpenChange: (open: boolean) => void
 }) {
   const { t } = useTranslation('registry')
   const sensitive = type.fields.filter((f) => f.sensitive)
@@ -47,111 +45,115 @@ export function FieldGrantsDialog({
   const grant = useGrantField(projectId, type.kind, type.id)
   const revoke = useRevokeField(projectId, type.kind, type.id)
   const toastError = useToastError()
+  const [field, setField] = useState(sensitive[0]?.name ?? '')
+  const [search, setSearch] = useState('')
+  const debounced = useDebounce(search, 300)
+  const results = useUserSearch(debounced)
 
-  const [field, setField] = useState('')
-  const [users, setUsers] = useState<UserCard[]>([])
-  const [err, setErr] = useState<{ field?: string; user?: string }>({})
+  const doGrant = (userId: string) =>
+    grant
+      .mutateAsync({ user_id: userId, field })
+      .then(() => {
+        toast.success(t('grants.granted'))
+        setSearch('')
+      })
+      .catch(toastError)
 
-  const onGrant = async () => {
-    const uid = users[0]?.id
-    const e: typeof err = {}
-    if (!field) e.field = t('grants.fieldRequired')
-    if (!uid) e.user = t('grants.userRequired')
-    setErr(e)
-    if (Object.keys(e).length) return
-    try {
-      await grant.mutateAsync({ user_id: uid!, field })
-      toast.success(t('grants.granted'))
-      setUsers([])
-      setField('')
-    } catch (ex) {
-      toastError(ex)
-    }
-  }
-
-  const onRevoke = async (uid: string, f: string) => {
-    try {
-      await revoke.mutateAsync({ userId: uid, field: f })
-      toast.success(t('grants.revoked'))
-    } catch (ex) {
-      toastError(ex)
-    }
-  }
+  const doRevoke = (userId: string, f: string) =>
+    revoke
+      .mutateAsync({ userId, field: f })
+      .then(() => toast.success(t('grants.revoked')))
+      .catch(toastError)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle>{t('grants.title')}</DialogTitle>
+          <DialogDescription>{t('grants.desc')}</DialogDescription>
         </DialogHeader>
 
         {sensitive.length === 0 ? (
           <EmptyState title={t('grants.noSensitive')} />
         ) : (
           <div className="space-y-4">
-            <p className="text-muted-foreground text-sm">{t('grants.desc')}</p>
-
-            <div className="space-y-3 rounded-lg border p-3">
-              <div className="space-y-1.5">
-                <Label>{t('grants.field')}</Label>
-                <Select value={field} onValueChange={setField}>
-                  <SelectTrigger aria-invalid={!!err.field} className="w-full">
-                    <SelectValue placeholder={t('grants.field')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sensitive.map((f) => (
-                      <SelectItem key={f.name} value={f.name}>
-                        {f.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {err.field && (
-                  <p className="text-destructive text-sm">{err.field}</p>
-                )}
+            <div className="flex items-center gap-2">
+              <Select value={field} onValueChange={setField}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {sensitive.map((f) => (
+                    <SelectItem key={f.name} value={f.name}>
+                      {f.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="relative flex-1">
+                <Search className="absolute top-2.5 left-3 size-[15px] text-muted-foreground" />
+                <Input
+                  className="pl-9"
+                  placeholder={t('grants.user')}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
               </div>
-              <div className="space-y-1.5">
-                <Label>{t('grants.user')}</Label>
-                <UserPicker value={users} onChange={setUsers} max={1} />
-                {err.user && <p className="text-destructive text-sm">{err.user}</p>}
-              </div>
-              <Button onClick={onGrant} disabled={grant.isPending}>
-                {grant.isPending ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Plus className="size-4" />
-                )}
-                {t('grants.grant')}
-              </Button>
             </div>
 
-            {grants.isLoading ? (
-              <TableSkeleton rows={2} cols={2} />
-            ) : grants.data && grants.data.length > 0 ? (
-              <ul className="divide-y rounded-md border">
-                {grants.data.map((g) => (
-                  <li
-                    key={g.id}
-                    className="flex items-center justify-between gap-2 px-3 py-2 text-sm"
+            {debounced && (
+              <div className="max-h-40 overflow-auto rounded-[9px] border">
+                {(results.data ?? []).map((u) => (
+                  <button
+                    type="button"
+                    key={u.id}
+                    onClick={() => doGrant(u.id)}
+                    className="flex w-full items-center gap-2.5 px-2.5 py-2 text-left hover:bg-surface-2"
                   >
-                    <span className="flex items-center gap-2">
-                      <Badge variant="secondary">{g.field}</Badge>
-                      <UserName id={g.user_id} className="text-sm" />
+                    <UserAvatar name={u.display_name || u.email} seed={u.id} size={26} />
+                    <span className="flex-1 truncate text-[12.5px]">
+                      {u.display_name || u.email}
                     </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-8"
-                      onClick={() => onRevoke(g.user_id, g.field)}
-                    >
-                      <Trash2 className="text-destructive size-4" />
-                    </Button>
-                  </li>
+                    <span className="text-[11px] font-semibold text-brand">
+                      {t('grants.grant')}
+                    </span>
+                  </button>
                 ))}
-              </ul>
-            ) : (
-              <p className="text-muted-foreground text-sm">{t('grants.empty')}</p>
+              </div>
             )}
+
+            <div>
+              <div className="mb-2 text-[12px] font-bold text-muted-foreground">
+                {t('grants.title')}
+              </div>
+              {(grants.data ?? []).length === 0 ? (
+                <p className="text-[12.5px] text-muted-foreground">
+                  {t('grants.empty')}
+                </p>
+              ) : (
+                <div className="space-y-1.5">
+                  {(grants.data ?? []).map((g) => (
+                    <div
+                      key={g.id}
+                      className="flex items-center gap-2.5 rounded-[9px] border px-2.5 py-1.5"
+                    >
+                      <UserAvatar name={g.user_id} seed={g.user_id} size={24} />
+                      <span className="flex-1 truncate text-[12.5px]">
+                        {shortId(g.user_id)} ·{' '}
+                        <span className="mono text-brand">{g.field}</span>
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => doRevoke(g.user_id, g.field)}
+                      >
+                        <Trash2 className="size-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </DialogContent>

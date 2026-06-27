@@ -1,50 +1,13 @@
-import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  Building2,
-  CheckCircle2,
-  HardDrive,
-  PauseCircle,
-  ShieldCheck,
-  Users,
-} from 'lucide-react'
-import { PageHeader } from '@/components/page-header'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
+import { ShieldCheck } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
+import { PageHeader } from '@/components/page-header'
+import { StatCard } from '@/components/stat-card'
 import { ErrorState } from '@/components/states'
-import { usePlatformStats, usePlatformLicense } from '@/hooks/use-platform'
+import { Skeleton } from '@/components/ui/skeleton'
+import { usePlatformLicense, usePlatformStats } from '@/hooks/use-platform'
 import { formatBytes } from '@/lib/format'
-
-function StatCard({
-  icon,
-  label,
-  value,
-  loading,
-}: {
-  icon: ReactNode
-  label: string
-  value: ReactNode
-  loading?: boolean
-}) {
-  return (
-    <Card>
-      <CardContent className="flex items-center gap-3 py-4">
-        <div className="bg-muted text-muted-foreground flex size-9 items-center justify-center rounded-md">
-          {icon}
-        </div>
-        <div className="min-w-0">
-          <p className="text-muted-foreground text-xs">{label}</p>
-          {loading ? (
-            <Skeleton className="mt-1 h-6 w-16" />
-          ) : (
-            <p className="text-lg font-semibold tabular-nums">{value}</p>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
 
 export function PlatformOverviewPage() {
   const { t } = useTranslation('platform')
@@ -52,103 +15,132 @@ export function PlatformOverviewPage() {
   const license = usePlatformLicense()
 
   return (
-    <div className="space-y-6">
-      <PageHeader title={t('overview.title')} description={t('overview.desc')} />
+    <div className="mx-auto max-w-[1180px] px-8 py-7">
+      <PageHeader
+        title={t('overview.title')}
+        titleEn="Overview"
+        description={t('overview.desc')}
+      />
 
       {stats.isError ? (
         <ErrorState error={stats.error} onRetry={() => stats.refetch()} />
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <StatCard
-            icon={<Building2 className="size-4" />}
-            label={t('stats.tenants')}
-            value={stats.data?.tenants ?? 0}
-            loading={stats.isLoading}
-          />
-          <StatCard
-            icon={<CheckCircle2 className="size-4" />}
-            label={t('stats.active')}
-            value={stats.data?.active_tenants ?? 0}
-            loading={stats.isLoading}
-          />
-          <StatCard
-            icon={<PauseCircle className="size-4" />}
-            label={t('stats.suspended')}
-            value={stats.data?.suspended_tenants ?? 0}
-            loading={stats.isLoading}
-          />
-          <StatCard
-            icon={<Building2 className="size-4" />}
-            label={t('stats.orgs')}
-            value={stats.data?.total_orgs ?? 0}
-            loading={stats.isLoading}
-          />
-          <StatCard
-            icon={<Users className="size-4" />}
-            label={t('stats.users')}
-            value={stats.data?.total_users ?? 0}
-            loading={stats.isLoading}
-          />
-          <StatCard
-            icon={<HardDrive className="size-4" />}
-            label={t('stats.storage')}
-            value={formatBytes(stats.data?.total_storage ?? 0)}
-            loading={stats.isLoading}
-          />
+        <div
+          className="grid gap-4"
+          style={{ gridTemplateColumns: 'repeat(4,1fr)' }}
+        >
+          {stats.isLoading || !stats.data ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-[104px] rounded-[14px]" />
+            ))
+          ) : (
+            <>
+              <StatCard
+                label={t('stats.tenants')}
+                value={stats.data.tenants.toLocaleString()}
+                sub={`${stats.data.active_tenants} ${t('stats.active')} · ${stats.data.suspended_tenants} ${t('stats.suspended')}`}
+              />
+              <StatCard
+                label={t('stats.orgs')}
+                value={stats.data.total_orgs.toLocaleString()}
+                sub={t('overview.orgsSub')}
+              />
+              <StatCard
+                label={t('stats.users')}
+                value={stats.data.total_users.toLocaleString()}
+                sub={t('overview.usersSub')}
+              />
+              <StatCard
+                label={t('stats.storage')}
+                value={formatBytes(stats.data.total_storage)}
+                sub={t('overview.storageSub')}
+              />
+            </>
+          )}
         </div>
       )}
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <ShieldCheck className="text-muted-foreground size-4" />
-            {t('license.title')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm">
-          {license.isError ? (
-            <ErrorState error={license.error} onRetry={() => license.refetch()} />
-          ) : license.isLoading ? (
-            <Skeleton className="h-20 w-full" />
+      {/* License 卡片 */}
+      {license.isError ? (
+        <ErrorState
+          className="mt-5"
+          error={license.error}
+          onRetry={() => license.refetch()}
+        />
+      ) : (
+        <Card className="mt-5 gap-0 p-[18px]">
+          <div className="flex items-center gap-2.5">
+            <span
+              className="flex size-8 shrink-0 items-center justify-center rounded-[9px] [&>svg]:size-[18px]"
+              style={{ background: '#EFE9FB', color: '#7C3AED' }}
+            >
+              <ShieldCheck />
+            </span>
+            <h2 className="text-[15px] font-bold">{t('license.title')}</h2>
+            <Badge variant="purple" className="ml-auto">
+              {t('license.machineBound')}
+            </Badge>
+          </div>
+
+          {license.isLoading || !license.data ? (
+            <div className="mt-5 grid grid-cols-2 gap-6">
+              <Skeleton className="h-12 rounded-lg" />
+              <Skeleton className="h-12 rounded-lg" />
+            </div>
           ) : (
-            <dl className="grid gap-x-8 gap-y-3 sm:grid-cols-2">
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-muted-foreground">{t('license.tenants')}</dt>
-                <dd className="font-medium tabular-nums">
-                  {license.data?.tenants_used ?? 0}
-                  {' / '}
-                  {license.data?.max_tenants == null
-                    ? t('unlimited')
-                    : license.data.max_tenants}
-                </dd>
+            <div className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div>
+                <div className="text-[11.5px] font-semibold text-muted-foreground">
+                  {t('license.machine')}
+                </div>
+                <div className="mono mt-1.5 text-[14px] font-semibold tracking-wide">
+                  {license.data.machine_code}
+                </div>
               </div>
-              <div className="flex items-center justify-between gap-4">
-                <dt className="text-muted-foreground">{t('license.signed')}</dt>
-                <dd>
-                  <Badge
-                    variant="outline"
-                    className={
-                      license.data?.license_pubkey_baked
-                        ? 'border-transparent bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                        : 'text-muted-foreground'
-                    }
-                  >
-                    {license.data?.license_pubkey_baked
-                      ? t('license.baked')
-                      : t('license.unbaked')}
-                  </Badge>
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-4 sm:col-span-2">
-                <dt className="text-muted-foreground">{t('license.machine')}</dt>
-                <dd className="truncate font-mono text-xs">
-                  {license.data?.machine_code ?? '-'}
-                </dd>
-              </div>
-            </dl>
+              <LicenseTenantsBar
+                used={license.data.tenants_used}
+                max={license.data.max_tenants}
+                label={t('license.tenants')}
+                unlimited={t('unlimited')}
+              />
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+/** 企业数进度条（紫色渐变填充；max=null 表示不限）。 */
+function LicenseTenantsBar({
+  used,
+  max,
+  label,
+  unlimited,
+}: {
+  used: number
+  max: number | null
+  label: string
+  unlimited: string
+}) {
+  const pct = max && max > 0 ? Math.min(100, (used / max) * 100) : 0
+  return (
+    <div>
+      <div className="text-[11.5px] font-semibold text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-2 h-[9px] max-w-[300px] overflow-hidden rounded-full bg-[#F1F3F7]">
+        <div
+          className="h-full rounded-full"
+          style={{
+            width: `${pct}%`,
+            background: 'linear-gradient(90deg,#6D5BD0,#8E7DE8)',
+          }}
+        />
+      </div>
+      <div className="mono mt-1.5 text-[12px] font-bold">
+        {used} / {max ?? unlimited}
+      </div>
     </div>
   )
 }

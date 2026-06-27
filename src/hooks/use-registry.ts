@@ -5,6 +5,7 @@ import {
   type FieldDefInput,
   type TypeKind,
 } from '@/api/registry'
+import { markOnboard } from '@/features/onboarding/flags'
 
 const root = (projectId: string) => ['registry', projectId] as const
 
@@ -19,6 +20,8 @@ export const registryKeys = {
     [...root(pid), 'component-tree', rid] as const,
   fieldGrants: (pid: string, tid: string) =>
     [...root(pid), 'field-grants', tid] as const,
+  fieldAccess: (pid: string, tid: string) =>
+    [...root(pid), 'field-access', tid] as const,
 }
 
 function useInvalidateRegistry(projectId: string) {
@@ -60,11 +63,35 @@ export function useUpdateType(
   })
 }
 
+export function useDeleteType(projectId: string) {
+  const invalidate = useInvalidateRegistry(projectId)
+  return useMutation({
+    mutationFn: ({
+      kind,
+      typeId,
+      version,
+    }: {
+      kind: TypeKind
+      typeId: string
+      version: number
+    }) => registryApi.deleteType(projectId, kind, typeId, version),
+    onSuccess: invalidate,
+  })
+}
+
 export function useSeedDrugRd(projectId: string) {
   const invalidate = useInvalidateRegistry(projectId)
   return useMutation({
-    mutationFn: () => registryApi.seedDrugRd(projectId),
+    mutationFn: (keys?: string[]) => registryApi.seedDrugRd(projectId, keys),
     onSuccess: invalidate,
+  })
+}
+
+export function useDrugRdCatalog(projectId: string, enabled = true) {
+  return useQuery({
+    queryKey: [...registryKeys.types(projectId), 'catalog'],
+    queryFn: () => registryApi.drugRdCatalog(projectId),
+    enabled: enabled && !!projectId,
   })
 }
 
@@ -100,6 +127,19 @@ export function useFieldGrants(
   return useQuery({
     queryKey: registryKeys.fieldGrants(projectId, typeId),
     queryFn: () => registryApi.listFieldGrants(projectId, kind, typeId),
+  })
+}
+
+/** 当前用户对某类型敏感字段的列级可见性（表头锁渲染用）。 */
+export function useMyFieldAccess(
+  projectId: string,
+  kind: TypeKind,
+  typeId: string,
+) {
+  return useQuery({
+    queryKey: registryKeys.fieldAccess(projectId, typeId),
+    queryFn: () => registryApi.myFieldAccess(projectId, kind, typeId),
+    enabled: !!typeId,
   })
 }
 
@@ -164,7 +204,10 @@ export function useCreateRecord(projectId: string, kind: TypeKind) {
       data: Record<string, unknown>
       asset_record_id?: string
     }) => registryApi.createRecord(projectId, kind, body),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate()
+      markOnboard('asset') // 快速上手清单：标记「录入数据资产」完成
+    },
   })
 }
 

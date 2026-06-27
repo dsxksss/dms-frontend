@@ -1,0 +1,40 @@
+{
+  "title": "Lab Notebook",
+  "new": "New entry",
+  "untitled": "Untitled entry",
+  "save": "Save",
+  "saved": "Saved",
+  "unsaved": "Unsaved",
+  "archived": "Archived",
+  "archive": "Archive",
+  "unarchive": "Unarchive",
+  "archivedDone": "Archived",
+  "unarchived": "Unarchived",
+  "delete": "Delete",
+  "deleted": "Entry deleted",
+  "deleteTitle": "Delete entry?",
+  "deleteDesc": "This deletes \"{{title}}\". The action is audited.",
+  "showArchived": "Show archived",
+  "placeholder": "Document your experiment in Markdown — steps, results, conclusions…",
+  "previewEmpty": "Preview appears here",
+  "lastSaved": "Last edited",
+  "conflict": "This entry was changed by someone else. The latest version was loaded — review your content and save again (your content will overwrite).",
+  "list": { "empty": "No entries", "loadMore": "Load more" },
+  "empty": {
+    "title": "Select or create a notebook entry",
+    "hint": "Document your experiments — steps, results, conclusions — in Markdown."
+  },
+  "view": { "edit": "Edit", "split": "Split", "preview": "Preview" },
+  "toolbar": {
+    "bold": "Bold",
+    "italic": "Italic",
+    "h1": "Heading 1",
+    "h2": "Heading 2",
+    "ul": "Bullet list",
+    "ol": "Numbered list",
+    "quote": "Quote",
+    "code": "Inline code",
+    "link": "Link",
+    "table": "Table"
+  }
+}

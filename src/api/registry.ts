@@ -34,6 +34,8 @@ export interface FieldDef {
   unique: boolean
   sensitive: boolean
   options: string[]
+  /** 仅 reference 字段：引用目标的资产类型 key（前端据此过滤候选；软引用，后端不强制类型）。 */
+  ref_type?: string | null
 }
 
 export type EntityScope = 'organization' | 'project'
@@ -57,7 +59,8 @@ export interface EntityType {
 /** 记录：药物资产(asset) 或 药物数据(template)；data 记录可关联一条资产记录。 */
 export interface Entity {
   id: string
-  project_id: string
+  /** 项目级记录为项目 id；组织级记录(scope=organization)为 null。 */
+  project_id: string | null
   type_id: string
   data: Record<string, unknown>
   /** 仅药物数据：关联的药物资产记录 id。 */
@@ -90,9 +93,33 @@ export interface FieldGrant {
   field: string
 }
 
+/** 当前用户对某类型敏感字段的列级可见性（前端表头锁渲染，不必靠「值为空」猜）。 */
+export interface FieldAccess {
+  type_id: string
+  /** 该类型的全部敏感字段。 */
+  sensitive_fields: string[]
+  /** 当前用户可见明文的字段。 */
+  visible_fields: string[]
+  /** 当前用户被隐藏（整列锁定）的字段。 */
+  locked_fields: string[]
+  /** 当前用户对该类型记录的有效增/改/删能力（角色 ≥ 贡献者 或被细粒度授权）。前端据此显示按钮。 */
+  can_create: boolean
+  can_update: boolean
+  can_delete: boolean
+}
+
 export interface ImportReport {
   created: number
   failed: { row: number; error: string }[]
+}
+
+/** 系统内置类型目录项（供选择性导入，不含真实类型 id）。 */
+export interface DrugRdCatalogType {
+  key: string
+  name: string
+  kind: TypeKind
+  field_count: number
+  sensitive_count: number
 }
 
 export const RELATION_KINDS = {
@@ -107,6 +134,8 @@ export interface FieldDefInput {
   unique: boolean
   sensitive: boolean
   options: string[]
+  /** 仅 reference 字段：引用目标的资产类型 key。 */
+  ref_type?: string
 }
 
 /** 建类型 body：资产类型仅 {key,name,fields}；数据模版可带 bound/from。 */
@@ -154,10 +183,22 @@ export const registryApi = {
       method: 'PATCH',
       body,
     }),
-  seedDrugRd: (projectId: string) =>
+  /** 删除类型（乐观锁 version）。有记录 / 被模板绑定 → 409。 */
+  deleteType: (projectId: string, kind: TypeKind, typeId: string, version: number) =>
+    request<void>(`${typePath(projectId, kind)}/${typeId}`, {
+      method: 'DELETE',
+      query: { version },
+      responseType: 'void',
+    }),
+  /** seed 内置类型；keys 给定时仅导入这些（选择性导入），缺省 = 全部。幂等。 */
+  seedDrugRd: (projectId: string, keys?: string[]) =>
     request<EntityType[]>(`${pbase(projectId)}/registry/seed-drug-rd`, {
       method: 'POST',
+      body: keys && keys.length ? { keys } : {},
     }),
+  /** 系统内置类型目录元信息（供选择性导入 UI）。 */
+  drugRdCatalog: (projectId: string) =>
+    request<DrugRdCatalogType[]>(`${pbase(projectId)}/registry/drug-rd-catalog`),
   /** 批量导入仅资产类型支持。 */
   importEntities: (
     projectId: string,
@@ -171,13 +212,19 @@ export const registryApi = {
         method: 'POST',
         raw: body,
         query: { ...params },
-        headers: { 'content-type': 'text/plain' },
+        // 后端 import 仅声明 text/csv / application/octet-stream（FASTA 亦为文本）。
+        headers: { 'content-type': 'text/csv' },
       },
     ),
 
   // ---- 字段授权（按 kind 取对应类型路径）----
   listFieldGrants: (projectId: string, kind: TypeKind, typeId: string) =>
     request<FieldGrant[]>(`${typePath(projectId, kind)}/${typeId}/field-grants`),
+  /** 当前用户对该类型敏感字段的列级可见性。 */
+  myFieldAccess: (projectId: string, kind: TypeKind, typeId: string) =>
+    request<FieldAccess>(
+      `${typePath(projectId, kind)}/${typeId}/my-field-access`,
+    ),
   grantField: (
     projectId: string,
     kind: TypeKind,
