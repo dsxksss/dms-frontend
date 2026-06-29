@@ -61,7 +61,19 @@
     "from": "from",
     "cancel": "Withdraw",
     "cancelled": "Withdrawn",
-    "kind": { "org": "Organization", "project": "Project" }
+    "markRead": "Read",
+    "markAllRead": "Mark all read",
+    "markedRead": "Marked as read",
+    "allMarkedRead": "All marked as read",
+    "unread": "Unread",
+    "handledRecords": "Handled records",
+    "decided": "Handled",
+    "kind": { "org": "Organization", "project": "Project", "field": "Field access" },
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    }
   },
   "discover": {
     "title": "Organizations you can join",

@@ -93,6 +93,22 @@ export interface FieldGrant {
   field: string
 }
 
+export interface FieldAccessRequest {
+  id: string
+  project_id: string
+  project_name: string
+  type_id: string
+  type_name: string
+  user_id: string
+  field: string
+  message: string
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: string
+  decided_at?: string | null
+  decided_by?: string | null
+  requester_read_at?: string | null
+}
+
 /** 当前用户对某类型敏感字段的列级可见性（前端表头锁渲染，不必靠「值为空」猜）。 */
 export interface FieldAccess {
   type_id: string
@@ -245,6 +261,63 @@ export const registryApi = {
     request<void>(`${typePath(projectId, kind)}/${typeId}/field-grants`, {
       method: 'DELETE',
       query: { user_id: userId, field },
+      responseType: 'void',
+    }),
+  requestFieldAccess: (
+    projectId: string,
+    kind: TypeKind,
+    typeId: string,
+    body: { field: string; message?: string },
+  ) =>
+    request<FieldAccessRequest>(
+      `${typePath(projectId, kind)}/${typeId}/field-access-requests`,
+      { method: 'POST', body },
+    ),
+  listFieldAccessRequests: (
+    projectId: string,
+    kind: TypeKind,
+    typeId: string,
+    status?: FieldAccessRequest['status'],
+  ) =>
+    request<FieldAccessRequest[]>(
+      `${typePath(projectId, kind)}/${typeId}/field-access-requests`,
+      { query: { status } },
+    ),
+  listMyFieldAccessRequests: (
+    projectId: string,
+    kind: TypeKind,
+    typeId: string,
+    status?: FieldAccessRequest['status'],
+  ) =>
+    request<FieldAccessRequest[]>(
+      `${typePath(projectId, kind)}/${typeId}/my-field-access-requests`,
+      { query: { status } },
+    ),
+  approveFieldAccessRequest: (projectId: string, requestId: string) =>
+    request<FieldAccessRequest>(
+      `${pbase(projectId)}/field-access-requests/${requestId}/approve`,
+      { method: 'POST' },
+    ),
+  rejectFieldAccessRequest: (projectId: string, requestId: string) =>
+    request<FieldAccessRequest>(
+      `${pbase(projectId)}/field-access-requests/${requestId}/reject`,
+      { method: 'POST' },
+    ),
+  myAllFieldAccessRequests: (status?: FieldAccessRequest['status']) =>
+    request<FieldAccessRequest[]>('/v1/me/field-access-requests', {
+      query: { status },
+    }),
+  incomingFieldAccessRequests: (status?: FieldAccessRequest['status']) =>
+    request<FieldAccessRequest[]>('/v1/me/incoming-field-access-requests', {
+      query: { status },
+    }),
+  markFieldAccessRequestRead: (requestId: string) =>
+    request<FieldAccessRequest>(`/v1/me/field-access-requests/${requestId}/read`, {
+      method: 'POST',
+    }),
+  markAllFieldAccessRequestsRead: () =>
+    request<void>('/v1/me/field-access-requests/read-all', {
+      method: 'POST',
       responseType: 'void',
     }),
 

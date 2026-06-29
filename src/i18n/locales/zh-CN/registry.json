@@ -132,6 +132,17 @@
     "fieldRequired": "请选择字段",
     "userRequired": "请输入用户 ID"
   },
+  "accessRequests": {
+    "requestTitle": "申请查看 {{field}}",
+    "requested": "查看申请已提交",
+    "pending": "已申请，等待审批",
+    "pendingTitle": "待审批申请",
+    "empty": "暂无待审批申请",
+    "approve": "批准申请",
+    "reject": "拒绝申请",
+    "approved": "已批准申请",
+    "rejected": "已拒绝申请"
+  },
   "relations": {
     "title": "关系",
     "add": "添加关系",

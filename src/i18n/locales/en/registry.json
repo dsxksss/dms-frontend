@@ -132,6 +132,17 @@
     "fieldRequired": "Select a field",
     "userRequired": "User ID is required"
   },
+  "accessRequests": {
+    "requestTitle": "Request access to {{field}}",
+    "requested": "Access request submitted",
+    "pending": "Requested, waiting for approval",
+    "pendingTitle": "Pending requests",
+    "empty": "No pending requests",
+    "approve": "Approve request",
+    "reject": "Reject request",
+    "approved": "Request approved",
+    "rejected": "Request rejected"
+  },
   "relations": {
     "title": "Relations",
     "add": "Add relation",

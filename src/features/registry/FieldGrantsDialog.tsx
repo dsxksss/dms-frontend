@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { Search, Trash2 } from 'lucide-react'
+import { Check, Search, Trash2, X } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,14 @@ import {
 } from '@/components/ui/select'
 import { EmptyState } from '@/components/states'
 import { UserAvatar } from '@/components/user-avatar'
-import { useFieldGrants, useGrantField, useRevokeField } from '@/hooks/use-registry'
+import {
+  useApproveFieldAccessRequest,
+  useFieldAccessRequests,
+  useFieldGrants,
+  useGrantField,
+  useRejectFieldAccessRequest,
+  useRevokeField,
+} from '@/hooks/use-registry'
 import { useUserSearch } from '@/hooks/use-membership'
 import { useDebounce } from '@/hooks/use-debounce'
 import { useToastError } from '@/hooks/use-toast-error'
@@ -42,8 +49,11 @@ export function FieldGrantsDialog({
   const { t } = useTranslation('registry')
   const sensitive = type.fields.filter((f) => f.sensitive)
   const grants = useFieldGrants(projectId, type.kind, type.id)
+  const requests = useFieldAccessRequests(projectId, type.kind, type.id, 'pending')
   const grant = useGrantField(projectId, type.kind, type.id)
   const revoke = useRevokeField(projectId, type.kind, type.id)
+  const approve = useApproveFieldAccessRequest(projectId)
+  const reject = useRejectFieldAccessRequest(projectId)
   const toastError = useToastError()
   const [field, setField] = useState(sensitive[0]?.name ?? '')
   const [search, setSearch] = useState('')
@@ -65,6 +75,18 @@ export function FieldGrantsDialog({
       .then(() => toast.success(t('grants.revoked')))
       .catch(toastError)
 
+  const doApprove = (id: string) =>
+    approve
+      .mutateAsync(id)
+      .then(() => toast.success(t('accessRequests.approved')))
+      .catch(toastError)
+
+  const doReject = (id: string) =>
+    reject
+      .mutateAsync(id)
+      .then(() => toast.success(t('accessRequests.rejected')))
+      .catch(toastError)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px]">
@@ -77,6 +99,50 @@ export function FieldGrantsDialog({
           <EmptyState title={t('grants.noSensitive')} />
         ) : (
           <div className="space-y-4">
+            <div>
+              <div className="mb-2 text-[12px] font-bold text-muted-foreground">
+                {t('accessRequests.pendingTitle')}
+              </div>
+              {(requests.data ?? []).length === 0 ? (
+                <p className="text-[12.5px] text-muted-foreground">
+                  {t('accessRequests.empty')}
+                </p>
+              ) : (
+                <div className="space-y-1.5">
+                  {(requests.data ?? []).map((r) => (
+                    <div
+                      key={r.id}
+                      className="flex items-center gap-2.5 rounded-[9px] border px-2.5 py-1.5"
+                    >
+                      <UserAvatar name={r.user_id} seed={r.user_id} size={24} />
+                      <span className="min-w-0 flex-1 truncate text-[12.5px]">
+                        {shortId(r.user_id)} ·{' '}
+                        <span className="mono text-brand">{r.field}</span>
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        title={t('accessRequests.approve')}
+                        disabled={approve.isPending || reject.isPending}
+                        onClick={() => doApprove(r.id)}
+                      >
+                        <Check className="size-3.5 text-brand" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        title={t('accessRequests.reject')}
+                        disabled={approve.isPending || reject.isPending}
+                        onClick={() => doReject(r.id)}
+                      >
+                        <X className="size-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="flex items-center gap-2">
               <Select value={field} onValueChange={setField}>
                 <SelectTrigger className="w-40">

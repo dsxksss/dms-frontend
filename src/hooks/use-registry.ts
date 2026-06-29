@@ -3,6 +3,7 @@ import {
   registryApi,
   type CreateTypeBody,
   type FieldDefInput,
+  type FieldAccessRequest,
   type TypeKind,
 } from '@/api/registry'
 import { markOnboard } from '@/features/onboarding/flags'
@@ -22,11 +23,22 @@ export const registryKeys = {
     [...root(pid), 'field-grants', tid] as const,
   fieldAccess: (pid: string, tid: string) =>
     [...root(pid), 'field-access', tid] as const,
+  fieldAccessRequests: (pid: string, tid: string, status?: string) =>
+    [...root(pid), 'field-access-requests', tid, status] as const,
+  myFieldAccessRequests: (pid: string, tid: string, status?: string) =>
+    [...root(pid), 'my-field-access-requests', tid, status] as const,
+  myAllFieldAccessRequests: (status?: string) =>
+    ['registry', 'me', 'field-access-requests', status] as const,
+  incomingFieldAccessRequests: (status?: string) =>
+    ['registry', 'me', 'incoming-field-access-requests', status] as const,
 }
 
 function useInvalidateRegistry(projectId: string) {
   const qc = useQueryClient()
-  return () => qc.invalidateQueries({ queryKey: root(projectId) })
+  return () => {
+    qc.invalidateQueries({ queryKey: root(projectId) })
+    qc.invalidateQueries({ queryKey: ['registry', 'me'] })
+  }
 }
 
 // ---- 类型 ----
@@ -166,6 +178,98 @@ export function useRevokeField(
     mutationFn: ({ userId, field }: { userId: string; field: string }) =>
       registryApi.revokeField(projectId, kind, typeId, userId, field),
     onSuccess: invalidate,
+  })
+}
+
+export function useRequestFieldAccess(
+  projectId: string,
+  kind: TypeKind,
+  typeId: string,
+) {
+  const invalidate = useInvalidateRegistry(projectId)
+  return useMutation({
+    mutationFn: ({ field, message }: { field: string; message?: string }) =>
+      registryApi.requestFieldAccess(projectId, kind, typeId, { field, message }),
+    onSuccess: invalidate,
+  })
+}
+
+export function useFieldAccessRequests(
+  projectId: string,
+  kind: TypeKind,
+  typeId: string,
+  status?: 'pending' | 'approved' | 'rejected',
+) {
+  return useQuery({
+    queryKey: registryKeys.fieldAccessRequests(projectId, typeId, status),
+    queryFn: () => registryApi.listFieldAccessRequests(projectId, kind, typeId, status),
+    enabled: !!typeId,
+  })
+}
+
+export function useMyFieldAccessRequests(
+  projectId: string,
+  kind: TypeKind,
+  typeId: string,
+  status?: 'pending' | 'approved' | 'rejected',
+) {
+  return useQuery({
+    queryKey: registryKeys.myFieldAccessRequests(projectId, typeId, status),
+    queryFn: () => registryApi.listMyFieldAccessRequests(projectId, kind, typeId, status),
+    enabled: !!typeId,
+  })
+}
+
+export function useApproveFieldAccessRequest(projectId: string) {
+  const invalidate = useInvalidateRegistry(projectId)
+  return useMutation({
+    mutationFn: (requestId: string) =>
+      registryApi.approveFieldAccessRequest(projectId, requestId),
+    onSuccess: invalidate,
+  })
+}
+
+export function useRejectFieldAccessRequest(projectId: string) {
+  const invalidate = useInvalidateRegistry(projectId)
+  return useMutation({
+    mutationFn: (requestId: string) =>
+      registryApi.rejectFieldAccessRequest(projectId, requestId),
+    onSuccess: invalidate,
+  })
+}
+
+export function useMyAllFieldAccessRequests(
+  status?: 'pending' | 'approved' | 'rejected',
+) {
+  return useQuery({
+    queryKey: registryKeys.myAllFieldAccessRequests(status),
+    queryFn: () => registryApi.myAllFieldAccessRequests(status),
+  })
+}
+
+export function useIncomingFieldAccessRequests(
+  status: FieldAccessRequest['status'] | 'all' = 'pending',
+) {
+  const queryStatus = status === 'all' ? undefined : status
+  return useQuery({
+    queryKey: registryKeys.incomingFieldAccessRequests(status),
+    queryFn: () => registryApi.incomingFieldAccessRequests(queryStatus),
+  })
+}
+
+export function useMarkFieldAccessRequestRead() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (requestId: string) => registryApi.markFieldAccessRequestRead(requestId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['registry', 'me'] }),
+  })
+}
+
+export function useMarkAllFieldAccessRequestsRead() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => registryApi.markAllFieldAccessRequestsRead(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['registry', 'me'] }),
   })
 }
 

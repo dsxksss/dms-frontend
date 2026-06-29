@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { Building2, FolderClosed, Search } from 'lucide-react'
+import { Building2, FolderClosed, Lock, Search } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,20 +29,38 @@ import {
   useDecideIncomingJoinRequest,
   useIncomingProjectJoinRequests,
 } from '@/hooks/use-projects'
+import {
+  useApproveFieldAccessRequest,
+  useIncomingFieldAccessRequests,
+  useMarkAllFieldAccessRequestsRead,
+  useMarkFieldAccessRequestRead,
+  useMyAllFieldAccessRequests,
+  useRejectFieldAccessRequest,
+} from '@/hooks/use-registry'
 import { useToastError } from '@/hooks/use-toast-error'
 import { useDebounce } from '@/hooks/use-debounce'
 import type { ProjectJoinRequest } from '@/api/projects'
+import type { FieldAccessRequest } from '@/api/registry'
 
 export function InboxPage() {
   const { t } = useTranslation('membership')
   const incomingProjects = useIncomingProjectJoinRequests()
   const incomingOrgs = useIncomingOrgJoinRequests()
+  const incomingFields = useIncomingFieldAccessRequests()
+  const myFieldRequests = useMyAllFieldAccessRequests()
   const incomingCount =
-    (incomingProjects.data?.length ?? 0) + (incomingOrgs.data?.length ?? 0)
+    (incomingProjects.data?.length ?? 0) +
+    (incomingOrgs.data?.length ?? 0) +
+    (incomingFields.data?.length ?? 0)
+  const fieldDecisionCount = (myFieldRequests.data ?? []).filter(
+    (r) => r.status !== 'pending' && !r.requester_read_at,
+  ).length
+  const defaultTab =
+    incomingCount > 0 ? 'approvals' : fieldDecisionCount > 0 ? 'requests' : 'invitations'
   return (
     <div className="mx-auto max-w-[760px] px-8 py-7">
       <PageHeader title={t('inbox.title')} titleEn="Invitations" description={t('inbox.subtitle')} size="md" />
-      <Tabs defaultValue={incomingCount > 0 ? 'approvals' : 'invitations'}>
+      <Tabs defaultValue={defaultTab}>
         <TabsList>
           <TabsTrigger value="invitations">{t('inbox.tabInvitations')}</TabsTrigger>
           <TabsTrigger value="approvals">
@@ -53,7 +71,14 @@ export function InboxPage() {
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="requests">{t('inbox.tabJoinRequests')}</TabsTrigger>
+          <TabsTrigger value="requests">
+            {t('inbox.tabJoinRequests')}
+            {fieldDecisionCount > 0 && (
+              <span className="ml-1.5 rounded-full bg-[#DC2626] px-1.5 py-px text-[10px] font-bold text-white">
+                {fieldDecisionCount}
+              </span>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="discover">{t('inbox.tabDiscover')}</TabsTrigger>
         </TabsList>
         <TabsContent value="invitations" className="mt-4">
@@ -78,9 +103,18 @@ function ApprovalsTab() {
   const { t } = useTranslation('membership')
   const projects = useIncomingProjectJoinRequests()
   const orgs = useIncomingOrgJoinRequests()
+  const fields = useIncomingFieldAccessRequests()
+  const fieldHistoryQuery = useIncomingFieldAccessRequests('all')
   const projectReqs = projects.data ?? []
   const orgReqs = orgs.data ?? []
-  if (projectReqs.length === 0 && orgReqs.length === 0)
+  const fieldReqs = fields.data ?? []
+  const fieldHistory = (fieldHistoryQuery.data ?? []).filter((r) => r.status !== 'pending')
+  if (
+    projectReqs.length === 0 &&
+    orgReqs.length === 0 &&
+    fieldReqs.length === 0 &&
+    fieldHistory.length === 0
+  )
     return <EmptyState title={t('inbox.noApprovals')} />
   return (
     <div className="flex flex-col gap-3">
@@ -90,6 +124,106 @@ function ApprovalsTab() {
       {projectReqs.map((r) => (
         <ApprovalRow key={r.id} req={r} />
       ))}
+      {fieldReqs.map((r) => (
+        <FieldAccessApprovalRow key={r.id} req={r} />
+      ))}
+      {fieldHistory.length > 0 && (
+        <div className="pt-1">
+          <div className="mb-2 text-[12px] font-semibold text-muted-foreground">
+            {t('inbox.handledRecords')}
+          </div>
+          <div className="flex flex-col gap-3">
+            {fieldHistory.map((r) => (
+              <FieldAccessApprovalHistoryRow key={r.id} req={r} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function FieldAccessApprovalRow({ req }: { req: FieldAccessRequest }) {
+  const { t } = useTranslation('membership')
+  const user = useUser(req.user_id)
+  const approve = useApproveFieldAccessRequest(req.project_id)
+  const reject = useRejectFieldAccessRequest(req.project_id)
+  const toastError = useToastError()
+  const busy = approve.isPending || reject.isPending
+  const name =
+    user.data?.display_name ||
+    user.data?.email?.split('@')[0] ||
+    req.user_id.slice(0, 8)
+
+  return (
+    <div className="card-shadow flex items-center gap-3.5 rounded-[14px] border bg-card px-[18px] py-4">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-[11px] bg-[#FFF3F0] text-[#E0492C]">
+        <Lock className="size-5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[14px] font-bold">{req.project_name}</div>
+        <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+          <UserAvatar name={name} seed={req.user_id} size={16} />
+          <span className="truncate">
+            {name} · {req.type_name} / {req.field}
+          </span>
+        </div>
+      </div>
+      <Badge variant="neutral">{t('inbox.kind.field')}</Badge>
+      <Button
+        size="sm"
+        disabled={busy}
+        onClick={() =>
+          approve
+            .mutateAsync(req.id)
+            .then(() => toast.success(t('inbox.approved')))
+            .catch(toastError)
+        }
+      >
+        {t('inbox.approve')}
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={busy}
+        onClick={() =>
+          reject
+            .mutateAsync(req.id)
+            .then(() => toast.success(t('inbox.rejected')))
+            .catch(toastError)
+        }
+      >
+        {t('inbox.reject')}
+      </Button>
+    </div>
+  )
+}
+
+function FieldAccessApprovalHistoryRow({ req }: { req: FieldAccessRequest }) {
+  const { t } = useTranslation('membership')
+  const user = useUser(req.user_id)
+  const name =
+    user.data?.display_name ||
+    user.data?.email?.split('@')[0] ||
+    req.user_id.slice(0, 8)
+
+  return (
+    <div className="card-shadow flex items-center gap-3.5 rounded-[14px] border bg-card px-[18px] py-4">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-[11px] bg-[#FFF3F0] text-[#E0492C]">
+        <Lock className="size-5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[14px] font-bold">{req.project_name}</div>
+        <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+          <UserAvatar name={name} seed={req.user_id} size={16} />
+          <span className="truncate">
+            {name} · {req.type_name} / {req.field}
+          </span>
+        </div>
+      </div>
+      <Badge variant={req.status === 'approved' ? 'success' : 'danger'}>
+        {t(`inbox.status.${req.status}`)}
+      </Badge>
     </div>
   )
 }
@@ -273,13 +407,35 @@ function InvitationsTab() {
 function RequestsTab() {
   const { t } = useTranslation('membership')
   const reqs = useMyJoinRequests()
+  const fieldReqs = useMyAllFieldAccessRequests()
+  const markAllRead = useMarkAllFieldAccessRequestsRead()
   const cancel = useCancelJoinRequest()
   const toastError = useToastError()
   const data = reqs.data ?? []
-  if (data.length === 0) return <EmptyState title={t('inbox.noJoinRequests')} />
+  const fields = fieldReqs.data ?? []
+  const unreadFields = fields.filter((r) => r.status !== 'pending' && !r.requester_read_at)
+  if (data.length === 0 && fields.length === 0)
+    return <EmptyState title={t('inbox.noJoinRequests')} />
 
   return (
     <div className="flex flex-col gap-3">
+      {unreadFields.length > 0 && (
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={markAllRead.isPending}
+            onClick={() =>
+              markAllRead
+                .mutateAsync()
+                .then(() => toast.success(t('inbox.allMarkedRead')))
+                .catch(toastError)
+            }
+          >
+            {t('inbox.markAllRead')}
+          </Button>
+        </div>
+      )}
       {data.map((r) => (
         <div
           key={r.id}
@@ -307,6 +463,47 @@ function RequestsTab() {
           </Button>
         </div>
       ))}
+      {fields.map((r) => (
+        <FieldAccessRequestRow key={r.id} req={r} />
+      ))}
+    </div>
+  )
+}
+
+function FieldAccessRequestRow({ req }: { req: FieldAccessRequest }) {
+  const { t } = useTranslation('membership')
+  const markRead = useMarkFieldAccessRequestRead()
+  const toastError = useToastError()
+  const unread = req.status !== 'pending' && !req.requester_read_at
+  return (
+    <div className="card-shadow flex items-center gap-3.5 rounded-[14px] border bg-card px-[18px] py-4">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-[11px] bg-[#FFF3F0] text-[#E0492C]">
+        <Lock className="size-5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[14px] font-bold">{req.project_name}</div>
+        <div className="truncate text-[12px] text-muted-foreground">
+          {req.type_name} / {req.field}
+          {req.decided_at ? ` · ${t('inbox.decided')}` : ''}
+        </div>
+      </div>
+      {unread && <Badge className="bg-[#DC2626] text-white">{t('inbox.unread')}</Badge>}
+      <Badge variant="neutral">{t(`inbox.status.${req.status}`)}</Badge>
+      {unread && (
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={markRead.isPending}
+          onClick={() =>
+            markRead
+              .mutateAsync(req.id)
+              .then(() => toast.success(t('inbox.markedRead')))
+              .catch(toastError)
+          }
+        >
+          {t('inbox.markRead')}
+        </Button>
+      )}
     </div>
   )
 }

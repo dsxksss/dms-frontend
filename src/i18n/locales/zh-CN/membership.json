@@ -61,7 +61,19 @@
     "from": "来自",
     "cancel": "撤回",
     "cancelled": "已撤回",
-    "kind": { "org": "组织", "project": "项目" }
+    "markRead": "已读",
+    "markAllRead": "全部已读",
+    "markedRead": "已标记为已读",
+    "allMarkedRead": "已全部标记为已读",
+    "unread": "未读",
+    "handledRecords": "已处理记录",
+    "decided": "已处理",
+    "kind": { "org": "组织", "project": "项目", "field": "字段查看" },
+    "status": {
+      "pending": "待审批",
+      "approved": "已批准",
+      "rejected": "已拒绝"
+    }
   },
   "discover": {
     "title": "可加入的组织",

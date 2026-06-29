@@ -41,6 +41,8 @@ import {
   useRecords,
   useDeleteRecord,
   useMyFieldAccess,
+  useMyFieldAccessRequests,
+  useRequestFieldAccess,
   useImportEntities,
 } from '@/hooks/use-registry'
 import { useToastError } from '@/hooks/use-toast-error'
@@ -272,8 +274,11 @@ function RecordsGrid({
   const [page, setPage] = useState({ limit: 20, offset: 0 })
   const query = useRecords(projectId, kind, { type: type.id, ...page })
   const access = useMyFieldAccess(projectId, kind, type.id)
+  const myAccessRequests = useMyFieldAccessRequests(projectId, kind, type.id, 'pending')
+  const requestAccess = useRequestFieldAccess(projectId, kind, type.id)
   // 列级锁定字段：权威来自 my-field-access，不再靠「单元格值为空」猜。
   const lockedFields = new Set(access.data?.locked_fields ?? [])
+  const requestedFields = new Set((myAccessRequests.data ?? []).map((r) => r.field))
   // 记录的改/删按钮按**有效权限**（角色 OR 细粒度授权）显示——之前错按 Manager 角色，贡献者/被授权者都看不到。
   const canUpdate = access.data?.can_update ?? false
   const canDelete = access.data?.can_delete ?? false
@@ -295,6 +300,12 @@ function RecordsGrid({
     del
       .mutateAsync({ id: r.id, version: r.version })
       .then(() => toast.success(t('entities.deleted')))
+      .catch(toastError)
+
+  const onRequestAccess = (field: string) =>
+    requestAccess
+      .mutateAsync({ field })
+      .then(() => toast.success(t('accessRequests.requested')))
       .catch(toastError)
 
   if (query.isLoading) return <TableSkeleton rows={6} />
@@ -328,7 +339,21 @@ function RecordsGrid({
             <div key={f.name} className="th flex items-center gap-1 truncate">
               <span className="truncate">{f.name}</span>
               {lockedFields.has(f.name) && (
-                <Lock className="size-3 shrink-0 text-[#E0492C]" />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  className="size-5 text-[#E0492C] hover:bg-[#FFF3F0] hover:text-[#E0492C]"
+                  title={
+                    requestedFields.has(f.name)
+                      ? t('accessRequests.pending')
+                      : t('accessRequests.requestTitle', { field: f.name })
+                  }
+                  disabled={requestedFields.has(f.name) || requestAccess.isPending}
+                  onClick={() => onRequestAccess(f.name)}
+                >
+                  <Lock className="size-3" />
+                </Button>
               )}
             </div>
           ))}

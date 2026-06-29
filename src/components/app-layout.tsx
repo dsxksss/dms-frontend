@@ -17,6 +17,10 @@ import {
   useMyInvitations,
 } from '@/hooks/use-membership'
 import { useIncomingProjectJoinRequests } from '@/hooks/use-projects'
+import {
+  useIncomingFieldAccessRequests,
+  useMyAllFieldAccessRequests,
+} from '@/hooks/use-registry'
 import { useFirstRunTour, useTourReplay } from '@/features/onboarding/onboarding'
 
 /** 路由首段 → 面包屑标签。 */
@@ -35,11 +39,18 @@ function GlobalSidebar() {
   const invites = useMyInvitations()
   const incomingProjects = useIncomingProjectJoinRequests()
   const incomingOrgs = useIncomingOrgJoinRequests()
-  // 收件箱红点 = 待我处理的邀请 + 待我审批的（项目 + 组织）加入申请。
+  const incomingFields = useIncomingFieldAccessRequests()
+  const myFieldRequests = useMyAllFieldAccessRequests()
+  const fieldDecisionCount = (myFieldRequests.data ?? []).filter(
+    (r) => r.status !== 'pending' && !r.requester_read_at,
+  ).length
+  // 收件箱红点 = 待我处理的邀请 + 待我审批的申请 + 我发起的字段查看申请结果。
   const inboxCount =
     (invites.data?.length ?? 0) +
     (incomingProjects.data?.length ?? 0) +
-    (incomingOrgs.data?.length ?? 0)
+    (incomingOrgs.data?.length ?? 0) +
+    (incomingFields.data?.length ?? 0) +
+    fieldDecisionCount
 
   return (
     <Sidebar>
