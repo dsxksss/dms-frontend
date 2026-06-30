@@ -89,7 +89,6 @@ import {
 } from '@/hooks/use-files'
 import { useToastError } from '@/hooks/use-toast-error'
 import {
-  ALLOWED_EXT,
   extOf,
   FILE_CATEGORIES,
   filesApi,
@@ -492,13 +491,12 @@ export function FilesPanel({ projectId }: { projectId: string }) {
       toastError(e)
       return
     }
-    const allowed = new Set(ALLOWED_EXT[category])
     const all = collected.files.map((f) => ({
       file: f.file,
       folder: join(base, f.folder),
     }))
-    const valid = all.filter((f) => allowed.has(extOf(f.file.name)))
-    const skipped = all.length - valid.length
+    const valid = all
+    const skipped = 0
 
     // 仅显式建「空文件夹」（含文件的夹由后端按文件路径自动派生）。
     const fileFolders = new Set(valid.map((f) => f.folder))

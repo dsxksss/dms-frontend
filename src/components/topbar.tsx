@@ -1,22 +1,19 @@
 import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { HelpCircle, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { LangToggle } from '@/components/lang-toggle'
 import { CommandPalette } from '@/components/command-palette'
 import { cn } from '@/lib/utils'
 
 export type Crumb = { label: ReactNode; to?: string }
 
-/** 顶栏（58px）：面包屑 + 全局搜索（⌘K/Ctrl+K）+ 语言切换 + 帮助。 */
+/** 顶栏（58px）：面包屑 + 全局搜索（⌘K/Ctrl+K）+ 语言切换。 */
 export function Topbar({
   crumbs,
-  onHelp,
   search = true,
 }: {
   crumbs: Crumb[]
-  /** 点「帮助」重播新手引导。 */
-  onHelp?: () => void
   /** 是否启用全局搜索（租户 app 启用；平台后台无租户级数据，关闭）。 */
   search?: boolean
 }) {
@@ -84,16 +81,6 @@ export function Topbar({
         </>
       )}
       <LangToggle />
-      {onHelp && (
-        <button
-          onClick={onHelp}
-          data-tour="help"
-          className="flex size-9 items-center justify-center rounded-[9px] border bg-card text-[#5a6473] transition hover:bg-background"
-          aria-label="Help / guided tour"
-        >
-          <HelpCircle className="size-4" />
-        </button>
-      )}
     </header>
   )
 }

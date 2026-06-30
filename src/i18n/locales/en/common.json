@@ -47,11 +47,11 @@
   },
   "resourceGrants": {
     "title": "Collaborators",
-    "desc": "Grant specific people specific actions (added on top of their role). Project Managers only.",
+    "desc": "Grant project members specific actions (added on top of their role). Project Managers only.",
     "user": "User",
     "action": "Action",
     "add": "Grant",
-    "addUser": "Grant to someone else (search by name / email)",
+    "addUser": "Grant to a project member",
     "matrixDesc": "Tick to allow that action on top of the member's role; untick to revoke. Actions already covered by the member's role are shown locked.",
     "noMembers": "No members yet",
     "empty": "No individual grants",
@@ -131,6 +131,9 @@
       "generic": "Plan limit reached — upgrade your plan"
     },
     "validation": "Some fields are invalid, please check",
+    "grantTargetMustBeProjectMember": "Grants can only be assigned to project members",
+    "typeStillHasRecords": "This type still has records. Delete those records before deleting the type.",
+    "typeBoundByDataTemplate": "This drug asset type is still bound by a data asset type. Unbind or delete that data asset type first.",
     "server": "Server error",
     "unknown": "Unknown error"
   }

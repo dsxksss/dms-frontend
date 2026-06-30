@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQueries } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
+  ArrowLeft,
   Database,
   Eye,
   FileUp,
@@ -10,6 +11,7 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
+  RotateCcw,
   Settings2,
   Trash2,
   Wand2,
@@ -40,11 +42,20 @@ import {
   useEntityTypes,
   useRecords,
   useDeleteRecord,
+  usePurgeRecord,
+  useRestoreRecord,
   useMyFieldAccess,
   useMyFieldAccessRequests,
   useRequestFieldAccess,
   useImportEntities,
 } from '@/hooks/use-registry'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { useToastError } from '@/hooks/use-toast-error'
 import { registryApi } from '@/api/registry'
 import type { Entity, EntityType, TypeKind } from '@/api/registry'
@@ -55,6 +66,8 @@ import { EntityDialog } from './EntityDialog'
 import { EntityTypeDialog } from './EntityTypeDialog'
 import { ImportEntitiesDialog } from './ImportEntitiesDialog'
 import { EntityTypesPanel } from './EntityTypesPanel'
+import { TypeFieldsDialog } from './TypeFieldsDialog'
+import { FromAssetRecordsDialog } from './FromAssetRecordsDialog'
 import { FromRegistryDialog } from '@/features/datasets/FromRegistryDialog'
 
 const TYPES_TAB = '__types__'
@@ -76,7 +89,10 @@ export function RegistryTab({
   const [createTypeOpen, setCreateTypeOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
+  const [createFromAssetOpen, setCreateFromAssetOpen] = useState(false)
   const [convertOpen, setConvertOpen] = useState(false)
+  const [fieldsOpen, setFieldsOpen] = useState(false)
+  const [trashOpen, setTrashOpen] = useState(false)
 
   const isAsset = kind === 'asset'
   const kindTypes = (types.data ?? []).filter((ty) => ty.kind === kind)
@@ -100,7 +116,24 @@ export function RegistryTab({
       staleTime: 30_000,
     })),
   })
+  const trashCounts = useQueries({
+    queries: kindTypes.map((ty) => ({
+      queryKey: ['registry', projectId, 'trash-count', kind, ty.id],
+      queryFn: () =>
+        registryApi
+          .listRecords(projectId, kind, { type: ty.id, deleted: true, limit: 1 })
+          .then((r) => r.total),
+      staleTime: 30_000,
+    })),
+  })
   const countOf = (i: number) => counts[i]?.data
+  const trashCountOf = (i: number) => trashCounts[i]?.data
+  const activeTypeIndex = activeType
+    ? kindTypes.findIndex((ty) => ty.id === activeType.id)
+    : -1
+  const activeTypeCount = activeTypeIndex >= 0 ? countOf(activeTypeIndex) : undefined
+  const activeTrashCount =
+    activeTypeIndex >= 0 ? trashCountOf(activeTypeIndex) : undefined
 
   return (
     <div className="px-[26px] py-[22px]">
@@ -109,10 +142,10 @@ export function RegistryTab({
         titleEn={isAsset ? 'Drug Assets' : 'Data Assets'}
         description={isAsset ? t('subtitle') : t('dataSubtitle')}
         size="md"
-        actions={
+        actions={!showTypes ? (
           <div className="flex items-center gap-2">
             {/* 高频动作直出：转数据集 + 类型 + 新建记录(Contributor)；建类型(Manager)/批量导入(Contributor)收进「更多」。 */}
-            {canCreate && !showTypes && activeType && (
+            {canCreate && activeType && (
               <Button variant="outline" onClick={() => setConvertOpen(true)}>
                 <Database className="size-4" />
                 {t('fromRegistry.button', {
@@ -124,19 +157,40 @@ export function RegistryTab({
             {/* 类型管理：放在「转数据集」右侧，所有成员可见；再次点击返回记录视图。 */}
             <Button
               variant="outline"
-              onClick={() => setTab(showTypes ? '' : TYPES_TAB)}
-              className={cn(showTypes && 'border-brand text-brand')}
+              onClick={() => setTab(TYPES_TAB)}
             >
               <Settings2 className="size-4" />
               {t('tabs.types')}
             </Button>
-            {canCreateRecord && !showTypes && activeType && (
-              <Button onClick={() => setCreateOpen(true)}>
-                <Plus className="size-4" />
-                {t('entities.create')}
+            {activeType && (
+              <Button variant="outline" onClick={() => setTrashOpen(true)}>
+                <Trash2 className="size-4" />
+                {t('trash.recordsTitle')}
+                {typeof activeTrashCount === 'number' && activeTrashCount > 0
+                  ? ` ${activeTrashCount}`
+                  : null}
               </Button>
             )}
-            {canCreate && (canManage || (!showTypes && activeType && isAsset)) && (
+            {canCreateRecord && activeType && (
+              isAsset ? (
+                <Button onClick={() => setCreateOpen(true)}>
+                  <Plus className="size-4" />
+                  {t('entities.create')}
+                </Button>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={() => setCreateFromAssetOpen(true)}>
+                    <Database className="size-4" />
+                    {t('entities.createFromAsset')}
+                  </Button>
+                  <Button onClick={() => setCreateOpen(true)}>
+                    <Plus className="size-4" />
+                    {t('entities.create')}
+                  </Button>
+                </>
+              )
+            )}
+            {canCreate && (canManage || (activeType && isAsset)) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon" title={t('more')}>
@@ -153,7 +207,7 @@ export function RegistryTab({
                         : t('types.createTemplate')}
                     </DropdownMenuItem>
                   )}
-                  {!showTypes && activeType && isAsset && (
+                  {activeType && isAsset && (
                     <DropdownMenuItem onClick={() => setImportOpen(true)}>
                       <FileUp className="size-4" />
                       {t('import.button')}
@@ -163,8 +217,48 @@ export function RegistryTab({
               </DropdownMenu>
             )}
           </div>
-        }
+        ) : undefined}
       />
+
+      {showTypes ? (
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-[10px] border bg-card px-4 py-3">
+          <div className="min-w-0">
+            <div className="text-[13px] font-bold">
+              {isAsset ? t('types.managingAssets') : t('types.managingTemplates')}
+            </div>
+            <div className="mt-0.5 text-[12px] text-muted-foreground">
+              {t('types.manageHint')}
+            </div>
+          </div>
+          {kindTypes.length > 0 && (
+            <Button variant="outline" size="sm" onClick={() => setTab('')}>
+              <ArrowLeft className="size-4" />
+              {t('types.backToRecords')}
+            </Button>
+          )}
+        </div>
+      ) : activeType ? (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[10px] border bg-card px-4 py-3">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-baseline gap-2">
+              <span className="truncate text-[15px] font-bold">{activeType.name}</span>
+              <span className="mono text-[11px] text-muted-foreground">
+                {activeType.key}
+              </span>
+            </div>
+            <div className="mt-0.5 text-[12px] text-muted-foreground">
+              {t('types.currentHint', {
+                fields: activeType.fields.length,
+                records: activeTypeCount ?? '·',
+              })}
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setFieldsOpen(true)}>
+            <Eye className="size-4" />
+            {t('types.viewFields')}
+          </Button>
+        </div>
+      ) : null}
 
       {/* type sub-tabs */}
       <div className="mb-4 flex flex-wrap items-center gap-1.5 border-b">
@@ -217,7 +311,9 @@ export function RegistryTab({
           kind={kind}
           type={activeType}
           canCreate={canCreateRecord}
+          isAsset={isAsset}
           onCreate={() => setCreateOpen(true)}
+          onCreateFromAsset={() => setCreateFromAssetOpen(true)}
         />
       ) : null}
 
@@ -244,6 +340,14 @@ export function RegistryTab({
             open={createOpen}
             onOpenChange={setCreateOpen}
           />
+          {!isAsset && (
+            <FromAssetRecordsDialog
+              projectId={projectId}
+              type={activeType}
+              open={createFromAssetOpen}
+              onOpenChange={setCreateFromAssetOpen}
+            />
+          )}
           <FromRegistryDialog
             projectId={projectId}
             type={activeType}
@@ -251,9 +355,146 @@ export function RegistryTab({
             open={convertOpen}
             onOpenChange={setConvertOpen}
           />
+          <TypeFieldsDialog
+            type={activeType}
+            open={fieldsOpen}
+            onOpenChange={setFieldsOpen}
+          />
+          <TrashRecordsDialog
+            projectId={projectId}
+            kind={kind}
+            type={activeType}
+            open={trashOpen}
+            onOpenChange={setTrashOpen}
+          />
         </>
       )}
     </div>
+  )
+}
+
+function TrashRecordsDialog({
+  projectId,
+  kind,
+  type,
+  open,
+  onOpenChange,
+}: {
+  projectId: string
+  kind: TypeKind
+  type: EntityType
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const { t } = useTranslation('registry')
+  const [page, setPage] = useState({ limit: 20, offset: 0 })
+  const query = useRecords(
+    projectId,
+    kind,
+    { type: type.id, deleted: true, ...page },
+    open,
+  )
+  const access = useMyFieldAccess(projectId, kind, type.id)
+  const restore = useRestoreRecord(projectId, kind)
+  const purge = usePurgeRecord(projectId, kind)
+  const toastError = useToastError()
+  const shown = type.fields.slice(0, 2)
+  const canRestore = access.data?.can_update ?? false
+  const canPurge = access.data?.can_delete ?? false
+
+  const restoreRecord = (record: Entity) =>
+    restore
+      .mutateAsync({ id: record.id, version: record.version })
+      .then(() => toast.success(t('trash.restored')))
+      .catch(toastError)
+
+  const purgeRecord = (record: Entity) =>
+    purge
+      .mutateAsync({ id: record.id, version: record.version })
+      .then(() => toast.success(t('trash.purged')))
+      .catch(toastError)
+
+  const records = query.data?.items ?? []
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[82vh] flex-col gap-3 sm:max-w-[760px]">
+        <DialogHeader>
+          <DialogTitle>{t('trash.recordsTitle')}</DialogTitle>
+          <DialogDescription>{t('trash.desc', { name: type.name })}</DialogDescription>
+        </DialogHeader>
+
+        {query.isLoading ? (
+          <TableSkeleton rows={4} />
+        ) : query.isError ? (
+          <ErrorState error={query.error} onRetry={() => query.refetch()} />
+        ) : records.length === 0 ? (
+          <EmptyState title={t('trash.empty')} hint={t('trash.emptyHint')} />
+        ) : (
+          <TableCard>
+            <div className="grid grid-cols-[120px_minmax(0,1fr)_180px] items-center border-b bg-surface-2 px-4 py-[11px]">
+              <div className="th">ID</div>
+              <div className="th">{t('drawer.fields')}</div>
+              <div />
+            </div>
+            {records.map((record) => (
+              <div
+                key={record.id}
+                className="grid grid-cols-[120px_minmax(0,1fr)_180px] items-center border-b border-divider px-4 py-3 text-[13px] last:border-b-0"
+              >
+                <div className="mono truncate text-[12px] font-semibold text-brand">
+                  {shortId(record.id)}
+                </div>
+                <div className="min-w-0 truncate text-muted-foreground">
+                  {shown.length === 0
+                    ? t('trash.noPreview')
+                    : shown
+                        .map((field) => {
+                          const value = record.data[field.name]
+                          return `${field.name}: ${
+                            value == null || value === '' ? '-' : String(value)
+                          }`
+                        })
+                        .join(' · ')}
+                </div>
+                <div className="flex justify-end gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={!canRestore || restore.isPending}
+                    onClick={() => restoreRecord(record)}
+                  >
+                    <RotateCcw className="size-4" />
+                    {t('trash.restore')}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    disabled={!canPurge || purge.isPending}
+                    onClick={() => purgeRecord(record)}
+                  >
+                    <Trash2 className="size-4" />
+                    {t('trash.purge')}
+                  </Button>
+                </div>
+              </div>
+            ))}
+            <GridFooter>
+              <span>
+                {t('table.total', { ns: 'common', total: query.data?.total ?? 0 })}
+              </span>
+              <Pagination
+                limit={page.limit}
+                offset={page.offset}
+                total={query.data?.total ?? 0}
+                onChange={setPage}
+              />
+            </GridFooter>
+          </TableCard>
+        )}
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -262,13 +503,17 @@ function RecordsGrid({
   kind,
   type,
   canCreate,
+  isAsset,
   onCreate,
+  onCreateFromAsset,
 }: {
   projectId: string
   kind: TypeKind
   type: EntityType
   canCreate: boolean
+  isAsset: boolean
   onCreate: () => void
+  onCreateFromAsset: () => void
 }) {
   const { t } = useTranslation('registry')
   const [page, setPage] = useState({ limit: 20, offset: 0 })
@@ -317,11 +562,22 @@ function RecordsGrid({
         title={t('entities.empty')}
         hint={t('entities.emptyHint')}
         action={
-          canCreate ? (
+          canCreate && isAsset ? (
             <Button onClick={onCreate}>
               <Plus className="size-4" />
               {t('entities.create')}
             </Button>
+          ) : canCreate ? (
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button variant="outline" onClick={onCreateFromAsset}>
+                <Database className="size-4" />
+                {t('entities.createFromAsset')}
+              </Button>
+              <Button onClick={onCreate}>
+                <Plus className="size-4" />
+                {t('entities.create')}
+              </Button>
+            </div>
           ) : undefined
         }
       />
@@ -386,6 +642,11 @@ function RecordsGrid({
                   ) : (
                     <span className={cn(f.type === 'sequence' && 'mono text-[12px]')}>
                       {String(v)}
+                      {f.unit_symbol && (
+                        <span className="ml-1 text-[11px] font-medium text-muted-foreground">
+                          {f.unit_symbol}
+                        </span>
+                      )}
                     </span>
                   )}
                 </div>

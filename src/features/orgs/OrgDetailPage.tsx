@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ArrowLeft, Building2, Check, Plus, Search, Trash2 } from 'lucide-react'
@@ -35,12 +35,12 @@ import {
   useOrgs,
   useTeams,
   useCreateTeam,
+  useDeleteOrg,
   useUpdateOrg,
 } from '@/hooks/use-orgs'
 import { Switch } from '@/components/ui/switch'
 import { AppError } from '@/lib/errors'
 import { OrgRegistryTab } from './OrgRegistryTab'
-import { useFirstRunTour } from '@/features/onboarding/onboarding'
 import {
   useApproveJoinRequest,
   useInviteToOrg,
@@ -59,6 +59,7 @@ const MCOLS = '1.8fr 1fr 150px 70px'
 
 export function OrgDetailPage() {
   const { id = '' } = useParams()
+  const navigate = useNavigate()
   const { t } = useTranslation('orgs')
   const { me } = useAuth()
   const orgs = useOrgs()
@@ -68,12 +69,11 @@ export function OrgDetailPage() {
   const isAdmin = myRole === 'admin'
   const [inviteOpen, setInviteOpen] = useState(false)
   const [tintBg, tintFg] = tintOf(id)
-  // 非成员：成员/资产等端点 403。整页提示，且不自动起组织引导。
+  // 非成员：成员/资产等端点 403。整页提示。
   const notMember =
     members.isError &&
     members.error instanceof AppError &&
     members.error.status === 403
-  useFirstRunTour('org', !!org && !notMember && !members.isLoading)
 
   if (!org) {
     return (
@@ -141,9 +141,7 @@ export function OrgDetailPage() {
         <TabsList>
           <TabsTrigger value="members">{t('tabs.members')}</TabsTrigger>
           <TabsTrigger value="teams">{t('tabs.teams')}</TabsTrigger>
-          <TabsTrigger value="assets" data-tour="org-assets">
-            {t('tabs.assets')}
-          </TabsTrigger>
+          <TabsTrigger value="assets">{t('tabs.assets')}</TabsTrigger>
           <TabsTrigger value="data">{t('tabs.data')}</TabsTrigger>
           {isAdmin && <TabsTrigger value="join">{t('tabs.join')}</TabsTrigger>}
           {isAdmin && (
@@ -170,7 +168,13 @@ export function OrgDetailPage() {
         )}
         {isAdmin && (
           <TabsContent value="settings" className="mt-4">
-            <SettingsTab orgId={id} discoverable={!!org.discoverable} />
+            <SettingsTab
+              orgId={id}
+              orgName={org.name}
+              discoverable={!!org.discoverable}
+              canDelete={org.created_by === me?.user_id}
+              onDeleted={() => navigate('/orgs')}
+            />
           </TabsContent>
         )}
       </Tabs>
@@ -393,14 +397,25 @@ function JoinTab({ orgId }: { orgId: string }) {
 /** 组织设置：discoverable「允许被搜索并申请加入」开关（org admin）。 */
 function SettingsTab({
   orgId,
+  orgName,
   discoverable,
+  canDelete,
+  onDeleted,
 }: {
   orgId: string
+  orgName: string
   discoverable: boolean
+  canDelete: boolean
+  onDeleted: () => void
 }) {
   const { t } = useTranslation('orgs')
   const update = useUpdateOrg(orgId)
+  const del = useDeleteOrg()
   const toastError = useToastError()
+  const [name, setName] = useState(orgName)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+
+  useEffect(() => setName(orgName), [orgName])
 
   const toggle = (next: boolean) =>
     update
@@ -410,6 +425,23 @@ function SettingsTab({
 
   return (
     <div className="max-w-xl space-y-4">
+      <div className="space-y-2 rounded-[11px] border p-4">
+        <Label className="text-[13px] font-semibold">{t('settings.name')}</Label>
+        <div className="flex gap-2">
+          <Input value={name} onChange={(e) => setName(e.target.value)} />
+          <Button
+            disabled={!name.trim() || name.trim() === orgName || update.isPending}
+            onClick={() =>
+              update
+                .mutateAsync({ name: name.trim() })
+                .then(() => toast.success(t('settings.saved')))
+                .catch(toastError)
+            }
+          >
+            {t('settings.saveName')}
+          </Button>
+        </div>
+      </div>
       <div className="flex items-start justify-between gap-4 rounded-[11px] border p-4">
         <div className="space-y-1">
           <Label className="text-[13px] font-semibold">
@@ -425,6 +457,47 @@ function SettingsTab({
           onCheckedChange={toggle}
         />
       </div>
+      {canDelete && (
+        <div className="rounded-[11px] border border-destructive/30 p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <Label className="text-[13px] font-semibold text-destructive">
+                {t('settings.deleteTitle')}
+              </Label>
+              <p className="text-[12.5px] text-muted-foreground">
+                {t('settings.deleteHint')}
+              </p>
+            </div>
+            <Button
+              variant="destructive"
+              disabled={del.isPending}
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2 className="size-4" />
+              {t('settings.delete')}
+            </Button>
+          </div>
+        </div>
+      )}
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={(o) => !o && setDeleteOpen(false)}
+        title={t('settings.deleteConfirmTitle')}
+        description={t('settings.deleteConfirmDesc')}
+        destructive
+        confirmText={t('settings.delete')}
+        loading={del.isPending}
+        onConfirm={() =>
+          del
+            .mutateAsync(orgId)
+            .then(() => {
+              toast.success(t('settings.deleted'))
+              setDeleteOpen(false)
+              onDeleted()
+            })
+            .catch(toastError)
+        }
+      />
     </div>
   )
 }

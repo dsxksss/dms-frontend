@@ -42,6 +42,14 @@ export function useCreateOrg() {
   })
 }
 
+export function useDeleteOrg() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (orgId: string) => orgsApi.deleteOrg(orgId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: root }),
+  })
+}
+
 export function useTeams(orgId: string) {
   return useQuery({
     queryKey: orgKeys.teams(orgId),

@@ -6,12 +6,12 @@ import {
   type FieldAccessRequest,
   type TypeKind,
 } from '@/api/registry'
-import { markOnboard } from '@/features/onboarding/flags'
 
 const root = (projectId: string) => ['registry', projectId] as const
 
 export const registryKeys = {
   types: (pid: string) => [...root(pid), 'types'] as const,
+  deletedTypes: (pid: string) => [...root(pid), 'deleted-types'] as const,
   records: (pid: string, params: unknown) =>
     [...root(pid), 'records', params] as const,
   record: (pid: string, rid: string) => [...root(pid), 'record', rid] as const,
@@ -50,6 +50,14 @@ export function useEntityTypes(projectId: string) {
   })
 }
 
+export function useDeletedEntityTypes(projectId: string, enabled = true) {
+  return useQuery({
+    queryKey: registryKeys.deletedTypes(projectId),
+    queryFn: () => registryApi.listDeletedTypes(projectId),
+    enabled,
+  })
+}
+
 export function useCreateType(projectId: string, kind: TypeKind) {
   const invalidate = useInvalidateRegistry(projectId)
   return useMutation({
@@ -68,6 +76,9 @@ export function useUpdateType(
   return useMutation({
     mutationFn: (body: {
       name?: string
+      name_zh?: string | null
+      name_en?: string | null
+      description?: string | null
       fields?: FieldDefInput[]
       version: number
     }) => registryApi.updateType(projectId, kind, typeId, body),
@@ -87,6 +98,38 @@ export function useDeleteType(projectId: string) {
       typeId: string
       version: number
     }) => registryApi.deleteType(projectId, kind, typeId, version),
+    onSuccess: invalidate,
+  })
+}
+
+export function useRestoreType(projectId: string) {
+  const invalidate = useInvalidateRegistry(projectId)
+  return useMutation({
+    mutationFn: ({
+      kind,
+      typeId,
+      version,
+    }: {
+      kind: TypeKind
+      typeId: string
+      version: number
+    }) => registryApi.restoreType(projectId, kind, typeId, version),
+    onSuccess: invalidate,
+  })
+}
+
+export function usePurgeType(projectId: string) {
+  const invalidate = useInvalidateRegistry(projectId)
+  return useMutation({
+    mutationFn: ({
+      kind,
+      typeId,
+      version,
+    }: {
+      kind: TypeKind
+      typeId: string
+      version: number
+    }) => registryApi.purgeType(projectId, kind, typeId, version),
     onSuccess: invalidate,
   })
 }
@@ -277,7 +320,13 @@ export function useMarkAllFieldAccessRequestsRead() {
 export function useRecords(
   projectId: string,
   kind: TypeKind,
-  params: { type: string; contains?: string; limit?: number; offset?: number },
+  params: {
+    type: string
+    contains?: string
+    deleted?: boolean
+    limit?: number
+    offset?: number
+  },
   enabled = true,
 ) {
   return useQuery({
@@ -310,7 +359,6 @@ export function useCreateRecord(projectId: string, kind: TypeKind) {
     }) => registryApi.createRecord(projectId, kind, body),
     onSuccess: () => {
       invalidate()
-      markOnboard('asset') // 快速上手清单：标记「录入数据资产」完成
     },
   })
 }
@@ -333,6 +381,24 @@ export function useDeleteRecord(projectId: string, kind: TypeKind) {
   return useMutation({
     mutationFn: ({ id, version }: { id: string; version: number }) =>
       registryApi.deleteRecord(projectId, kind, id, version),
+    onSuccess: invalidate,
+  })
+}
+
+export function useRestoreRecord(projectId: string, kind: TypeKind) {
+  const invalidate = useInvalidateRegistry(projectId)
+  return useMutation({
+    mutationFn: ({ id, version }: { id: string; version: number }) =>
+      registryApi.restoreRecord(projectId, kind, id, version),
+    onSuccess: invalidate,
+  })
+}
+
+export function usePurgeRecord(projectId: string, kind: TypeKind) {
+  const invalidate = useInvalidateRegistry(projectId)
+  return useMutation({
+    mutationFn: ({ id, version }: { id: string; version: number }) =>
+      registryApi.purgeRecord(projectId, kind, id, version),
     onSuccess: invalidate,
   })
 }

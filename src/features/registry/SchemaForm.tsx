@@ -13,6 +13,7 @@ import {
 import { cn } from '@/lib/utils'
 import type { FieldDef } from '@/api/registry'
 import { EntityPicker } from './EntityPicker'
+import { DateTimePicker } from './DateTimePicker'
 
 /** 按字段定义动态渲染记录表单（新建 / 编辑记录）。 */
 export function SchemaForm({
@@ -101,13 +102,21 @@ function FieldInput({
     case 'integer':
     case 'number':
       return (
-        <Input
-          type="number"
-          value={str}
-          onChange={(e) =>
-            onChange(e.target.value === '' ? null : Number(e.target.value))
-          }
-        />
+        <div className="flex">
+          <Input
+            type="number"
+            value={str}
+            className={cn(field.unit_symbol && 'rounded-r-none')}
+            onChange={(e) =>
+              onChange(e.target.value === '' ? null : Number(e.target.value))
+            }
+          />
+          {field.unit_symbol && (
+            <span className="flex h-9 shrink-0 items-center rounded-r-md border border-l-0 bg-surface-1 px-2.5 text-[12px] font-medium text-muted-foreground">
+              {field.unit_symbol}
+            </span>
+          )}
+        </div>
       )
     case 'boolean':
       return (
@@ -123,15 +132,11 @@ function FieldInput({
       )
     case 'date':
       return (
-        <Input type="date" value={str} onChange={(e) => onChange(e.target.value)} />
+        <DateTimePicker value={str} mode="date" onChange={onChange} />
       )
     case 'datetime':
       return (
-        <Input
-          type="datetime-local"
-          value={str}
-          onChange={(e) => onChange(e.target.value)}
-        />
+        <DateTimePicker value={str} mode="datetime" onChange={onChange} />
       )
     case 'enum':
       return (

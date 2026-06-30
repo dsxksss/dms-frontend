@@ -64,7 +64,6 @@ export function SidebarNavItem({
   badge,
   badgeRed,
   dark,
-  tourId,
   children,
 }: {
   to: string
@@ -73,15 +72,12 @@ export function SidebarNavItem({
   badge?: ReactNode
   badgeRed?: boolean
   dark?: boolean
-  /** 新手引导锚点（data-tour）。 */
-  tourId?: string
   children: ReactNode
 }) {
   return (
     <NavLink
       to={to}
       end={end}
-      data-tour={tourId}
       className={({ isActive }) =>
         dark
           ? cn(

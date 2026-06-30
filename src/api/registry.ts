@@ -36,6 +36,10 @@ export interface FieldDef {
   options: string[]
   /** 仅 reference 字段：引用目标的资产类型 key（前端据此过滤候选；软引用，后端不强制类型）。 */
   ref_type?: string | null
+  /** 数值/整数字段可关联单位库；记录值本身仍为纯数字。 */
+  unit_id?: string | null
+  /** 单位符号快照，例如 mM、μM、ng/mL。 */
+  unit_symbol?: string | null
 }
 
 export type EntityScope = 'organization' | 'project'
@@ -50,6 +54,9 @@ export interface EntityType {
   kind: TypeKind
   key: string
   name: string
+  name_zh?: string | null
+  name_en?: string | null
+  description?: string | null
   fields: FieldDef[]
   /** 仅数据模版：绑定到某资产类型（其数据须挂该类型的资产记录）。 */
   bound_asset_type_id?: string | null
@@ -152,15 +159,29 @@ export interface FieldDefInput {
   options: string[]
   /** 仅 reference 字段：引用目标的资产类型 key。 */
   ref_type?: string
+  /** 仅 number/integer 字段：关联单位库。 */
+  unit_id?: string | null
+  unit_symbol?: string | null
 }
 
 /** 建类型 body：资产类型仅 {key,name,fields}；数据模版可带 bound/from。 */
 export interface CreateTypeBody {
   key: string
   name: string
+  name_zh?: string | null
+  name_en?: string | null
+  description?: string | null
   fields: FieldDefInput[]
   bound_asset_type_id?: string
   from_asset_type_id?: string
+}
+
+export function entityTypeDisplayName(type: EntityType, language = ''): string {
+  const preferred =
+    language.toLowerCase().startsWith('zh')
+      ? type.name_zh || type.name || type.name_en
+      : type.name_en || type.name || type.name_zh
+  return preferred || type.key
 }
 
 const pbase = (pid: string) => `/v1/projects/${pid}`
@@ -173,15 +194,26 @@ const recPath = (pid: string, kind: TypeKind) =>
 
 export const registryApi = {
   // ---- 类型 ----
-  listAssetTypes: (projectId: string) =>
-    request<EntityType[]>(`${pbase(projectId)}/asset-types`),
-  listDataTemplates: (projectId: string) =>
-    request<EntityType[]>(`${pbase(projectId)}/data-templates`),
+  listAssetTypes: (projectId: string, deleted = false) =>
+    request<EntityType[]>(`${pbase(projectId)}/asset-types`, {
+      query: deleted ? { deleted: true } : undefined,
+    }),
+  listDataTemplates: (projectId: string, deleted = false) =>
+    request<EntityType[]>(`${pbase(projectId)}/data-templates`, {
+      query: deleted ? { deleted: true } : undefined,
+    }),
   /** 合并两类，供选择器/列表统一展示（每项自带 kind）。 */
   listTypes: async (projectId: string): Promise<EntityType[]> => {
     const [assets, templates] = await Promise.all([
       registryApi.listAssetTypes(projectId),
       registryApi.listDataTemplates(projectId),
+    ])
+    return [...assets, ...templates]
+  },
+  listDeletedTypes: async (projectId: string): Promise<EntityType[]> => {
+    const [assets, templates] = await Promise.all([
+      registryApi.listAssetTypes(projectId, true),
+      registryApi.listDataTemplates(projectId, true),
     ])
     return [...assets, ...templates]
   },
@@ -193,7 +225,14 @@ export const registryApi = {
     projectId: string,
     kind: TypeKind,
     typeId: string,
-    body: { name?: string; fields?: FieldDefInput[]; version: number },
+    body: {
+      name?: string
+      name_zh?: string | null
+      name_en?: string | null
+      description?: string | null
+      fields?: FieldDefInput[]
+      version: number
+    },
   ) =>
     request<EntityType>(`${typePath(projectId, kind)}/${typeId}`, {
       method: 'PATCH',
@@ -202,6 +241,22 @@ export const registryApi = {
   /** 删除类型（乐观锁 version）。有记录 / 被模板绑定 → 409。 */
   deleteType: (projectId: string, kind: TypeKind, typeId: string, version: number) =>
     request<void>(`${typePath(projectId, kind)}/${typeId}`, {
+      method: 'DELETE',
+      query: { version },
+      responseType: 'void',
+    }),
+  restoreType: (
+    projectId: string,
+    kind: TypeKind,
+    typeId: string,
+    version: number,
+  ) =>
+    request<EntityType>(`${typePath(projectId, kind)}/${typeId}/restore`, {
+      method: 'POST',
+      query: { version },
+    }),
+  purgeType: (projectId: string, kind: TypeKind, typeId: string, version: number) =>
+    request<void>(`${typePath(projectId, kind)}/${typeId}/purge`, {
       method: 'DELETE',
       query: { version },
       responseType: 'void',
@@ -325,7 +380,13 @@ export const registryApi = {
   listRecords: (
     projectId: string,
     kind: TypeKind,
-    params: { type: string; contains?: string; limit?: number; offset?: number },
+    params: {
+      type: string
+      contains?: string
+      deleted?: boolean
+      limit?: number
+      offset?: number
+    },
   ) =>
     request<Paginated<Entity>>(recPath(projectId, kind), {
       query: { ...params },
@@ -358,6 +419,27 @@ export const registryApi = {
     version: number,
   ) =>
     request<void>(`${recPath(projectId, kind)}/${rid}`, {
+      method: 'DELETE',
+      query: { version },
+      responseType: 'void',
+    }),
+  restoreRecord: (
+    projectId: string,
+    kind: TypeKind,
+    rid: string,
+    version: number,
+  ) =>
+    request<Entity>(`${recPath(projectId, kind)}/${rid}/restore`, {
+      method: 'POST',
+      query: { version },
+    }),
+  purgeRecord: (
+    projectId: string,
+    kind: TypeKind,
+    rid: string,
+    version: number,
+  ) =>
+    request<void>(`${recPath(projectId, kind)}/${rid}/purge`, {
       method: 'DELETE',
       query: { version },
       responseType: 'void',

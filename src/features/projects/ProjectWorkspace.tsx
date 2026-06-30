@@ -2,15 +2,19 @@ import { Outlet, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQueries } from '@tanstack/react-query'
 import {
+  Activity,
   Boxes,
   Database,
   FolderClosed,
   LayoutGrid,
   Notebook,
+  ShieldCheck,
   Settings,
   Table2,
   Users,
 } from 'lucide-react'
+import { useState } from 'react'
+import { Badge } from '@/components/ui/badge'
 import {
   Sidebar,
   SidebarFooter,
@@ -21,28 +25,29 @@ import { Topbar, type Crumb } from '@/components/topbar'
 import { PageHeader } from '@/components/page-header'
 import { StatCard } from '@/components/stat-card'
 import { BrandTile } from '@/components/brand-tile'
+import { TableCard } from '@/components/data-grid'
+import { Pagination } from '@/components/pagination'
 import { BiLabel, useIsZh } from '@/components/bilingual'
 import { UserAvatar } from '@/components/user-avatar'
-import { ErrorState } from '@/components/states'
+import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
 import { SidebarUser } from '@/components/sidebar-user'
 import { useProject, useProjectRole, useMembers } from '@/hooks/use-projects'
 import { useOrgs } from '@/hooks/use-orgs'
-import {
-  useFirstRunTour,
-  useTourReplay,
-} from '@/features/onboarding/onboarding'
 import { useEntityTypes } from '@/hooks/use-registry'
 import { useDatasets } from '@/hooks/use-datasets'
 import { useFilesSummary } from '@/hooks/use-files'
-import { useAudit } from '@/hooks/use-audit'
+import { useProjectAudit } from '@/hooks/use-audit'
 import { useCan } from '@/auth/auth-context'
 import { registryApi } from '@/api/registry'
-import { formatDateTime } from '@/lib/format'
+import { formatDateTime, shortId } from '@/lib/format'
+import { TONE_HEX, type Tone } from '@/components/tone'
 import { RegistryTab } from '@/features/registry/RegistryTab'
 import { DatasetsPanel } from '@/features/datasets/DatasetsPanel'
 import { FilesPanel } from '@/features/files/FilesPanel'
 import { MembersPanel } from '@/features/projects/MembersPanel'
 import { NotebookPanel } from '@/features/notebook/NotebookPanel'
+import { ChangesView } from '@/features/audit/ChangesView'
+import type { AuditEntry } from '@/api/audit'
 
 const NAV = [
   { seg: '', end: true, icon: <LayoutGrid />, zh: '概览', en: 'Overview' },
@@ -51,6 +56,7 @@ const NAV = [
   { seg: '/datasets', icon: <Database />, zh: '数据集', en: 'Datasets', count: 'datasets' },
   { seg: '/notebook', icon: <Notebook />, zh: '实验记录本', en: 'Notebook' },
   { seg: '/files', icon: <FolderClosed />, zh: '文件', en: 'Files', count: 'files' },
+  { seg: '/audit', icon: <Activity />, zh: '操作记录', en: 'Activity' },
   { seg: '/members', icon: <Settings />, zh: '设置', en: 'Settings' },
 ] as const
 
@@ -62,6 +68,7 @@ function useProjectId() {
 export function ProjectLayout() {
   const projectId = useProjectId()
   const isZh = useIsZh()
+  const canAudit = useCan('audit:read')
   const project = useProject(projectId)
   const role = useProjectRole(projectId)
   const orgs = useOrgs()
@@ -78,10 +85,6 @@ export function ProjectLayout() {
     files: files.data?.total,
     members: members.data?.length,
   }
-
-  const { replayProject } = useTourReplay()
-  // 首次进入项目自动起一轮业务流引导（项目数据就绪后）。
-  useFirstRunTour('project', !!project.data)
 
   const name = project.data?.name ?? ''
   const crumbs: Crumb[] = [{ label: name, to: `/projects/${projectId}` }]
@@ -106,20 +109,16 @@ export function ProjectLayout() {
           </div>
         </div>
         <SidebarNav>
-          {NAV.map((n) => (
+          {NAV.filter((n) => {
+            if (n.seg !== '/audit') return true
+            return role === 'owner' || role === 'manager' || canAudit
+          }).map((n) => (
             <SidebarNavItem
               key={n.seg}
               to={`/projects/${projectId}${n.seg}`}
               end={'end' in n ? n.end : undefined}
               icon={n.icon}
               badge={'count' in n ? counts[n.count] : undefined}
-              tourId={
-                n.seg === '/registry'
-                  ? 'proj-registry'
-                  : n.seg === '/datasets'
-                    ? 'proj-datasets'
-                    : undefined
-              }
             >
               <BiLabel zh={n.zh} en={n.en} />
             </SidebarNavItem>
@@ -131,7 +130,7 @@ export function ProjectLayout() {
       </Sidebar>
 
       <div className="relative flex min-w-0 flex-1 flex-col">
-        <Topbar crumbs={crumbs} onHelp={replayProject} />
+        <Topbar crumbs={crumbs} />
         <div className="flex-1 overflow-auto">
           {project.isError ? (
             <div className="p-8">
@@ -163,6 +162,47 @@ export function ProjectNotebookSection() {
 export function ProjectFilesSection() {
   return <FilesPanel projectId={useProjectId()} />
 }
+export function ProjectAuditSection() {
+  const projectId = useProjectId()
+  const { t } = useTranslation('projects')
+  const [page, setPage] = useState({ limit: 30, offset: 0 })
+  const audit = useProjectAudit(projectId, page)
+  const entries = audit.data?.items ?? []
+
+  return (
+    <div className="mx-auto max-w-[900px] px-8 py-7">
+      <PageHeader
+        title={t('audit.title')}
+        titleEn="Activity"
+        description={t('audit.subtitle')}
+        size="md"
+      />
+      {audit.isLoading ? (
+        <TableSkeleton rows={7} />
+      ) : audit.isError ? (
+        <ErrorState error={audit.error} onRetry={() => audit.refetch()} />
+      ) : entries.length === 0 ? (
+        <EmptyState title={t('audit.empty')} />
+      ) : (
+        <>
+          <TableCard className="py-1.5">
+            {entries.map((entry) => (
+              <ProjectAuditRow key={entry.id} entry={entry} />
+            ))}
+          </TableCard>
+          <div className="mt-4 flex justify-end">
+            <Pagination
+              limit={page.limit}
+              offset={page.offset}
+              total={audit.data?.total ?? 0}
+              onChange={setPage}
+            />
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
 export function ProjectMembersSection() {
   return <MembersPanel projectId={useProjectId()} />
 }
@@ -173,11 +213,97 @@ export function ProjectMembersSection() {
 const STAT_TINT = ['#EAF0FF', '#2F6BFF'] as const
 const BAR_COLOR = '#2F6BFF'
 
+function actionTone(action: string): Tone {
+  const v = action.split('.').pop() ?? action
+  if (/creat|add|grant|invit|sign|approv|restor|activat/.test(v)) {
+    if (/sign/.test(v)) return 'purple'
+    if (/grant|invit|approv/.test(v)) return 'info'
+    return 'success'
+  }
+  if (/updat|edit|chang|patch|rename|move|archive|unarchive/.test(v)) return 'warning'
+  if (/delet|remov|revok|abort|suspend|reject|unshare/.test(v)) return 'danger'
+  return 'neutral'
+}
+
+const PROJECT_AUDIT_ACTION_KEYS: Record<string, string> = {
+  'project.created': 'projectCreated',
+  'project.updated': 'projectUpdated',
+  'project.deleted': 'projectDeleted',
+  'project.archived': 'projectArchived',
+  'project.unarchived': 'projectUnarchived',
+  'project.visibility_set': 'visibilitySet',
+  'project.member_set': 'memberSet',
+  'project.member_removed': 'memberRemoved',
+  'project.shared': 'shared',
+  'project.unshared': 'unshared',
+  'entity_type.created': 'entityTypeCreated',
+  'entity_type.updated': 'entityTypeUpdated',
+  'entity_type.deleted': 'entityTypeDeleted',
+  'entity.created': 'entityCreated',
+  'entity.updated': 'entityUpdated',
+  'entity.deleted': 'entityDeleted',
+  'entity.imported': 'entityImported',
+  'entity_relation.created': 'relationCreated',
+  'entity_relation.deleted': 'relationDeleted',
+  'dataset.created': 'datasetCreated',
+  'dataset.updated': 'datasetUpdated',
+  'dataset.deleted': 'datasetDeleted',
+  'dataset.row_imported': 'datasetRowsImported',
+  'file.uploaded': 'fileUploaded',
+  'file.updated': 'fileUpdated',
+  'file.deleted': 'fileDeleted',
+  'file.moved': 'fileMoved',
+  'file.confidential_set': 'fileConfidentialSet',
+  'file.file_granted': 'fileGranted',
+  'file.file_revoked': 'fileRevoked',
+  'notebook_entry.created': 'notebookCreated',
+  'notebook_entry.updated': 'notebookUpdated',
+  'notebook_entry.deleted': 'notebookDeleted',
+  'notebook_entry.signed': 'notebookSigned',
+  'protocol.created': 'protocolCreated',
+  'protocol.updated': 'protocolUpdated',
+  'protocol.deleted': 'protocolDeleted',
+  'run.created': 'runCreated',
+  'run.results_updated': 'runResultsUpdated',
+  'run.deleted': 'runDeleted',
+  'field_access_request.field_access_requested': 'fieldAccessRequested',
+  'field_access_request.field_access_approved': 'fieldAccessApproved',
+  'field_access_request.field_access_rejected': 'fieldAccessRejected',
+  'field_grant.field_granted': 'fieldGranted',
+  'field_grant.field_revoked': 'fieldRevoked',
+  'resource_grant.granted': 'resourceGrantGranted',
+  'resource_grant.revoked': 'resourceGrantRevoked',
+}
+
+type ProjectT = (key: string, options?: Record<string, unknown>) => string
+
+function projectAuditActionKey(entry: AuditEntry) {
+  return (
+    PROJECT_AUDIT_ACTION_KEYS[`${entry.entity_type}.${entry.action}`] ??
+    PROJECT_AUDIT_ACTION_KEYS[entry.action]
+  )
+}
+
+function projectAuditText(entry: AuditEntry, t: ProjectT) {
+  const key = projectAuditActionKey(entry)
+  if (key) return t(`audit.actions.${key}`)
+  return entry.event_description || entry.action
+}
+
+function projectAuditBadge(entry: AuditEntry, t: ProjectT) {
+  const key = projectAuditActionKey(entry)
+  if (key) return t(`audit.badges.${key}`, { defaultValue: t(`audit.actions.${key}`) })
+  const verb = entry.action.split('.').pop() ?? entry.action
+  return t(`actionLabels.${verb}`, { ns: 'audit', defaultValue: verb })
+}
+
 export function ProjectOverviewSection() {
   const projectId = useProjectId()
   const { t } = useTranslation('projects')
   const isZh = useIsZh()
   const canAudit = useCan('audit:read')
+  const role = useProjectRole(projectId)
+  const canProjectAudit = canAudit || role === 'owner' || role === 'manager'
 
   const project = useProject(projectId)
   const members = useMembers(projectId)
@@ -198,7 +324,7 @@ export function ProjectOverviewSection() {
   const assetTotal = counts.reduce((s, q) => s + (q.data ?? 0), 0)
   const maxBar = Math.max(1, ...counts.map((q) => q.data ?? 0))
 
-  const audit = useAudit({ limit: 6 })
+  const audit = useProjectAudit(projectId, { limit: 6 }, canProjectAudit)
   const memberList = members.data ?? []
 
   return (
@@ -285,7 +411,7 @@ export function ProjectOverviewSection() {
 
         <div className="card-shadow rounded-[14px] border bg-card px-5 py-[18px]">
           <div className="mb-3.5 text-[14px] font-bold">{t('overview.recent')}</div>
-          {!canAudit ? (
+          {!canProjectAudit ? (
             <p className="text-[12.5px] text-muted-foreground">
               {t('overview.noActivity')}
             </p>
@@ -305,7 +431,7 @@ export function ProjectOverviewSection() {
                 <div className="min-w-0 flex-1">
                   <div className="text-[12.5px] leading-snug">
                     <b>{a.user_name || a.user_handle || '—'}</b>{' '}
-                    {a.event_description || a.action}
+                    {projectAuditText(a, t)}
                   </div>
                   <div className="mt-0.5 text-[11px] text-muted-foreground">
                     {formatDateTime(a.occurred_at)}
@@ -315,6 +441,59 @@ export function ProjectOverviewSection() {
             ))
           )}
         </div>
+      </div>
+    </div>
+  )
+}
+
+function ProjectAuditRow({ entry }: { entry: AuditEntry }) {
+  const { t } = useTranslation(['projects', 'audit'])
+  const tone = actionTone(entry.action)
+  const [bg, fg] = TONE_HEX[tone]
+  const actor = entry.user_name || entry.user_handle || t('none', { ns: 'audit' })
+  const actionText = projectAuditText(entry, t)
+
+  return (
+    <div className="flex gap-3 border-b border-divider px-5 py-[13px] last:border-b-0">
+      <div
+        className="flex size-8 shrink-0 items-center justify-center rounded-[9px]"
+        style={{ background: bg, color: fg }}
+      >
+        <Activity className="size-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-[13px]">
+          <b>{actor}</b>{' '}
+          <span className="text-[#5a6473]">
+            {actionText}
+          </span>{' '}
+          <span className="mono text-[11.5px] font-semibold text-brand">
+            {entry.entity_type}/{shortId(entry.entity_id)}
+          </span>
+        </div>
+        <div className="mt-[3px] flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+          <span>{formatDateTime(entry.occurred_at)}</span>
+          {entry.ip_address && <span className="mono">IP {entry.ip_address}</span>}
+          {entry.request_id && <span className="mono">{entry.request_id}</span>}
+          {entry.hash && (
+            <span
+              className="inline-flex items-center gap-1 text-[#15803D]"
+              title={`${t('meta.integrity', { ns: 'audit' })}\nhash: ${entry.hash}`}
+            >
+              <ShieldCheck className="size-3" />
+              {t('meta.integrityShort', { ns: 'audit' })}
+            </span>
+          )}
+          <ChangesView entry={entry} />
+        </div>
+      </div>
+      <div className="flex h-fit shrink-0 items-center gap-1.5">
+        {entry.result === 'failure' && (
+          <Badge variant="danger">{t('meta.failure', { ns: 'audit' })}</Badge>
+        )}
+        <Badge variant={tone}>
+          {projectAuditBadge(entry, t)}
+        </Badge>
       </div>
     </div>
   )

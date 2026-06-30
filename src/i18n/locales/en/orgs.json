@@ -129,8 +129,16 @@
   },
   "settings": {
     "title": "Organization settings",
+    "name": "Organization name",
+    "saveName": "Save name",
     "discoverable": "Allow search & join requests",
     "discoverableHint": "When on, other users in this tenant can find this organization and request to join; when off, members can only be added by invitation.",
-    "saved": "Saved"
+    "saved": "Saved",
+    "deleteTitle": "Delete organization",
+    "deleteHint": "Only the organization creator can delete it. Move or delete active projects first.",
+    "delete": "Delete organization",
+    "deleteConfirmTitle": "Delete organization?",
+    "deleteConfirmDesc": "This cannot be undone. Members, teams, and invitations for this organization will be removed.",
+    "deleted": "Organization deleted"
   }
 }

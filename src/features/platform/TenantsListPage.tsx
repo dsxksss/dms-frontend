@@ -33,6 +33,7 @@ export function TenantsListPage() {
   const [page, setPage] = useState({ limit: 30, offset: 0 })
   const query = useTenants(page)
   const rows = query.data?.items ?? []
+  const hasRows = rows.length > 0
 
   return (
     <div className="mx-auto max-w-[1180px] px-8 py-7">
@@ -40,12 +41,12 @@ export function TenantsListPage() {
         title={t('tenants.title')}
         titleEn="Tenants"
         description={t('tenants.subtitle')}
-        actions={
+        actions={hasRows ? (
           <Button onClick={() => setCreateOpen(true)}>
             <Plus className="size-4" />
             {t('tenants.create.title')}
           </Button>
-        }
+        ) : undefined}
       />
 
       {query.isLoading ? (

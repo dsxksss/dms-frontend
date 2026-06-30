@@ -57,6 +57,7 @@ export function ProjectsListPage() {
     () => new Set((myReqs.data ?? []).map((r) => r.project_id)),
     [myReqs.data],
   )
+  const hasProjects = projects.length > 0
 
   return (
     <div className="mx-auto max-w-[1180px] px-8 py-7">
@@ -72,10 +73,12 @@ export function ProjectsListPage() {
             >
               {t('filter.includeArchived')}
             </Button>
-            <Button onClick={() => setCreateOpen(true)} data-tour="new-project">
-              <Plus className="size-4" />
-              {t('create.title')}
-            </Button>
+            {hasProjects && (
+              <Button onClick={() => setCreateOpen(true)}>
+                <Plus className="size-4" />
+                {t('create.title')}
+              </Button>
+            )}
           </>
         }
       />
@@ -132,6 +135,7 @@ function ProjectCard({
   const requestJoin = useRequestJoinProject()
   const toastError = useToastError()
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const canManage = roleAtLeast(role, 'manager')
   const canOwn = roleAtLeast(role, 'owner')
   // 能看到但还不是直接成员（经组织共享获得只读可见）→ 可申请加入成为正式成员。
   const canRequestJoin = members.data != null && role == null && !project.archived
@@ -228,7 +232,7 @@ function ProjectCard({
             {t('join.request')}
           </ContextMenuItem>
         )}
-        {canOwn && (
+        {canManage && (
           <ContextMenuItem onClick={onArchive}>
             {project.archived ? <ArchiveRestore /> : <Archive />}
             {t(project.archived ? 'row.unarchive' : 'row.archive')}

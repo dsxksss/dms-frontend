@@ -13,6 +13,7 @@ import {
 import { cn } from '@/lib/utils'
 import { InfoHint } from '@/components/info-hint'
 import type { FieldDefInput, FieldType } from '@/api/registry'
+import type { Unit } from '@/api/units'
 
 const ALL_TYPES: FieldType[] = [
   'string',
@@ -37,7 +38,8 @@ const emptyField = (): FieldDefInput => ({
   options: [],
 })
 
-const GRID = 'grid-cols-[1.4fr_1fr_52px_52px_52px_30px]'
+const NO_UNIT = '__no_unit__'
+const GRID = 'grid-cols-[1.25fr_0.9fr_1fr_52px_52px_52px_30px]'
 
 /** Schema builder 字段编辑器：开关网格（必填/唯一/敏感），敏感开关为红色。 */
 export function FieldBuilder({
@@ -45,12 +47,15 @@ export function FieldBuilder({
   onChange,
   allowedTypes = ALL_TYPES,
   assetTypes = [],
+  units = [],
 }: {
   value: FieldDefInput[]
   onChange: (fields: FieldDefInput[]) => void
   allowedTypes?: readonly FieldType[]
   /** 可作为 reference 目标的资产类型（供 ref_type 下拉）。 */
   assetTypes?: { key: string; name: string }[]
+  /** 租户单位库（供 number/integer 字段选择）。 */
+  units?: Unit[]
 }) {
   const { t } = useTranslation('registry')
 
@@ -95,6 +100,10 @@ export function FieldBuilder({
               {t('fieldBuilder.type')}
               <InfoHint>{t('fieldBuilder.typeHint')}</InfoHint>
             </div>
+            <div className="flex items-center gap-1">
+              {t('fieldBuilder.unit')}
+              <InfoHint>{t('fieldBuilder.unitHint')}</InfoHint>
+            </div>
             <div className="text-center">{t('fieldBuilder.required')}</div>
             <div className="text-center">{t('fieldBuilder.unique')}</div>
             <div className="flex items-center justify-center gap-1">
@@ -118,6 +127,12 @@ export function FieldBuilder({
                     update(i, {
                       type: v as FieldType,
                       ref_type: v === 'reference' ? f.ref_type : undefined,
+                      unit_id:
+                        v === 'number' || v === 'integer' ? f.unit_id : undefined,
+                      unit_symbol:
+                        v === 'number' || v === 'integer'
+                          ? f.unit_symbol
+                          : undefined,
                     })
                   }
                 >
@@ -132,6 +147,40 @@ export function FieldBuilder({
                     ))}
                   </SelectContent>
                 </Select>
+                {f.type === 'number' || f.type === 'integer' ? (
+                  <Select
+                    value={f.unit_id ?? NO_UNIT}
+                    onValueChange={(v) => {
+                      if (v === NO_UNIT) {
+                        update(i, { unit_id: undefined, unit_symbol: undefined })
+                        return
+                      }
+                      const unit = units.find((u) => u.id === v)
+                      update(i, {
+                        unit_id: v,
+                        unit_symbol: unit?.symbol ?? undefined,
+                      })
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder={t('fieldBuilder.noUnit')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_UNIT}>
+                        {t('fieldBuilder.noUnit')}
+                      </SelectItem>
+                      {units.map((u) => (
+                        <SelectItem key={u.id} value={u.id}>
+                          {u.symbol} · {u.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="h-9 rounded-md border border-transparent px-3 py-2 text-[12px] text-muted-foreground">
+                    —
+                  </div>
+                )}
                 <div className="flex justify-center">
                   <Switch
                     checked={f.required}

@@ -30,6 +30,7 @@ export interface AuditParams {
   entity_type?: string
   entity_id?: string
   actor_id?: string
+  project_id?: string
   limit?: number
   offset?: number
 }
@@ -37,4 +38,8 @@ export interface AuditParams {
 export const auditApi = {
   list: (params: AuditParams = {}) =>
     request<Paginated<AuditEntry>>('/v1/audit', { query: { ...params } }),
+  listProject: (projectId: string, params: Omit<AuditParams, 'project_id'> = {}) =>
+    request<Paginated<AuditEntry>>(`/v1/projects/${projectId}/audit`, {
+      query: { ...params },
+    }),
 }

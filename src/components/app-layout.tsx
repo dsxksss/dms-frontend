@@ -21,7 +21,6 @@ import {
   useIncomingFieldAccessRequests,
   useMyAllFieldAccessRequests,
 } from '@/hooks/use-registry'
-import { useFirstRunTour, useTourReplay } from '@/features/onboarding/onboarding'
 
 /** 路由首段 → 面包屑标签。 */
 const SECTION: Record<string, [string, string]> = {
@@ -60,10 +59,10 @@ function GlobalSidebar() {
       </div>
       <SidebarNav>
         <SidebarCaption>{isZh ? '工作区 WORKSPACE' : 'WORKSPACE'}</SidebarCaption>
-        <SidebarNavItem to="/projects" icon={<FolderClosed />} tourId="nav-projects">
+        <SidebarNavItem to="/projects" icon={<FolderClosed />}>
           <BiLabel zh="我的项目" en="Projects" />
         </SidebarNavItem>
-        <SidebarNavItem to="/orgs" icon={<Building2 />} tourId="nav-orgs">
+        <SidebarNavItem to="/orgs" icon={<Building2 />}>
           <BiLabel zh="组织" en="Organizations" />
         </SidebarNavItem>
         <SidebarNavItem
@@ -79,7 +78,7 @@ function GlobalSidebar() {
           <>
             <div className="h-2.5" />
             <SidebarCaption>{isZh ? '系统 SYSTEM' : 'SYSTEM'}</SidebarCaption>
-            <SidebarNavItem to="/audit" icon={<Activity />} tourId="nav-audit">
+            <SidebarNavItem to="/audit" icon={<Activity />}>
               <BiLabel zh="审计" en="Audit" />
             </SidebarNavItem>
           </>
@@ -105,14 +104,11 @@ export function AppLayout() {
   const crumbs: Crumb[] = [
     { label: label ? (isZh ? label[0] : label[1]) : 'Bio-Data OS' },
   ]
-  const { replayApp } = useTourReplay()
-  // 首登 /projects 自动起一轮全局导航引导（看过即不再弹）。
-  useFirstRunTour('app', seg === 'projects')
   return (
     <div className="flex h-screen overflow-hidden">
       <GlobalSidebar />
       <div className="relative flex min-w-0 flex-1 flex-col">
-        <Topbar crumbs={crumbs} onHelp={replayApp} />
+        <Topbar crumbs={crumbs} />
         <div className="flex-1 overflow-auto">
           <Outlet />
         </div>

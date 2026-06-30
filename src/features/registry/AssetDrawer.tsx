@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { GitBranch, Pencil, ShieldCheck } from 'lucide-react'
+import { GitBranch, Link2, Pencil, ShieldCheck } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -14,7 +14,7 @@ import { statusTone } from '@/components/tone'
 import { useAudit } from '@/hooks/use-audit'
 import { useCan } from '@/auth/auth-context'
 import { useProjectRole } from '@/hooks/use-projects'
-import { useMyFieldAccess } from '@/hooks/use-registry'
+import { useEntityTypes, useMyFieldAccess, useRecord } from '@/hooks/use-registry'
 import { roleAtLeast } from '@/lib/roles'
 import { formatDateTime, shortId } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -45,6 +45,7 @@ export function AssetDrawer({
   const canManage = roleAtLeast(role, 'manager')
   const canAudit = useCan('audit:read')
   const [grantsOpen, setGrantsOpen] = useState(false)
+  const [tab, setTab] = useState('fields')
 
   const access = useMyFieldAccess(projectId, type.kind, type.id)
   const lockedFields = new Set(access.data?.locked_fields ?? [])
@@ -81,9 +82,12 @@ export function AssetDrawer({
           {status && <Badge variant={statusTone(status)}>{status}</Badge>}
         </div>
 
-        <Tabs defaultValue="fields" className="flex min-h-0 flex-1 flex-col">
+        <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col">
           <TabsList className="mx-[22px] mt-2 justify-start">
             <TabsTrigger value="fields">{t('drawer.fields')}</TabsTrigger>
+            {type.kind === 'template' && (
+              <TabsTrigger value="relations">{t('drawer.relations')}</TabsTrigger>
+            )}
             <TabsTrigger value="lineage">{t('drawer.lineage')}</TabsTrigger>
             <TabsTrigger value="audit">{t('drawer.audit')}</TabsTrigger>
           </TabsList>
@@ -121,6 +125,11 @@ export function AssetDrawer({
                             )}
                           >
                             {String(v)}
+                            {f.unit_symbol && (
+                              <span className="ml-1 text-[11px] font-medium text-muted-foreground">
+                                {f.unit_symbol}
+                              </span>
+                            )}
                           </span>
                         )}
                       </div>
@@ -141,6 +150,12 @@ export function AssetDrawer({
                 </Button>
               )}
             </TabsContent>
+
+            {type.kind === 'template' && (
+              <TabsContent value="relations" className="mt-0">
+                <LinkedAssetPanel projectId={projectId} entity={entity} />
+              </TabsContent>
+            )}
 
             <TabsContent value="lineage" className="mt-0">
               <ComponentTreeView projectId={projectId} assetId={entity.id} />
@@ -166,7 +181,12 @@ export function AssetDrawer({
               {t('entities.edit')}
             </Button>
           )}
-          <Button variant="outline" className="flex-1" disabled>
+          <Button
+            variant="outline"
+            className="flex-1"
+            disabled={type.kind !== 'template'}
+            onClick={() => setTab(type.kind === 'template' ? 'relations' : 'lineage')}
+          >
             <GitBranch className="size-4" />
             {t('entities.relations')}
           </Button>
@@ -182,6 +202,109 @@ export function AssetDrawer({
         />
       )}
     </Sheet>
+  )
+}
+
+function LinkedAssetPanel({
+  projectId,
+  entity,
+}: {
+  projectId: string
+  entity: Entity
+}) {
+  const { t } = useTranslation('registry')
+  const linkedId = entity.asset_record_id ?? ''
+  const linked = useRecord(projectId, 'asset', linkedId, !!linkedId)
+  const types = useEntityTypes(projectId)
+  const linkedType = (types.data ?? []).find((ty) => ty.id === linked.data?.type_id)
+  const access = useMyFieldAccess(projectId, 'asset', linkedType?.id ?? '')
+  const lockedFields = new Set(access.data?.locked_fields ?? [])
+
+  if (!linkedId) {
+    return (
+      <p className="py-8 text-center text-[12.5px] text-muted-foreground">
+        {t('relations.noLinkedAsset')}
+      </p>
+    )
+  }
+
+  if (linked.isLoading || types.isLoading) {
+    return (
+      <p className="py-8 text-center text-[12.5px] text-muted-foreground">
+        {t('relations.loadingLinkedAsset')}
+      </p>
+    )
+  }
+
+  if (linked.isError || !linked.data || !linkedType) {
+    return (
+      <p className="py-8 text-center text-[12.5px] text-muted-foreground">
+        {t('relations.linkedAssetUnavailable')}
+      </p>
+    )
+  }
+
+  const data = linked.data.data
+  const name = String(data.name ?? shortId(linked.data.id))
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-[10px] border bg-surface-1 p-3">
+        <div className="flex items-start gap-2.5">
+          <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-brand">
+            <Link2 className="size-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+              {t('relations.linkedAsset')}
+            </div>
+            <div className="mt-0.5 truncate text-[14px] font-bold">{name}</div>
+            <div className="mt-0.5 text-[12px] text-muted-foreground">
+              {linkedType.name} · {shortId(linked.data.id)}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-[10px] border">
+        {linkedType.fields.map((f) => {
+          const v = data[f.name]
+          const masked = lockedFields.has(f.name)
+          return (
+            <div
+              key={f.name}
+              className="flex items-center gap-3 border-b border-divider px-3 py-2.5 last:border-b-0"
+            >
+              <div className="flex w-[130px] shrink-0 items-center gap-1.5 text-[12.5px] text-muted-foreground">
+                {f.name}
+                {f.sensitive && <ShieldCheck className="size-3 text-[#E0492C]" />}
+              </div>
+              <div className="min-w-0 flex-1">
+                {masked ? (
+                  <MaskedValue />
+                ) : v == null || v === '' ? (
+                  <span className="text-[13px] text-muted-foreground">—</span>
+                ) : (
+                  <span
+                    className={cn(
+                      'text-[13px] font-semibold break-all',
+                      (f.type === 'sequence' || f.sensitive) && 'mono',
+                    )}
+                  >
+                    {String(v)}
+                    {f.unit_symbol && (
+                      <span className="ml-1 text-[11px] font-medium text-muted-foreground">
+                        {f.unit_symbol}
+                      </span>
+                    )}
+                  </span>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 

@@ -48,6 +48,10 @@ const ProjectFilesSection = lazyPage(
   () => import('@/features/projects/ProjectWorkspace'),
   'ProjectFilesSection',
 )
+const ProjectAuditSection = lazyPage(
+  () => import('@/features/projects/ProjectWorkspace'),
+  'ProjectAuditSection',
+)
 const ProjectMembersSection = lazyPage(
   () => import('@/features/projects/ProjectWorkspace'),
   'ProjectMembersSection',
@@ -149,6 +153,7 @@ export const router = createBrowserRouter([
           { path: 'projects/:id/datasets', element: <ProjectDatasetsSection /> },
           { path: 'projects/:id/datasets/:dsId', element: <DatasetDetailPage /> },
           { path: 'projects/:id/files', element: <ProjectFilesSection /> },
+          { path: 'projects/:id/audit', element: <ProjectAuditSection /> },
           { path: 'projects/:id/members', element: <ProjectMembersSection /> },
         ],
       },

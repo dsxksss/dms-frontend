@@ -22,7 +22,6 @@ import { useProjectRole } from '@/hooks/use-projects'
 import { useToastError } from '@/hooks/use-toast-error'
 import { useDatasets, useDatasetTags, useDeleteDataset } from '@/hooks/use-datasets'
 import { datasetsApi, type Dataset } from '@/api/datasets'
-import { useFirstRunTour } from '@/features/onboarding/onboarding'
 import { CreateDatasetDialog } from './CreateDatasetDialog'
 
 const COLS = '1.6fr 1fr 130px 110px'
@@ -41,6 +40,7 @@ export function DatasetsPanel({ projectId }: { projectId: string }) {
   const [createOpen, setCreateOpen] = useState(false)
   const [delTarget, setDelTarget] = useState<Dataset | null>(null)
   const data = query.data ?? []
+  const hasData = data.length > 0
 
   const onDelete = () => {
     if (!delTarget) return
@@ -53,10 +53,8 @@ export function DatasetsPanel({ projectId }: { projectId: string }) {
       .catch(toastError)
   }
 
-  useFirstRunTour('datasets', !query.isLoading && !query.isError)
-
   const createBtn = (
-    <Button onClick={() => setCreateOpen(true)} data-tour="ds-new">
+    <Button onClick={() => setCreateOpen(true)}>
       <Plus className="size-4" />
       {t('create.title')}
     </Button>
@@ -68,14 +66,11 @@ export function DatasetsPanel({ projectId }: { projectId: string }) {
         title={t('title')}
         titleEn="Datasets"
         description={t('subtitle')}
-        actions={createBtn}
+        actions={hasData ? createBtn : undefined}
       />
 
       {(tags.data?.length ?? 0) > 0 && (
-        <div
-          data-tour="ds-tags"
-          className="mb-4 flex flex-wrap items-center gap-1.5"
-        >
+        <div className="mb-4 flex flex-wrap items-center gap-1.5">
           <FilterChip active={!tag} onClick={() => setTag(undefined)}>
             {t('filter.allTags')}
           </FilterChip>

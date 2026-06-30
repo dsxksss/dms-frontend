@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils'
 import { useDrugRdCatalog, useEntityTypes } from '@/hooks/use-registry'
 import { useToastError } from '@/hooks/use-toast-error'
 import { registryApi } from '@/api/registry'
-import type { EntityType, FieldDef, FieldDefInput } from '@/api/registry'
+import type { EntityType, FieldDef, FieldDefInput, TypeKind } from '@/api/registry'
 
 const toInput = (f: FieldDef): FieldDefInput => ({
   name: f.name,
@@ -32,10 +32,12 @@ const toInput = (f: FieldDef): FieldDefInput => ({
 /** 选择性导入内置类型：左=系统自带目录（选择性 seed）、右=组织自带类型（复制成项目类型）。 */
 export function ImportTypesDialog({
   projectId,
+  kindFilter,
   open,
   onOpenChange,
 }: {
   projectId: string
+  kindFilter?: TypeKind
   open: boolean
   onOpenChange: (o: boolean) => void
 }) {
@@ -59,8 +61,16 @@ export function ImportTypesDialog({
   )
   // 组织自带类型（自动并入项目可见，scope=organization）。
   const orgTypes = useMemo(
-    () => (types.data ?? []).filter((ty) => ty.scope === 'organization'),
-    [types.data],
+    () =>
+      (types.data ?? []).filter(
+        (ty) => ty.scope === 'organization' && (!kindFilter || ty.kind === kindFilter),
+      ),
+    [kindFilter, types.data],
+  )
+  const systemTypes = useMemo(
+    () =>
+      (catalog.data ?? []).filter((ty) => !kindFilter || ty.kind === kindFilter),
+    [catalog.data, kindFilter],
   )
 
   const toggle = (set: Set<string>, setSet: (s: Set<string>) => void, id: string) => {
@@ -125,10 +135,10 @@ export function ImportTypesDialog({
           <Column
             icon={<Sparkles className="size-4 text-brand" />}
             title={t('types.sourceSystem')}
-            count={catalog.data?.length ?? 0}
+            count={systemTypes.length}
             loading={catalog.isLoading}
           >
-            {(catalog.data ?? []).map((c) => {
+            {systemTypes.map((c) => {
               const imported = projectKeys.has(c.key)
               return (
                 <ImportRow

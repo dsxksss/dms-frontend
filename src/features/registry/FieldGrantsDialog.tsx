@@ -28,8 +28,7 @@ import {
   useRejectFieldAccessRequest,
   useRevokeField,
 } from '@/hooks/use-registry'
-import { useUserSearch } from '@/hooks/use-membership'
-import { useDebounce } from '@/hooks/use-debounce'
+import { useMembers } from '@/hooks/use-projects'
 import { useToastError } from '@/hooks/use-toast-error'
 import { shortId } from '@/lib/format'
 import type { EntityType } from '@/api/registry'
@@ -54,11 +53,13 @@ export function FieldGrantsDialog({
   const revoke = useRevokeField(projectId, type.kind, type.id)
   const approve = useApproveFieldAccessRequest(projectId)
   const reject = useRejectFieldAccessRequest(projectId)
+  const members = useMembers(projectId)
   const toastError = useToastError()
   const [field, setField] = useState(sensitive[0]?.name ?? '')
   const [search, setSearch] = useState('')
-  const debounced = useDebounce(search, 300)
-  const results = useUserSearch(debounced)
+  const memberOptions = (members.data ?? []).filter((m) =>
+    m.user_id.toLowerCase().includes(search.trim().toLowerCase()),
+  )
 
   const doGrant = (userId: string) =>
     grant
@@ -167,18 +168,18 @@ export function FieldGrantsDialog({
               </div>
             </div>
 
-            {debounced && (
+            {search.trim() && (
               <div className="max-h-40 overflow-auto rounded-[9px] border">
-                {(results.data ?? []).map((u) => (
+                {memberOptions.map((m) => (
                   <button
                     type="button"
-                    key={u.id}
-                    onClick={() => doGrant(u.id)}
+                    key={m.user_id}
+                    onClick={() => doGrant(m.user_id)}
                     className="flex w-full items-center gap-2.5 px-2.5 py-2 text-left hover:bg-surface-2"
                   >
-                    <UserAvatar name={u.display_name || u.email} seed={u.id} size={26} />
+                    <UserAvatar name={m.user_id} seed={m.user_id} size={26} />
                     <span className="flex-1 truncate text-[12.5px]">
-                      {u.display_name || u.email}
+                      {shortId(m.user_id)}
                     </span>
                     <span className="text-[11px] font-semibold text-brand">
                       {t('grants.grant')}

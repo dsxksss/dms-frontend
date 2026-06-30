@@ -47,11 +47,11 @@
   },
   "resourceGrants": {
     "title": "协作者",
-    "desc": "给具体的人按操作单独放行（在角色之外叠加）。仅项目 Manager 可设置。",
+    "desc": "给项目成员按操作单独放行（在角色之外叠加）。仅项目 Manager 可设置。",
     "user": "用户",
     "action": "操作",
     "add": "授权",
-    "addUser": "授权给其他人（按姓名 / 邮箱搜索）",
+    "addUser": "授权给项目成员",
     "matrixDesc": "勾选即在该成员角色之外额外放行此动作，取消勾选即撤销；角色本身已覆盖的动作显示为锁定。",
     "noMembers": "暂无成员",
     "empty": "暂无单独授权",
@@ -131,6 +131,9 @@
       "generic": "已达套餐上限，请升级套餐"
     },
     "validation": "提交内容有误，请检查",
+    "grantTargetMustBeProjectMember": "只能授权给项目成员，请先邀请对方加入项目",
+    "typeStillHasRecords": "该类型下还有记录，需先删除这些记录后再删除类型",
+    "typeBoundByDataTemplate": "该药物资产类型仍被数据资产类型绑定，请先解绑或删除对应数据资产类型",
     "server": "服务器错误",
     "unknown": "未知错误"
   }

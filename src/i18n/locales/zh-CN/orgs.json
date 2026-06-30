@@ -129,8 +129,16 @@
   },
   "settings": {
     "title": "组织设置",
+    "name": "组织名称",
+    "saveName": "保存名称",
     "discoverable": "允许被搜索并申请加入",
     "discoverableHint": "开启后，本企业其他用户可搜索到该组织并申请加入；关闭则只能由管理员邀请。",
-    "saved": "已保存"
+    "saved": "已保存",
+    "deleteTitle": "删除组织",
+    "deleteHint": "只有组织创建者可以删除组织；若组织下仍有项目，需要先移动或删除项目。",
+    "delete": "删除组织",
+    "deleteConfirmTitle": "删除组织？",
+    "deleteConfirmDesc": "该操作不可撤销。组织成员、团队与邀请记录会被移除。",
+    "deleted": "组织已删除"
   }
 }

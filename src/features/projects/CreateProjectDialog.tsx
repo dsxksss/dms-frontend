@@ -27,8 +27,8 @@ import { useOrgs } from '@/hooks/use-orgs'
 import { useToastError } from '@/hooks/use-toast-error'
 import { projectsApi } from '@/api/projects'
 
-/** 归属默认值：留空交后端回退到默认组织「我的组织」。 */
-const DEFAULT_WS = ''
+/** 归属默认值：提交时转为空，交后端回退到默认组织「我的组织」。 */
+const DEFAULT_WS = '__default_workspace__'
 
 /** 新建项目对话框：名称 + 描述 + 归属组织（默认「我的组织」，可改其他组织）。 */
 export function CreateProjectDialog({
@@ -49,8 +49,9 @@ export function CreateProjectDialog({
   const [visibility, setVisibility] = useState<'private' | 'org'>('private')
   const orgList = orgs.data ?? []
   const defaultOrg = orgList.find((o) => o.is_default)
-  // 选中值：空=默认工作区（用默认组织 id 回显，否则交后端兜底）。
-  const selected = org || defaultOrg?.id || DEFAULT_WS
+  // 选中值：默认工作区用默认组织 id 回显，否则使用非空 sentinel，避免 Radix SelectItem 空值崩溃。
+  const selected = org === DEFAULT_WS ? defaultOrg?.id ?? DEFAULT_WS : org
+  const organizationId = org === DEFAULT_WS ? undefined : org
 
   const submit = async () => {
     if (!name.trim()) return
@@ -58,7 +59,7 @@ export function CreateProjectDialog({
       const project = await create.mutateAsync({
         name: name.trim(),
         description: description.trim() || undefined,
-        organization_id: org || undefined,
+        organization_id: organizationId,
       })
       // 组织内公开 = 把项目共享给它所属组织（该组织成员只读可见）；私有则不共享。
       if (visibility === 'org' && project.organization_id) {
@@ -109,7 +110,7 @@ export function CreateProjectDialog({
           <div className="space-y-1.5">
             <Label>{t('columns.organization')}</Label>
             <Select value={selected} onValueChange={setOrg}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label={t('columns.organization')}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -132,7 +133,7 @@ export function CreateProjectDialog({
               value={visibility}
               onValueChange={(v) => setVisibility(v as 'private' | 'org')}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label={t('visibility.label')}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
