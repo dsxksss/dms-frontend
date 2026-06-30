@@ -17,7 +17,9 @@ import type {
  */
 const obase = (orgId: string) => `/v1/orgs/${orgId}`
 const typePath = (orgId: string, kind: TypeKind) =>
-  kind === 'asset' ? `${obase(orgId)}/asset-types` : `${obase(orgId)}/data-templates`
+  kind === 'asset'
+    ? `${obase(orgId)}/asset-types`
+    : `${obase(orgId)}/data-templates`
 const recPath = (orgId: string, kind: TypeKind) =>
   kind === 'asset' ? `${obase(orgId)}/assets` : `${obase(orgId)}/data`
 
@@ -41,7 +43,16 @@ export const orgRegistryApi = {
   listRecords: (
     orgId: string,
     kind: TypeKind,
-    params: { type?: string; contains?: string; limit?: number; offset?: number },
+    params: {
+      type?: string
+      contains?: string
+      search?: string
+      search_field?: string
+      sort?: string
+      desc?: boolean
+      limit?: number
+      offset?: number
+    },
   ) =>
     request<Paginated<Entity>>(recPath(orgId, kind), { query: { ...params } }),
   getRecord: (orgId: string, kind: TypeKind, rid: string) =>
@@ -73,18 +84,19 @@ export const orgRegistryApi = {
     orgId: string,
     assetTypeId: string,
     body: string,
-    params: { format: 'csv' | 'fasta'; name_field?: string; seq_field?: string },
+    params: {
+      format: 'csv' | 'fasta'
+      name_field?: string
+      seq_field?: string
+    },
   ) =>
-    request<ImportReport>(
-      `${obase(orgId)}/asset-types/${assetTypeId}/import`,
-      {
-        method: 'POST',
-        raw: body,
-        query: { ...params },
-        // 后端 import 仅声明 text/csv / application/octet-stream（FASTA 亦为文本）。
-        headers: { 'content-type': 'text/csv' },
-      },
-    ),
+    request<ImportReport>(`${obase(orgId)}/asset-types/${assetTypeId}/import`, {
+      method: 'POST',
+      raw: body,
+      query: { ...params },
+      // 后端 import 仅声明 text/csv / application/octet-stream（FASTA 亦为文本）。
+      headers: { 'content-type': 'text/csv' },
+    }),
 }
 
 export type { CreateTypeBody, FieldDefInput }

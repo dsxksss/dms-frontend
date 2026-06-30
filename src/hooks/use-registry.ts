@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import {
   registryApi,
   type CreateTypeBody,
@@ -232,7 +237,10 @@ export function useRequestFieldAccess(
   const invalidate = useInvalidateRegistry(projectId)
   return useMutation({
     mutationFn: ({ field, message }: { field: string; message?: string }) =>
-      registryApi.requestFieldAccess(projectId, kind, typeId, { field, message }),
+      registryApi.requestFieldAccess(projectId, kind, typeId, {
+        field,
+        message,
+      }),
     onSuccess: invalidate,
   })
 }
@@ -245,7 +253,8 @@ export function useFieldAccessRequests(
 ) {
   return useQuery({
     queryKey: registryKeys.fieldAccessRequests(projectId, typeId, status),
-    queryFn: () => registryApi.listFieldAccessRequests(projectId, kind, typeId, status),
+    queryFn: () =>
+      registryApi.listFieldAccessRequests(projectId, kind, typeId, status),
     enabled: !!typeId,
   })
 }
@@ -258,7 +267,8 @@ export function useMyFieldAccessRequests(
 ) {
   return useQuery({
     queryKey: registryKeys.myFieldAccessRequests(projectId, typeId, status),
-    queryFn: () => registryApi.listMyFieldAccessRequests(projectId, kind, typeId, status),
+    queryFn: () =>
+      registryApi.listMyFieldAccessRequests(projectId, kind, typeId, status),
     enabled: !!typeId,
   })
 }
@@ -303,7 +313,8 @@ export function useIncomingFieldAccessRequests(
 export function useMarkFieldAccessRequestRead() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (requestId: string) => registryApi.markFieldAccessRequestRead(requestId),
+    mutationFn: (requestId: string) =>
+      registryApi.markFieldAccessRequestRead(requestId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['registry', 'me'] }),
   })
 }
@@ -323,6 +334,10 @@ export function useRecords(
   params: {
     type: string
     contains?: string
+    search?: string
+    search_field?: string
+    sort?: string
+    desc?: boolean
     deleted?: boolean
     limit?: number
     offset?: number
@@ -332,6 +347,7 @@ export function useRecords(
   return useQuery({
     queryKey: registryKeys.records(projectId, { kind, ...params }),
     queryFn: () => registryApi.listRecords(projectId, kind, params),
+    placeholderData: keepPreviousData,
     enabled: enabled && !!params.type,
   })
 }

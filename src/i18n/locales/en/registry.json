@@ -182,6 +182,12 @@
     "deleteAllConfirm": "Delete {{count}}",
     "deleteAllDone": "Deleted {{count}} record(s)",
     "resizeColumn": "Drag to resize {{column}} column",
+    "allFields": "All fields",
+    "searchPlaceholder": "Search records...",
+    "searchResult": "{{total}} matching record(s)",
+    "sortColumn": "Sort {{column}}",
+    "noMatches": "No matching records",
+    "noMatchesHint": "Adjust or clear the search query and try again.",
     "relations": "Relations & composition",
     "hidden": "Hidden",
     "selectTypeFirst": "Select an entity type first"
@@ -200,7 +206,10 @@
     "hour": "Hour",
     "minute": "Minute"
   },
-  "errors": { "required": "This field is required", "number": "Enter a number" },
+  "errors": {
+    "required": "This field is required",
+    "number": "Enter a number"
+  },
   "grants": {
     "title": "Sensitive field grants",
     "desc": "Grant a specific user visibility into a sensitive field.",

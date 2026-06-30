@@ -181,10 +181,9 @@ export interface CreateTypeBody {
 }
 
 export function entityTypeDisplayName(type: EntityType, language = ''): string {
-  const preferred =
-    language.toLowerCase().startsWith('zh')
-      ? type.name_zh || type.name || type.name_en
-      : type.name_en || type.name || type.name_zh
+  const preferred = language.toLowerCase().startsWith('zh')
+    ? type.name_zh || type.name || type.name_en
+    : type.name_en || type.name || type.name_zh
   return preferred || type.key
 }
 
@@ -209,7 +208,9 @@ export function fieldDisplayWithName(
 const pbase = (pid: string) => `/v1/projects/${pid}`
 /** 类型端点按 kind 分路径。 */
 const typePath = (pid: string, kind: TypeKind) =>
-  kind === 'asset' ? `${pbase(pid)}/asset-types` : `${pbase(pid)}/data-templates`
+  kind === 'asset'
+    ? `${pbase(pid)}/asset-types`
+    : `${pbase(pid)}/data-templates`
 /** 记录端点按 kind 分路径。 */
 const recPath = (pid: string, kind: TypeKind) =>
   kind === 'asset' ? `${pbase(pid)}/assets` : `${pbase(pid)}/data`
@@ -261,7 +262,12 @@ export const registryApi = {
       body,
     }),
   /** 删除类型（乐观锁 version）。有记录 / 被模板绑定 → 409。 */
-  deleteType: (projectId: string, kind: TypeKind, typeId: string, version: number) =>
+  deleteType: (
+    projectId: string,
+    kind: TypeKind,
+    typeId: string,
+    version: number,
+  ) =>
     request<void>(`${typePath(projectId, kind)}/${typeId}`, {
       method: 'DELETE',
       query: { version },
@@ -277,7 +283,12 @@ export const registryApi = {
       method: 'POST',
       query: { version },
     }),
-  purgeType: (projectId: string, kind: TypeKind, typeId: string, version: number) =>
+  purgeType: (
+    projectId: string,
+    kind: TypeKind,
+    typeId: string,
+    version: number,
+  ) =>
     request<void>(`${typePath(projectId, kind)}/${typeId}/purge`, {
       method: 'DELETE',
       query: { version },
@@ -291,13 +302,19 @@ export const registryApi = {
     }),
   /** 系统内置类型目录元信息（供选择性导入 UI）。 */
   drugRdCatalog: (projectId: string) =>
-    request<DrugRdCatalogType[]>(`${pbase(projectId)}/registry/drug-rd-catalog`),
+    request<DrugRdCatalogType[]>(
+      `${pbase(projectId)}/registry/drug-rd-catalog`,
+    ),
   /** 批量导入仅资产类型支持。 */
   importEntities: (
     projectId: string,
     assetTypeId: string,
     body: string,
-    params: { format: 'csv' | 'fasta'; name_field?: string; seq_field?: string },
+    params: {
+      format: 'csv' | 'fasta'
+      name_field?: string
+      seq_field?: string
+    },
   ) =>
     request<ImportReport>(
       `${pbase(projectId)}/asset-types/${assetTypeId}/import`,
@@ -312,7 +329,9 @@ export const registryApi = {
 
   // ---- 字段授权（按 kind 取对应类型路径）----
   listFieldGrants: (projectId: string, kind: TypeKind, typeId: string) =>
-    request<FieldGrant[]>(`${typePath(projectId, kind)}/${typeId}/field-grants`),
+    request<FieldGrant[]>(
+      `${typePath(projectId, kind)}/${typeId}/field-grants`,
+    ),
   /** 当前用户对该类型敏感字段的列级可见性。 */
   myFieldAccess: (projectId: string, kind: TypeKind, typeId: string) =>
     request<FieldAccess>(
@@ -389,9 +408,12 @@ export const registryApi = {
       query: { status },
     }),
   markFieldAccessRequestRead: (requestId: string) =>
-    request<FieldAccessRequest>(`/v1/me/field-access-requests/${requestId}/read`, {
-      method: 'POST',
-    }),
+    request<FieldAccessRequest>(
+      `/v1/me/field-access-requests/${requestId}/read`,
+      {
+        method: 'POST',
+      },
+    ),
   markAllFieldAccessRequestsRead: () =>
     request<void>('/v1/me/field-access-requests/read-all', {
       method: 'POST',
@@ -405,6 +427,10 @@ export const registryApi = {
     params: {
       type: string
       contains?: string
+      search?: string
+      search_field?: string
+      sort?: string
+      desc?: boolean
       deleted?: boolean
       limit?: number
       offset?: number

@@ -6,7 +6,16 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from 'react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Search, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 /**
  * 网格表（原型 .card + grid 表头 + .trow 行）—— 全站列表的统一骨架。
@@ -25,7 +34,7 @@ export function TableCard({
   return (
     <div
       className={cn(
-        'card-shadow overflow-hidden rounded-[14px] border bg-card',
+        'card-shadow bg-card overflow-hidden rounded-[14px] border',
         className,
       )}
     >
@@ -47,7 +56,7 @@ export function GridHeader({
   return (
     <div
       className={cn(
-        'grid items-center border-b bg-surface-2 px-[18px] py-[11px]',
+        'bg-surface-2 grid items-center border-b px-[18px] py-[11px]',
         className,
       )}
       style={{ gridTemplateColumns: cols }}
@@ -83,7 +92,7 @@ export function GridRow({
   return (
     <div
       className={cn(
-        'grid items-center border-b border-divider px-[18px] py-3 text-[13px] last:border-b-0',
+        'border-divider grid items-center border-b px-[18px] py-3 text-[13px] last:border-b-0',
         onClick && 'trow cursor-pointer',
         className,
       )}
@@ -98,9 +107,133 @@ export function GridRow({
 /** 列表底部栏（计数 + 分页）。 */
 export function GridFooter({ children }: { children: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 px-[18px] py-3 text-[12.5px] text-muted-foreground">
+    <div className="text-muted-foreground flex flex-wrap items-center justify-between gap-3 px-[18px] py-3 text-[12.5px]">
       {children}
     </div>
+  )
+}
+
+export type GridSortState = {
+  key: string
+  desc: boolean
+} | null
+
+export function nextGridSort(
+  current: GridSortState,
+  key: string,
+): GridSortState {
+  if (current?.key !== key) return { key, desc: false }
+  if (!current.desc) return { key, desc: true }
+  return null
+}
+
+export function GridSearchToolbar({
+  value,
+  onChange,
+  placeholder,
+  resultText,
+  actions,
+  fieldValue,
+  onFieldChange,
+  fieldOptions,
+  allFieldsLabel,
+}: {
+  value: string
+  onChange: (value: string) => void
+  placeholder: string
+  resultText?: ReactNode
+  actions?: ReactNode
+  fieldValue?: string
+  onFieldChange?: (value: string) => void
+  fieldOptions?: Array<{ value: string; label: string }>
+  allFieldsLabel?: string
+}) {
+  const hasFieldFilter = !!onFieldChange && !!fieldOptions?.length
+  return (
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="flex w-full max-w-[560px] min-w-[260px] flex-wrap items-center gap-2">
+        {hasFieldFilter && (
+          <Select value={fieldValue ?? '__all__'} onValueChange={onFieldChange}>
+            <SelectTrigger className="h-9 w-[132px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="start">
+              <SelectItem value="__all__">
+                {allFieldsLabel ?? 'All fields'}
+              </SelectItem>
+              {fieldOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        <div className="relative min-w-[220px] flex-1">
+          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+          <Input
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            placeholder={placeholder}
+            className="h-9 pr-8 pl-9"
+          />
+          {value.trim() && (
+            <button
+              type="button"
+              className="text-muted-foreground hover:bg-muted hover:text-foreground absolute top-1/2 right-2 flex size-5 -translate-y-1/2 items-center justify-center rounded"
+              onClick={() => onChange('')}
+            >
+              <X className="size-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+      {(actions || resultText) && (
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+          {resultText && (
+            <div className="text-muted-foreground text-[12.5px] font-medium">
+              {resultText}
+            </div>
+          )}
+          {actions}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function GridSortButton({
+  sortKey,
+  sort,
+  onSortChange,
+  label,
+  children,
+}: {
+  sortKey: string
+  sort: GridSortState
+  onSortChange: (next: GridSortState) => void
+  label: string
+  children: ReactNode
+}) {
+  const active = sort?.key === sortKey
+  const Icon = active ? (sort.desc ? ArrowDown : ArrowUp) : ArrowUpDown
+  return (
+    <button
+      type="button"
+      className={cn(
+        'flex min-w-0 items-center gap-1 truncate text-left text-[11px] font-semibold tracking-[0.04em] uppercase',
+        active ? 'text-brand' : 'text-muted-foreground hover:text-foreground',
+      )}
+      title={label}
+      aria-label={label}
+      onClick={(event) => {
+        event.stopPropagation()
+        onSortChange(nextGridSort(sort, sortKey))
+      }}
+    >
+      <span className="truncate">{children}</span>
+      <Icon className="size-3 shrink-0" />
+    </button>
   )
 }
 
@@ -121,9 +254,13 @@ export function useResizableGridColumns(columns: ResizableGridColumn[]) {
   const [widths, setWidths] = useState<Record<string, number>>(() =>
     Object.fromEntries(columns.map((column) => [column.id, column.width])),
   )
+  const [lockedWidths, setLockedWidths] = useState(false)
 
   useEffect(() => {
-    setWidths(Object.fromEntries(columns.map((column) => [column.id, column.width])))
+    setWidths(
+      Object.fromEntries(columns.map((column) => [column.id, column.width])),
+    )
+    setLockedWidths(false)
   }, [columnKey, columns])
 
   const template = useMemo(
@@ -131,11 +268,11 @@ export function useResizableGridColumns(columns: ResizableGridColumn[]) {
       columns
         .map((column) => {
           const width = widths[column.id] ?? column.width
-          if (column.flex === 0) return `${width}px`
+          if (lockedWidths || column.flex === 0) return `${width}px`
           return `minmax(${width}px, ${column.flex ?? 1}fr)`
         })
         .join(' '),
-    [columns, widths],
+    [columns, widths, lockedWidths],
   )
 
   const startResize = useCallback(
@@ -146,10 +283,42 @@ export function useResizableGridColumns(columns: ResizableGridColumn[]) {
       event.preventDefault()
       event.stopPropagation()
 
+      let grid: HTMLElement | null = event.currentTarget
+      while (grid) {
+        const style = window.getComputedStyle(grid)
+        if (
+          style.display.includes('grid') &&
+          grid.children.length >= columns.length
+        ) {
+          break
+        }
+        grid = grid.parentElement
+      }
+      const measuredWidths = grid
+        ? Object.fromEntries(
+            columns.map((item, index) => {
+              const child = grid.children.item(index)
+              const width =
+                child instanceof HTMLElement
+                  ? child.getBoundingClientRect().width
+                  : (widths[item.id] ?? item.width)
+              return [item.id, width]
+            }),
+          )
+        : {}
+      const baseWidths = {
+        ...Object.fromEntries(
+          columns.map((item) => [item.id, widths[item.id] ?? item.width]),
+        ),
+        ...measuredWidths,
+      }
+      setLockedWidths(true)
+      setWidths(baseWidths)
+
       const startX = event.clientX
-      const startWidth = widths[columnId] ?? column.width
+      const startWidth = baseWidths[columnId] ?? column.width
       const min = column.min ?? 72
-      const max = column.max ?? 640
+      const max = column.max ?? Number.POSITIVE_INFINITY
       const previousCursor = document.body.style.cursor
       const previousUserSelect = document.body.style.userSelect
 
@@ -157,8 +326,11 @@ export function useResizableGridColumns(columns: ResizableGridColumn[]) {
       document.body.style.userSelect = 'none'
 
       const onPointerMove = (moveEvent: PointerEvent) => {
-        const next = Math.min(max, Math.max(min, startWidth + moveEvent.clientX - startX))
-        setWidths((current) => ({ ...current, [columnId]: next }))
+        const next = Math.min(
+          max,
+          Math.max(min, startWidth + moveEvent.clientX - startX),
+        )
+        setWidths({ ...baseWidths, [columnId]: next })
       }
 
       const onPointerUp = () => {
@@ -194,7 +366,7 @@ export function GridColumnResizeHandle({
       onPointerDown={onPointerDown}
     >
       <span
-        className="my-0.5 w-px rounded-full bg-muted-foreground/35 transition group-hover:w-0.5 group-hover:bg-brand group-focus-visible:w-0.5 group-focus-visible:bg-brand group-active:w-0.5 group-active:bg-brand"
+        className="bg-muted-foreground/35 group-hover:bg-brand group-focus-visible:bg-brand group-active:bg-brand my-0.5 w-px rounded-full transition group-hover:w-0.5 group-focus-visible:w-0.5 group-active:w-0.5"
         onPointerDown={onPointerDown}
       />
     </button>

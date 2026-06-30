@@ -189,6 +189,12 @@
     "deleteAllConfirm": "删除 {{count}} 条",
     "deleteAllDone": "已删除 {{count}} 条记录",
     "resizeColumn": "拖拽调整 {{column}} 列宽",
+    "allFields": "全部字段",
+    "searchPlaceholder": "搜索记录…",
+    "searchResult": "共 {{total}} 条匹配记录",
+    "sortColumn": "排序 {{column}}",
+    "noMatches": "没有匹配记录",
+    "noMatchesHint": "调整搜索关键词或清空搜索后再试。",
     "relations": "关系与组合",
     "hidden": "已隐藏",
     "selectTypeFirst": "请先选择一个实体类型"

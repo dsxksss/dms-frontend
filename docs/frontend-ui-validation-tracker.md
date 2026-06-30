@@ -37,18 +37,68 @@ Known intentionally skipped or confirmation-required actions:
 
 ## Open Findings
 
-No open findings at this baseline.
+2026-06-30 - Runtime browser verification pending for registry record search/sort
+Route: `/projects/:id/registry`
+Repro: After adding server-side record search/sort support, the already running `http://localhost:8080` service showed the new search UI but continued returning 10 `ADC` rows for an impossible search string.
+Expected: After the backend process is restarted with the current code, searching `definitely-no-match-062630` returns 0 matching records and clicking sortable headers changes the server-side order.
+Actual: Browser verified the new frontend controls are loaded, but the current runtime still behaved like the old backend and did not filter the rows.
+Status: Restart the local backend/frontend service and rerun the focused browser search/sort check from this route.
 
 ## Resolved Findings
+
+2026-06-30 - Registry column resize changes only the dragged column
+Route: `/projects/:id/registry`
+Repro: Dragging one resize line caused other table columns to resize at the same time.
+Expected: Dragging a column edge changes only that column; existing widths of the other columns stay fixed during the drag.
+Actual: `useResizableGridColumns` kept non-fixed columns as `minmax(width, fr)`, so browser grid layout redistributed free space while dragging. When dragging the inner line element, the resize handler could also measure the wrong parent and lock incorrect widths.
+Fix: On resize start, walk up to the actual CSS grid header row, measure every current column as a pixel width, lock the grid to those pixel widths, then update only the dragged column during pointer movement.
+Verification: `npm run build` passed. Browser verified `/projects/019f03a2-cce1-7df3-a08c-ffdfdeae1640/registry`: dragging the `name` resize line by 120px changed widths from `[200,286,286,286,286,48]` to `[200,406,286,286,286,48]`; deltas were `[0,120,0,0,0,0]`.
+Commit: frontend this commit
+
+2026-06-30 - Registry bulk delete action aligned with search toolbar
+Route: `/projects/:id/registry`
+Repro: The `删除全部记录` action lived in the record table header action column, making it look like another table header control instead of a list-level destructive action.
+Expected: The bulk delete action should sit on the same toolbar row as search/filter controls while the table header remains focused on column labels and sorting.
+Actual: `删除全部记录` was rendered in the table header's rightmost cell.
+Fix: Added an `actions` slot to `GridSearchToolbar`, moved the `删除全部记录` button into that toolbar, and left the table action header cell blank for row action alignment. The button visibility now uses the current type's total record count rather than the filtered search result count.
+Verification: `npm run build` passed. Browser verified `/projects/019f03a2-cce1-7df3-a08c-ffdfdeae1640/registry`: one `删除全部记录` button is rendered on the same row as `搜索记录…` (`searchY=349.3125`, `deleteY=351.3125`), and it appears above the table header (`sortY=409.3125`) rather than inside the header.
+Commit: frontend this commit
+
+2026-06-30 - Registry search matches field values by selected field
+Route: `/projects/:id/registry`
+Repro: The record table search used the whole JSON text, so it could match field names such as `name/heavy/light` instead of only user-entered record values; when the running backend ignored the new search parameter, every input appeared to match.
+Expected: Search should match record field values. Users can choose all fields or a specific field to search against.
+Actual: Search behavior was too broad and not field-aware.
+Fix: Added `search_field` to project and organization record list APIs. Backend search now matches `jsonb_each_text(data)` values for all-fields search, or `data ->> search_field` for a selected field; it no longer searches JSON key names. `GridSearchToolbar` now supports an optional field selector, and the registry record table exposes `全部字段` plus every field in the current type.
+Verification: `npm run build` passed in `dms-frontend`; `cargo check` passed in `dms-backend`. Browser verified `/projects/019f03a2-cce1-7df3-a08c-ffdfdeae1640/registry` shows the `全部字段` selector next to `搜索记录…`, keeps focus while typing `name`, and the selector menu lists `全部字段`, `name`, `heavy`, `light`, `linker`, `payload`, and `weight` for the current `ADC` type. Runtime filtering still requires restarting the already running backend service; see the open runtime verification finding.
+Commit: backend/frontend this commit
+
+2026-06-30 - Registry search input keeps focus while typing
+Route: `/projects/:id/registry`
+Repro: Type into the record table search box. After the first debounced search request starts, the table area refreshes and the search input loses focus, so continuing to type requires clicking the input again.
+Expected: Users can type a full search query continuously; list refreshes should not unmount the search input or steal focus.
+Actual: Query parameter changes put the records query back into loading state, causing `RecordsGrid` to render `TableSkeleton` and unmount the search toolbar.
+Fix: Added `placeholderData: keepPreviousData` to project and organization record list queries, so search/sort/page parameter changes keep the previous result rendered while the new request is in flight.
+Verification: `npm run build` passed. Browser verified `/projects/019f03a2-cce1-7df3-a08c-ffdfdeae1640/registry`: after typing `a` and waiting past the debounce interval, the search input remained focused, no skeleton rendered, and continuing to type `bc` produced `abc` without another click.
+Commit: frontend this commit
 
 2026-06-30 - Registry record table column resizing
 Route: `/projects/:id/registry`
 Repro: Registry record tables use fixed CSS grid columns, so long field values can only be truncated and users cannot widen important columns.
-Expected: The record table header supports dragging column edges to widen or narrow ID and field columns while keeping rows aligned.
+Expected: The record table header supports dragging column edges to widen or narrow ID and field columns while keeping rows aligned; very wide columns should create table-level horizontal scrolling instead of hitting an artificial maximum width.
 Actual: Column widths were static.
-Fix: Added reusable resizable grid column helpers to `src/components/data-grid.tsx` and wired the project registry record table to use visible vertical line drag handles for ID and visible field columns. The action column remains fixed.
-Verification: `npm run build` passed. Browser verified `/projects/019f03a2-cce1-7df3-a08c-ffdfdeae1640/registry`; the visible `name` column resize line is the hit target, dragging it changed that column template up to `minmax(520px, 1fr)`, with the header and first row cell both measuring 520px after resize, records still present, and no console errors.
+Fix: Added reusable resizable grid column helpers to `src/components/data-grid.tsx` and wired the project registry record table to use visible vertical line drag handles for ID and visible field columns. The action column remains fixed. Registry record columns no longer have a maximum drag width, and the table card scrolls horizontally when resized columns exceed the available width.
+Verification: `npm run build` passed. Browser verified `/projects/019f03a2-cce1-7df3-a08c-ffdfdeae1640/registry` exposes visible resize-line controls such as `拖拽调整 ID 列宽`; dragging the ID column expanded it from about 200px to 1025px, and the table card changed from `scrollWidth=1425` to `scrollWidth=5205` while `clientWidth=1425`, confirming horizontal scrolling instead of a max-width cap.
 Commit: frontend this commit
+
+2026-06-30 - Registry record table search and sort
+Route: `/projects/:id/registry`
+Repro: Registry record tables only supported pagination and manual scanning; users could not search records or sort by visible columns.
+Expected: Record tables expose a reusable search toolbar and sortable headers; query state should go through the backend list API so pagination, search, and sorting operate on the full result set.
+Actual: No record search input or sortable column headers were available.
+Fix: Added reusable `GridSearchToolbar`, `GridSortButton`, and `GridSortState` helpers to `src/components/data-grid.tsx`; wired project and organization registry list APIs/hooks for `search`, `sort`, and `desc`; added backend `EntityFilter` support for text search and field/ID ordering; connected the project registry record table to debounced search, sortable visible columns, reset-on-filter pagination, and a distinct no-match empty state.
+Verification: `npm run build` passed in `dms-frontend`; `cargo check` passed in `dms-backend` after allowing crate downloads. Browser verified `/projects/019f03a2-cce1-7df3-a08c-ffdfdeae1640/registry` renders one `搜索记录…` input, sortable header buttons (`排序 ID`, field headers), active sort styling after clicking `排序 ID`, and the resized table still creates horizontal scrolling. Runtime search-result filtering is pending until the already running service is restarted with the current backend code; see Open Findings.
+Commit: backend/frontend this commit
 
 2026-06-30 - Registry record bulk delete entry
 Route: `/projects/:id/data`, `/projects/:id/registry`

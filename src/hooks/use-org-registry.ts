@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { orgRegistryApi } from '@/api/org-registry'
 import type { CreateTypeBody, TypeKind } from '@/api/registry'
 
@@ -37,12 +42,22 @@ export function useCreateOrgType(orgId: string, kind: TypeKind) {
 export function useOrgRecords(
   orgId: string,
   kind: TypeKind,
-  params: { type?: string; contains?: string; limit?: number; offset?: number },
+  params: {
+    type?: string
+    contains?: string
+    search?: string
+    search_field?: string
+    sort?: string
+    desc?: boolean
+    limit?: number
+    offset?: number
+  },
   enabled = true,
 ) {
   return useQuery({
     queryKey: orgRegistryKeys.records(orgId, { kind, ...params }),
     queryFn: () => orgRegistryApi.listRecords(orgId, kind, params),
+    placeholderData: keepPreviousData,
     enabled: enabled && !!orgId && !!params.type,
   })
 }
