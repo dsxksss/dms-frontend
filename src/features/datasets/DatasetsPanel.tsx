@@ -1,8 +1,16 @@
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { Download, Grid3x3, MoreHorizontal, Plus, Trash2 } from 'lucide-react'
+import {
+  Download,
+  Grid3x3,
+  MoreHorizontal,
+  Plus,
+  Trash2,
+  Upload,
+} from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -12,6 +20,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { PageHeader } from '@/components/page-header'
 import { GridHeader, GridRow, TableCard, Th } from '@/components/data-grid'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
@@ -20,7 +36,12 @@ import { cn } from '@/lib/utils'
 import { roleAtLeast } from '@/lib/roles'
 import { useProjectRole } from '@/hooks/use-projects'
 import { useToastError } from '@/hooks/use-toast-error'
-import { useDatasets, useDatasetTags, useDeleteDataset } from '@/hooks/use-datasets'
+import {
+  datasetKeys,
+  useDatasets,
+  useDatasetTags,
+  useDeleteDataset,
+} from '@/hooks/use-datasets'
 import { datasetsApi, type Dataset, type DatasetScope } from '@/api/datasets'
 import { CreateDatasetDialog } from './CreateDatasetDialog'
 
@@ -48,19 +69,25 @@ export function DatasetsPanel({
 }) {
   const { t } = useTranslation(['datasets', 'common'])
   const navigate = useNavigate()
+  const qc = useQueryClient()
   const role = useProjectRole(projectId)
   const datasetScope = scope ?? projectId ?? ''
   const basePath = detailBasePath ?? `/projects/${projectId}/datasets`
   const canWrite = canWriteOverride ?? roleAtLeast(role, 'contributor')
   const del = useDeleteDataset(datasetScope)
   const toastError = useToastError()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const folderInputRef = useRef<HTMLInputElement>(null)
   const [tag, setTag] = useState<string | undefined>(undefined)
   const query = useDatasets(datasetScope, tag)
   const tags = useDatasetTags(datasetScope)
   const [createOpen, setCreateOpen] = useState(false)
+  const [uploadOpen, setUploadOpen] = useState(false)
   const [delTarget, setDelTarget] = useState<Dataset | null>(null)
+  const [uploadingCsv, setUploadingCsv] = useState(false)
   const data = query.data ?? []
   const hasData = data.length > 0
+  const csvUploading = uploadingCsv
 
   const onDelete = () => {
     if (!delTarget) return
@@ -80,13 +107,179 @@ export function DatasetsPanel({
     </Button>
   )
 
+  const uploadFiles = async (files: FileList | null) => {
+    const csvFiles = Array.from(files ?? []).filter((file) =>
+      file.name.toLowerCase().endsWith('.csv'),
+    )
+    if (csvFiles.length === 0) {
+      toast.error(t('create.noCsvFiles'))
+      return
+    }
+    setUploadingCsv(true)
+    try {
+      for (const file of csvFiles) {
+        const dataset = await datasetsApi.create(datasetScope, {
+          name: file.name.replace(/\.csv$/i, ''),
+        })
+        await datasetsApi.uploadVersion(datasetScope, dataset.id, file, 'csv')
+      }
+      await qc.invalidateQueries({ queryKey: datasetKeys.scope(datasetScope) })
+      toast.success(
+        t('toast.createdFromCsv', { count: csvFiles.length }),
+      )
+      setUploadOpen(false)
+    } catch (err) {
+      toastError(err)
+    } finally {
+      setUploadingCsv(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const uploadFolder = async (files: FileList | null) => {
+    const csvFiles = Array.from(files ?? [])
+      .filter((file) => file.name.toLowerCase().endsWith('.csv'))
+      .sort((a, b) =>
+        (a.webkitRelativePath || a.name).localeCompare(
+          b.webkitRelativePath || b.name,
+        ),
+      )
+    if (csvFiles.length === 0) {
+      toast.error(t('create.noCsvFiles'))
+      return
+    }
+    const firstPath = csvFiles[0]?.webkitRelativePath
+    const folderName = firstPath?.split('/').filter(Boolean)[0]
+    const datasetName =
+      folderName || csvFiles[0].name.replace(/\.csv$/i, '')
+    setUploadingCsv(true)
+    try {
+      const dataset = await datasetsApi.create(datasetScope, {
+        name: datasetName,
+      })
+      for (const file of csvFiles) {
+        await datasetsApi.uploadVersion(datasetScope, dataset.id, file, 'csv')
+      }
+      await qc.invalidateQueries({ queryKey: datasetKeys.scope(datasetScope) })
+      toast.success(
+        t('toast.createdFolderFromCsv', {
+          name: datasetName,
+          count: csvFiles.length,
+        }),
+      )
+      setUploadOpen(false)
+    } catch (err) {
+      toastError(err)
+    } finally {
+      setUploadingCsv(false)
+      if (folderInputRef.current) folderInputRef.current.value = ''
+    }
+  }
+
+  const uploadControls = canWrite ? (
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv,text/csv"
+        multiple
+        className="hidden"
+        onChange={(e) => uploadFiles(e.target.files)}
+      />
+      <input
+        ref={folderInputRef}
+        type="file"
+        accept=".csv,text/csv"
+        multiple
+        className="hidden"
+        onChange={(e) => uploadFolder(e.target.files)}
+      />
+    </>
+  ) : null
+
+  const uploadBtn = canWrite ? (
+    <Button
+      variant="outline"
+      onClick={() => setUploadOpen(true)}
+      disabled={csvUploading}
+    >
+      <Upload className="size-4" />
+      {csvUploading ? t('create.uploadingCsv') : t('create.uploadCsv')}
+    </Button>
+  ) : null
+
+  const uploadDialog = canWrite ? (
+    <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
+      <DialogContent className="sm:max-w-[460px]">
+        <DialogHeader>
+          <DialogTitle>{t('create.uploadCsv')}</DialogTitle>
+          <DialogDescription>
+            {t('create.uploadCsvDescription')}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="h-auto items-start justify-start gap-3 whitespace-normal p-4 text-left"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={csvUploading}
+          >
+            <Upload className="mt-0.5 size-4 shrink-0" />
+            <span className="space-y-1">
+              <span className="block font-bold">{t('create.uploadCsvFile')}</span>
+              <span className="block text-[12px] font-normal text-muted-foreground">
+                {t('create.uploadCsvFileHint')}
+              </span>
+            </span>
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-auto items-start justify-start gap-3 whitespace-normal p-4 text-left"
+            onClick={() => {
+              folderInputRef.current?.setAttribute('webkitdirectory', '')
+              folderInputRef.current?.click()
+            }}
+            disabled={csvUploading}
+          >
+            <Upload className="mt-0.5 size-4 shrink-0" />
+            <span className="space-y-1">
+              <span className="block font-bold">{t('create.uploadCsvFolder')}</span>
+              <span className="block text-[12px] font-normal text-muted-foreground">
+                {t('create.uploadCsvFolderHint')}
+              </span>
+            </span>
+          </Button>
+        </div>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setUploadOpen(false)}
+            disabled={csvUploading}
+          >
+            {t('actions.cancel', { ns: 'common', defaultValue: '取消' })}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  ) : null
+
+  const actions = canWrite ? (
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      {uploadBtn}
+      {createBtn}
+    </div>
+  ) : undefined
+
   return (
     <div className={embedded ? 'space-y-4' : 'px-[26px] py-[22px] max-w-[1200px]'}>
       <PageHeader
         title={title ?? t('title')}
         titleEn={titleEn ?? 'Datasets'}
         description={description ?? t('subtitle')}
-        actions={hasData ? createBtn : undefined}
+        actions={hasData ? actions : undefined}
       />
 
       {(tags.data?.length ?? 0) > 0 && (
@@ -110,7 +303,7 @@ export function DatasetsPanel({
         <EmptyState
           title={t('empty.title')}
           hint={t('empty.description')}
-          action={createBtn}
+          action={actions}
         />
       ) : (
         <TableCard>
@@ -211,6 +404,8 @@ export function DatasetsPanel({
         loading={del.isPending}
         onConfirm={onDelete}
       />
+      {uploadControls}
+      {uploadDialog}
 
       <CreateDatasetDialog
         scope={datasetScope}
