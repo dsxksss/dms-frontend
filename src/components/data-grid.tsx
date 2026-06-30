@@ -1,4 +1,11 @@
-import type { ReactNode } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from 'react'
 import { cn } from '@/lib/utils'
 
 /**
@@ -94,5 +101,102 @@ export function GridFooter({ children }: { children: ReactNode }) {
     <div className="flex flex-wrap items-center justify-between gap-3 px-[18px] py-3 text-[12.5px] text-muted-foreground">
       {children}
     </div>
+  )
+}
+
+export type ResizableGridColumn = {
+  id: string
+  width: number
+  min?: number
+  max?: number
+  flex?: number
+  resizable?: boolean
+}
+
+export function useResizableGridColumns(columns: ResizableGridColumn[]) {
+  const columnKey = useMemo(
+    () => columns.map((column) => `${column.id}:${column.width}`).join('|'),
+    [columns],
+  )
+  const [widths, setWidths] = useState<Record<string, number>>(() =>
+    Object.fromEntries(columns.map((column) => [column.id, column.width])),
+  )
+
+  useEffect(() => {
+    setWidths(Object.fromEntries(columns.map((column) => [column.id, column.width])))
+  }, [columnKey, columns])
+
+  const template = useMemo(
+    () =>
+      columns
+        .map((column) => {
+          const width = widths[column.id] ?? column.width
+          if (column.flex === 0) return `${width}px`
+          return `minmax(${width}px, ${column.flex ?? 1}fr)`
+        })
+        .join(' '),
+    [columns, widths],
+  )
+
+  const startResize = useCallback(
+    (columnId: string, event: ReactPointerEvent<HTMLElement>) => {
+      const column = columns.find((item) => item.id === columnId)
+      if (!column || column.resizable === false) return
+
+      event.preventDefault()
+      event.stopPropagation()
+
+      const startX = event.clientX
+      const startWidth = widths[columnId] ?? column.width
+      const min = column.min ?? 72
+      const max = column.max ?? 640
+      const previousCursor = document.body.style.cursor
+      const previousUserSelect = document.body.style.userSelect
+
+      document.body.style.cursor = 'col-resize'
+      document.body.style.userSelect = 'none'
+
+      const onPointerMove = (moveEvent: PointerEvent) => {
+        const next = Math.min(max, Math.max(min, startWidth + moveEvent.clientX - startX))
+        setWidths((current) => ({ ...current, [columnId]: next }))
+      }
+
+      const onPointerUp = () => {
+        document.body.style.cursor = previousCursor
+        document.body.style.userSelect = previousUserSelect
+        window.removeEventListener('pointermove', onPointerMove)
+        window.removeEventListener('pointerup', onPointerUp)
+      }
+
+      window.addEventListener('pointermove', onPointerMove)
+      window.addEventListener('pointerup', onPointerUp, { once: true })
+    },
+    [columns, widths],
+  )
+
+  return { template, startResize, widths }
+}
+
+export function GridColumnResizeHandle({
+  label,
+  onPointerDown,
+}: {
+  label: string
+  onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      className="group absolute inset-y-0 right-0 z-10 flex w-3 cursor-col-resize items-stretch justify-center rounded-sm outline-none"
+      onClick={(event) => event.stopPropagation()}
+      onPointerDown={onPointerDown}
+    >
+      <span
+        className="my-0.5 w-px rounded-full bg-muted-foreground/35 transition group-hover:w-0.5 group-hover:bg-brand group-focus-visible:w-0.5 group-focus-visible:bg-brand group-active:w-0.5 group-active:bg-brand"
+        onPointerDown={onPointerDown}
+      />
+    </button>
   )
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueries, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -31,7 +31,12 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 import { PageHeader } from '@/components/page-header'
-import { TableCard, GridFooter } from '@/components/data-grid'
+import {
+  GridColumnResizeHandle,
+  GridFooter,
+  TableCard,
+  useResizableGridColumns,
+} from '@/components/data-grid'
 import { Pagination } from '@/components/pagination'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -584,7 +589,22 @@ function RecordsGrid({
   const [deletingAll, setDeletingAll] = useState(false)
 
   const shown = type.fields.slice(0, 4)
-  const cols = `108px ${shown.map(() => 'minmax(0,1fr)').join(' ')} 48px`
+  const shownKey = shown.map((field) => field.name).join('|')
+  const columns = useMemo(
+    () => [
+      { id: '__id__', width: 108, min: 88, max: 220, flex: 0.7 },
+      ...shown.map((field) => ({
+        id: field.name,
+        width: 160,
+        min: 120,
+        max: 520,
+        flex: 1,
+      })),
+      { id: '__actions__', width: 48, flex: 0, resizable: false },
+    ],
+    [shownKey],
+  )
+  const { template: cols, startResize } = useResizableGridColumns(columns)
   const records = query.data?.items ?? []
   const total = query.data?.total ?? 0
 
@@ -664,9 +684,18 @@ function RecordsGrid({
           className="grid items-center border-b bg-surface-2 px-4 py-[11px]"
           style={{ gridTemplateColumns: cols }}
         >
-          <div className="th">ID</div>
+          <div className="th relative min-w-0 pr-3">
+            ID
+            <GridColumnResizeHandle
+              label={t('entities.resizeColumn', { column: 'ID' })}
+              onPointerDown={(event) => startResize('__id__', event)}
+            />
+          </div>
           {shown.map((f) => (
-            <div key={f.name} className="th flex items-center gap-1 truncate">
+            <div
+              key={f.name}
+              className="th relative flex min-w-0 items-center gap-1 truncate pr-3"
+            >
               <span className="truncate">{fieldDisplayName(f, i18n.language)}</span>
               {lockedFields.has(f.name) && (
                 <Button
@@ -687,6 +716,12 @@ function RecordsGrid({
                   <Lock className="size-3" />
                 </Button>
               )}
+              <GridColumnResizeHandle
+                label={t('entities.resizeColumn', {
+                  column: fieldDisplayName(f, i18n.language),
+                })}
+                onPointerDown={(event) => startResize(f.name, event)}
+              />
             </div>
           ))}
           <div className="flex justify-end">

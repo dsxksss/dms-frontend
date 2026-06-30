@@ -181,6 +181,7 @@
     "deleteAllDesc": "This moves {{count}} record(s) under \"{{name}}\" to the trash.",
     "deleteAllConfirm": "Delete {{count}}",
     "deleteAllDone": "Deleted {{count}} record(s)",
+    "resizeColumn": "Drag to resize {{column}} column",
     "relations": "Relations & composition",
     "hidden": "Hidden",
     "selectTypeFirst": "Select an entity type first"

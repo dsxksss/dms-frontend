@@ -188,6 +188,7 @@
     "deleteAllDesc": "将把「{{name}}」下的 {{count}} 条记录移入回收站。",
     "deleteAllConfirm": "删除 {{count}} 条",
     "deleteAllDone": "已删除 {{count}} 条记录",
+    "resizeColumn": "拖拽调整 {{column}} 列宽",
     "relations": "关系与组合",
     "hidden": "已隐藏",
     "selectTypeFirst": "请先选择一个实体类型"

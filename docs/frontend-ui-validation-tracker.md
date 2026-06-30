@@ -41,6 +41,15 @@ No open findings at this baseline.
 
 ## Resolved Findings
 
+2026-06-30 - Registry record table column resizing
+Route: `/projects/:id/registry`
+Repro: Registry record tables use fixed CSS grid columns, so long field values can only be truncated and users cannot widen important columns.
+Expected: The record table header supports dragging column edges to widen or narrow ID and field columns while keeping rows aligned.
+Actual: Column widths were static.
+Fix: Added reusable resizable grid column helpers to `src/components/data-grid.tsx` and wired the project registry record table to use visible vertical line drag handles for ID and visible field columns. The action column remains fixed.
+Verification: `npm run build` passed. Browser verified `/projects/019f03a2-cce1-7df3-a08c-ffdfdeae1640/registry`; the visible `name` column resize line is the hit target, dragging it changed that column template up to `minmax(520px, 1fr)`, with the header and first row cell both measuring 520px after resize, records still present, and no console errors.
+Commit: frontend this commit
+
 2026-06-30 - Registry record bulk delete entry
 Route: `/projects/:id/data`, `/projects/:id/registry`
 Repro: When a registry type contains many records, deleting records one by one and permanently deleting records one by one from the record trash is inefficient.
