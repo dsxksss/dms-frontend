@@ -118,11 +118,15 @@
     "delete": "Delete",
     "total": "{{total}} total"
   },
+  "datasets": {
+    "description": "Organization-shared datasets. Members can view them; org admins can create, upload versions, edit and delete."
+  },
   "tabs": {
     "teams": "Teams",
     "members": "Members",
     "assets": "Org assets",
     "data": "Org data",
+    "datasets": "Org datasets",
     "grants": "Role grants",
     "join": "Join requests",
     "settings": "Settings"

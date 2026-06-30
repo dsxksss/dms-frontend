@@ -138,6 +138,7 @@ export const router = createBrowserRouter([
           { path: 'public-datasets', element: <PublicDatasetsPage /> },
           { path: 'orgs', element: <OrgsListPage /> },
           { path: 'orgs/:id', element: <OrgDetailPage /> },
+          { path: 'orgs/:orgId/datasets/:dsId', element: <DatasetDetailPage /> },
           { path: 'inbox', element: <InboxPage /> },
           { path: 'audit', element: <AuditPage /> },
           { path: 'settings', element: <SettingsPage /> },

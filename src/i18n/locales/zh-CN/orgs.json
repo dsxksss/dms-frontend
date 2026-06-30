@@ -118,6 +118,9 @@
     "delete": "删除",
     "total": "共 {{total}} 条"
   },
+  "datasets": {
+    "description": "组织内共享的数据集，组织成员可查看，组织管理员可维护。"
+  },
   "tabs": {
     "teams": "团队",
     "members": "成员",

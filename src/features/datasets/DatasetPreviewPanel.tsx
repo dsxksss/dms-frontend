@@ -15,7 +15,7 @@ import { Pagination } from '@/components/pagination'
 import { columnRoleTone } from '@/components/tone'
 import { useDebounce } from '@/hooks/use-debounce'
 import { useDatasetPreview } from '@/hooks/use-datasets'
-import type { ColumnRole, ColumnSchema } from '@/api/datasets'
+import type { ColumnRole, ColumnSchema, DatasetScope } from '@/api/datasets'
 
 const ROLE_ORDER: ColumnRole[] = ['id', 'feature', 'label', 'ignore']
 const CANVAS_PAGE_LIMIT = 200
@@ -24,10 +24,12 @@ const CANVAS_PAGE_SIZE_OPTIONS = [100, 200] as const
 /** 数据集预览（富屏）：全列搜索 + 列角色图例 + 可排序表头 + 斑马行。 */
 export function DatasetPreviewPanel({
   projectId,
+  scope,
   datasetId,
   schema,
 }: {
-  projectId: string
+  projectId?: string
+  scope?: DatasetScope
   datasetId: string
   schema?: ColumnSchema[]
 }) {
@@ -37,6 +39,7 @@ export function DatasetPreviewPanel({
   const [desc, setDesc] = useState(false)
   const [page, setPage] = useState({ limit: CANVAS_PAGE_LIMIT, offset: 0 })
   const debounced = useDebounce(search, 300)
+  const datasetScope = scope ?? projectId ?? ''
 
   // 列名 → schema（role/type）映射，用于表头徽标与 id 单元上色。
   const byName = useMemo(() => {
@@ -45,7 +48,7 @@ export function DatasetPreviewPanel({
     return m
   }, [schema])
 
-  const query = useDatasetPreview(projectId, datasetId, {
+  const query = useDatasetPreview(datasetScope, datasetId, {
     search: debounced || undefined,
     sort,
     desc: sort ? desc : undefined,

@@ -41,6 +41,8 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { AppError } from '@/lib/errors'
 import { OrgRegistryTab } from './OrgRegistryTab'
+import { DatasetsPanel } from '@/features/datasets/DatasetsPanel'
+import { orgDatasetScope } from '@/api/datasets'
 import {
   useApproveJoinRequest,
   useInviteToOrg,
@@ -143,6 +145,9 @@ export function OrgDetailPage() {
           <TabsTrigger value="teams">{t('tabs.teams')}</TabsTrigger>
           <TabsTrigger value="assets">{t('tabs.assets')}</TabsTrigger>
           <TabsTrigger value="data">{t('tabs.data')}</TabsTrigger>
+          <TabsTrigger value="datasets">
+            {t('tabs.datasets', { defaultValue: '组织数据集' })}
+          </TabsTrigger>
           {isAdmin && <TabsTrigger value="join">{t('tabs.join')}</TabsTrigger>}
           {isAdmin && (
             <TabsTrigger value="settings">{t('tabs.settings')}</TabsTrigger>
@@ -160,6 +165,20 @@ export function OrgDetailPage() {
         </TabsContent>
         <TabsContent value="data" className="mt-4">
           <OrgRegistryTab orgId={id} kind="template" isAdmin={isAdmin} />
+        </TabsContent>
+        <TabsContent value="datasets" className="mt-4">
+          <DatasetsPanel
+            scope={orgDatasetScope(id)}
+            detailBasePath={`/orgs/${id}/datasets`}
+            canWrite={isAdmin}
+            title={t('tabs.datasets', { defaultValue: '组织数据集' })}
+            titleEn="Org Datasets"
+            description={t('datasets.description', {
+              defaultValue:
+                '组织内共享的数据集，组织成员可查看，组织管理员可维护。',
+            })}
+            embedded
+          />
         </TabsContent>
         {isAdmin && (
           <TabsContent value="join" className="mt-4">

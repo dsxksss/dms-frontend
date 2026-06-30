@@ -21,8 +21,10 @@ import {
   useDatasetLineage,
 } from '@/hooks/use-datasets'
 import { useProjectRole } from '@/hooks/use-projects'
+import { useOrgMembers } from '@/hooks/use-membership'
 import { useToastError } from '@/hooks/use-toast-error'
-import { datasetsApi, type DatasetVersion } from '@/api/datasets'
+import { datasetsApi, orgDatasetScope, type DatasetScope, type DatasetVersion } from '@/api/datasets'
+import { useAuth } from '@/auth/auth-context'
 import { roleAtLeast } from '@/lib/roles'
 import { shortId } from '@/lib/format'
 import { ResourceGrantsPanel } from '@/features/grants/ResourceGrantsPanel'
@@ -34,16 +36,24 @@ import { DatasetVersionsPanel } from './DatasetVersionsPanel'
 /** 数据集详情整页（项目壳内的子路由）：预览 / 版本 / 协作。 */
 export function DatasetDetailPage() {
   const { t } = useTranslation('datasets')
-  const { id: projectId = '', dsId = '' } = useParams()
+  const { id: projectId = '', orgId = '', dsId = '' } = useParams()
   const navigate = useNavigate()
   const toastError = useToastError()
+  const { me } = useAuth()
+  const isOrgDataset = !!orgId
+  const datasetScope: DatasetScope = isOrgDataset
+    ? orgDatasetScope(orgId)
+    : projectId
+  const listPath = isOrgDataset ? `/orgs/${orgId}` : `/projects/${projectId}/datasets`
   const role = useProjectRole(projectId)
-  const canWrite = roleAtLeast(role, 'contributor')
-  const canManage = roleAtLeast(role, 'manager')
+  const orgMembers = useOrgMembers(orgId)
+  const orgRole = orgMembers.data?.find((m) => m.user_id === me?.user_id)?.role
+  const canWrite = isOrgDataset ? orgRole === 'admin' : roleAtLeast(role, 'contributor')
+  const canManage = isOrgDataset ? false : roleAtLeast(role, 'manager')
 
-  const query = useDataset(projectId, dsId)
-  const versionsQuery = useDatasetVersions(projectId, dsId)
-  const remove = useDeleteDataset(projectId)
+  const query = useDataset(datasetScope, dsId)
+  const versionsQuery = useDatasetVersions(datasetScope, dsId)
+  const remove = useDeleteDataset(datasetScope)
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
 
@@ -56,7 +66,7 @@ export function DatasetDetailPage() {
 
   const backLink = (
     <Link
-      to={`/projects/${projectId}/datasets`}
+      to={listPath}
       className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-muted-foreground hover:text-foreground"
     >
       <ChevronLeft className="size-3.5" />
@@ -76,14 +86,14 @@ export function DatasetDetailPage() {
   }
 
   const onExport = (format: 'csv' | 'parquet') =>
-    datasetsApi.exportDownload(projectId, dsId, format).catch(toastError)
+    datasetsApi.exportDownload(datasetScope, dsId, format).catch(toastError)
 
   const onDelete = async () => {
     if (!ds) return
     try {
       await remove.mutateAsync({ id: ds.id, version: ds.version })
       toast.success(t('toast.deleted'))
-      navigate(`/projects/${projectId}/datasets`)
+      navigate(listPath)
     } catch (e) {
       toastError(e)
     }
@@ -168,7 +178,9 @@ export function DatasetDetailPage() {
         <TabsList>
           <TabsTrigger value="preview">{t('tabs.preview')}</TabsTrigger>
           <TabsTrigger value="versions">{t('tabs.versions')}</TabsTrigger>
-          <TabsTrigger value="lineage">{t('lineage.title')}</TabsTrigger>
+          {!isOrgDataset && (
+            <TabsTrigger value="lineage">{t('lineage.title')}</TabsTrigger>
+          )}
           {canManage && (
             <TabsTrigger value="collab">
               {t('resourceGrants.title', { ns: 'common' })}
@@ -178,21 +190,23 @@ export function DatasetDetailPage() {
 
         <TabsContent value="preview" className="mt-4">
           <DatasetPreviewPanel
-            projectId={projectId}
+            scope={datasetScope}
             datasetId={dsId}
             schema={latest?.columns}
           />
         </TabsContent>
         <TabsContent value="versions" className="mt-4">
           <DatasetVersionsPanel
-            projectId={projectId}
+            scope={datasetScope}
             datasetId={dsId}
             canManage={canWrite}
           />
         </TabsContent>
-        <TabsContent value="lineage" className="mt-4">
-          <LineageTab projectId={projectId} datasetId={dsId} />
-        </TabsContent>
+        {!isOrgDataset && (
+          <TabsContent value="lineage" className="mt-4">
+            <LineageTab projectId={projectId} datasetId={dsId} />
+          </TabsContent>
+        )}
         {canManage && (
           <TabsContent value="collab" className="mt-4 max-w-[560px]">
             {/* 数据集级细粒度授权：给具体人按 CRUD 叠加放行（resource_type=dataset） */}
@@ -207,7 +221,7 @@ export function DatasetDetailPage() {
 
       {ds && (
         <CreateDatasetDialog
-          projectId={projectId}
+          scope={datasetScope}
           open={editOpen}
           onOpenChange={setEditOpen}
           dataset={ds}

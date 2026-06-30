@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useCreateDataset, useUpdateDataset } from '@/hooks/use-datasets'
 import { useToastError } from '@/hooks/use-toast-error'
-import type { Dataset } from '@/api/datasets'
+import type { Dataset, DatasetScope } from '@/api/datasets'
 import {
   DatasetMetaFields,
   emptyMeta,
@@ -27,11 +27,13 @@ import {
 /** 新建 / 编辑数据集：名称 + 描述。编辑携带乐观锁 version。 */
 export function CreateDatasetDialog({
   projectId,
+  scope,
   open,
   onOpenChange,
   dataset,
 }: {
-  projectId: string
+  projectId?: string
+  scope?: DatasetScope
   open: boolean
   onOpenChange: (open: boolean) => void
   dataset?: Dataset
@@ -39,8 +41,9 @@ export function CreateDatasetDialog({
   const { t } = useTranslation('datasets')
   const toastError = useToastError()
   const isEdit = !!dataset
-  const create = useCreateDataset(projectId)
-  const update = useUpdateDataset(projectId, dataset?.id ?? '')
+  const datasetScope = scope ?? projectId ?? ''
+  const create = useCreateDataset(datasetScope)
+  const update = useUpdateDataset(datasetScope, dataset?.id ?? '')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [meta, setMeta] = useState<DatasetMetaValue>(emptyMeta())

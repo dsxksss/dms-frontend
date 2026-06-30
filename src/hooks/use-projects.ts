@@ -68,10 +68,11 @@ export function useSetArchived() {
   })
 }
 
-export function useMembers(id: string) {
+export function useMembers(id: string, enabled = true) {
   return useQuery({
     queryKey: projectKeys.members(id),
     queryFn: () => projectsApi.members(id),
+    enabled: enabled && !!id,
   })
 }
 
@@ -206,9 +207,9 @@ export function useCancelProjectJoinRequest() {
 }
 
 /** 当前用户在该项目的成员角色（用于资源级 UI 门禁）。加载中或非成员返回 null。 */
-export function useProjectRole(projectId: string): ProjectRole | null {
+export function useProjectRole(projectId?: string): ProjectRole | null {
   const { me } = useAuth()
-  const { data } = useMembers(projectId)
+  const { data } = useMembers(projectId ?? '', !!projectId)
   if (!me?.user_id || !data) return null
   return data.find((m) => m.user_id === me.user_id)?.role ?? null
 }

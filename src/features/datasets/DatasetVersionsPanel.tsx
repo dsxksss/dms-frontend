@@ -22,24 +22,27 @@ import {
 } from '@/hooks/use-datasets'
 import { useToastError } from '@/hooks/use-toast-error'
 import { formatBytes } from '@/lib/format'
-import type { ColumnRole, DatasetVersion } from '@/api/datasets'
+import type { ColumnRole, DatasetScope, DatasetVersion } from '@/api/datasets'
 
 const ROLES: ColumnRole[] = ['feature', 'label', 'id', 'ignore']
 
 /** 数据集版本：版本列表 + 上传新版本 + 逐列角色编辑（AI-ready）。 */
 export function DatasetVersionsPanel({
   projectId,
+  scope,
   datasetId,
   canManage,
 }: {
-  projectId: string
+  projectId?: string
+  scope?: DatasetScope
   datasetId: string
   canManage: boolean
 }) {
   const { t } = useTranslation('datasets')
   const toastError = useToastError()
-  const query = useDatasetVersions(projectId, datasetId)
-  const upload = useUploadVersion(projectId, datasetId)
+  const datasetScope = scope ?? projectId ?? ''
+  const query = useDatasetVersions(datasetScope, datasetId)
+  const upload = useUploadVersion(datasetScope, datasetId)
   const fileRef = useRef<HTMLInputElement>(null)
   const versions = query.data ?? []
 
@@ -93,7 +96,7 @@ export function DatasetVersionsPanel({
           {versions.map((v) => (
             <VersionCard
               key={v.id}
-              projectId={projectId}
+              scope={datasetScope}
               datasetId={datasetId}
               version={v}
               canManage={canManage}
@@ -106,19 +109,19 @@ export function DatasetVersionsPanel({
 }
 
 function VersionCard({
-  projectId,
+  scope,
   datasetId,
   version,
   canManage,
 }: {
-  projectId: string
+  scope: DatasetScope
   datasetId: string
   version: DatasetVersion
   canManage: boolean
 }) {
   const { t } = useTranslation('datasets')
   const toastError = useToastError()
-  const setRoles = useSetColumnRoles(projectId, datasetId)
+  const setRoles = useSetColumnRoles(scope, datasetId)
   const [draft, setDraft] = useState<Record<string, ColumnRole>>({})
 
   // 版本数据到来/变化时，用其列角色初始化草稿。

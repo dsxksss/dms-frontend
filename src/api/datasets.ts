@@ -12,7 +12,9 @@ export interface ColumnSchema {
 /** Dataset 挂在项目下；可见/可写由项目成员角色决定（无 owner/visibility）。 */
 export interface Dataset {
   id: string
-  project_id: string
+  project_id?: string | null
+  scope: 'project' | 'organization'
+  scope_id: string
   name: string
   description: string
   tags: string[]
@@ -66,6 +68,22 @@ export interface PreviewParams {
   desc?: boolean
 }
 
+export type DatasetScope =
+  | string
+  | {
+      type: 'project' | 'organization'
+      id: string
+    }
+
+export const projectDatasetScope = (projectId: string): DatasetScope => projectId
+export const orgDatasetScope = (orgId: string): DatasetScope => ({
+  type: 'organization',
+  id: orgId,
+})
+
+const normalizeScope = (scope: DatasetScope): Exclude<DatasetScope, string> =>
+  typeof scope === 'string' ? { type: 'project', id: scope } : scope
+
 /** 数据转数据集（从某资产类型/数据模版的项目记录生成数据集 + 溯源）。 */
 export interface FromRegistryInput {
   name: string
@@ -100,8 +118,13 @@ export interface SystemDataset {
   version: number
 }
 
-const base = (projectId: string) => `/v1/projects/${projectId}/datasets`
-const ds = (projectId: string, id: string) => `${base(projectId)}/${id}`
+const base = (scope: DatasetScope) => {
+  const s = normalizeScope(scope)
+  return s.type === 'organization'
+    ? `/v1/orgs/${s.id}/datasets`
+    : `/v1/projects/${s.id}/datasets`
+}
+const ds = (scope: DatasetScope, id: string) => `${base(scope)}/${id}`
 
 const sysBase = '/v1/datasets/system'
 const sys = (id: string) => `${sysBase}/${id}`
@@ -124,24 +147,24 @@ export const systemDatasetsApi = {
 }
 
 export const datasetsApi = {
-  list: (projectId: string, tag?: string) =>
-    request<Dataset[]>(base(projectId), { query: tag ? { tag } : {} }),
-  listTags: (projectId: string) =>
-    request<string[]>(`${base(projectId)}/tags`),
-  get: (projectId: string, id: string) => request<Dataset>(ds(projectId, id)),
-  create: (projectId: string, body: CreateDatasetInput) =>
-    request<Dataset>(base(projectId), { method: 'POST', body }),
+  list: (scope: DatasetScope, tag?: string) =>
+    request<Dataset[]>(base(scope), { query: tag ? { tag } : {} }),
+  listTags: (scope: DatasetScope) =>
+    request<string[]>(`${base(scope)}/tags`),
+  get: (scope: DatasetScope, id: string) => request<Dataset>(ds(scope, id)),
+  create: (scope: DatasetScope, body: CreateDatasetInput) =>
+    request<Dataset>(base(scope), { method: 'POST', body }),
   update: (
-    projectId: string,
+    scope: DatasetScope,
     id: string,
     body: {
       name?: string
       description?: string
       version: number
     } & DatasetMeta,
-  ) => request<Dataset>(ds(projectId, id), { method: 'PATCH', body }),
-  remove: (projectId: string, id: string, version: number) =>
-    request<void>(ds(projectId, id), {
+  ) => request<Dataset>(ds(scope, id), { method: 'PATCH', body }),
+  remove: (scope: DatasetScope, id: string, version: number) =>
+    request<void>(ds(scope, id), {
       method: 'DELETE',
       query: { version },
       responseType: 'void',
@@ -157,36 +180,36 @@ export const datasetsApi = {
   lineage: (projectId: string, id: string) =>
     request<LineageNode[]>(`${ds(projectId, id)}/lineage`),
 
-  listVersions: (projectId: string, id: string) =>
-    request<DatasetVersion[]>(`${ds(projectId, id)}/versions`),
-  uploadVersion: (projectId: string, id: string, file: File, format: string) =>
-    request<DatasetVersion>(`${ds(projectId, id)}/versions`, {
+  listVersions: (scope: DatasetScope, id: string) =>
+    request<DatasetVersion[]>(`${ds(scope, id)}/versions`),
+  uploadVersion: (scope: DatasetScope, id: string, file: File, format: string) =>
+    request<DatasetVersion>(`${ds(scope, id)}/versions`, {
       method: 'POST',
       raw: file,
       query: { format },
       headers: { 'content-type': file.type || 'application/octet-stream' },
     }),
   setColumnRoles: (
-    projectId: string,
+    scope: DatasetScope,
     id: string,
     versionNo: number,
     roles: Record<string, string>,
   ) =>
     request<DatasetVersion>(
-      `${ds(projectId, id)}/versions/${versionNo}/columns`,
+      `${ds(scope, id)}/versions/${versionNo}/columns`,
       { method: 'PATCH', body: { roles } },
     ),
 
-  preview: (projectId: string, id: string, params: PreviewParams = {}) =>
-    request<QueryPage>(`${ds(projectId, id)}/preview`, { query: { ...params } }),
+  preview: (scope: DatasetScope, id: string, params: PreviewParams = {}) =>
+    request<QueryPage>(`${ds(scope, id)}/preview`, { query: { ...params } }),
   exportDownload: (
-    projectId: string,
+    scope: DatasetScope,
     id: string,
     format: string,
     version?: number,
   ) =>
     download(
-      `${ds(projectId, id)}/export`,
+      `${ds(scope, id)}/export`,
       `dataset.${format === 'parquet' ? 'parquet' : 'csv'}`,
       { query: { format, version } },
     ),

@@ -3,6 +3,7 @@ import {
   datasetsApi,
   type CreateDatasetInput,
   type DatasetMeta,
+  type DatasetScope,
   type FromRegistryInput,
   type PreviewParams,
 } from '@/api/datasets'
@@ -11,66 +12,74 @@ const root = ['datasets'] as const
 
 export const datasetKeys = {
   all: root,
-  scope: (projectId: string) => [...root, projectId] as const,
-  list: (projectId: string, tag?: string) =>
-    [...root, projectId, 'list', tag ?? null] as const,
-  tags: (projectId: string) => [...root, projectId, 'tags'] as const,
-  detail: (projectId: string, id: string) =>
-    [...root, projectId, 'detail', id] as const,
-  versions: (projectId: string, id: string) =>
-    [...root, projectId, 'versions', id] as const,
+  scope: (scope: DatasetScope) => [...root, scopeKey(scope)] as const,
+  list: (scope: DatasetScope, tag?: string) =>
+    [...root, scopeKey(scope), 'list', tag ?? null] as const,
+  tags: (scope: DatasetScope) => [...root, scopeKey(scope), 'tags'] as const,
+  detail: (scope: DatasetScope, id: string) =>
+    [...root, scopeKey(scope), 'detail', id] as const,
+  versions: (scope: DatasetScope, id: string) =>
+    [...root, scopeKey(scope), 'versions', id] as const,
   lineage: (projectId: string, id: string) =>
     [...root, projectId, 'lineage', id] as const,
-  preview: (projectId: string, id: string, params: PreviewParams) =>
-    [...root, projectId, 'preview', id, params] as const,
+  preview: (scope: DatasetScope, id: string, params: PreviewParams) =>
+    [...root, scopeKey(scope), 'preview', id, params] as const,
 }
 
-function useInvalidate(projectId: string) {
+function scopeKey(scope: DatasetScope) {
+  return typeof scope === 'string' ? `project:${scope}` : `${scope.type}:${scope.id}`
+}
+
+function scopeEnabled(scope: DatasetScope) {
+  return typeof scope === 'string' ? !!scope : !!scope.id
+}
+
+function useInvalidate(scope: DatasetScope) {
   const qc = useQueryClient()
-  return () => qc.invalidateQueries({ queryKey: datasetKeys.scope(projectId) })
+  return () => qc.invalidateQueries({ queryKey: datasetKeys.scope(scope) })
 }
 
-export function useDatasets(projectId: string, tag?: string) {
+export function useDatasets(scope: DatasetScope, tag?: string) {
   return useQuery({
-    queryKey: datasetKeys.list(projectId, tag),
-    queryFn: () => datasetsApi.list(projectId, tag),
-    enabled: !!projectId,
+    queryKey: datasetKeys.list(scope, tag),
+    queryFn: () => datasetsApi.list(scope, tag),
+    enabled: scopeEnabled(scope),
   })
 }
 
 /** 该项目数据集去重标签集合（左侧导航过滤用）。 */
-export function useDatasetTags(projectId: string) {
+export function useDatasetTags(scope: DatasetScope) {
   return useQuery({
-    queryKey: datasetKeys.tags(projectId),
-    queryFn: () => datasetsApi.listTags(projectId),
-    enabled: !!projectId,
+    queryKey: datasetKeys.tags(scope),
+    queryFn: () => datasetsApi.listTags(scope),
+    enabled: scopeEnabled(scope),
   })
 }
 
-export function useDataset(projectId: string, id: string) {
+export function useDataset(scope: DatasetScope, id: string) {
   return useQuery({
-    queryKey: datasetKeys.detail(projectId, id),
-    queryFn: () => datasetsApi.get(projectId, id),
-    enabled: !!projectId && !!id,
+    queryKey: datasetKeys.detail(scope, id),
+    queryFn: () => datasetsApi.get(scope, id),
+    enabled: scopeEnabled(scope) && !!id,
   })
 }
 
-export function useCreateDataset(projectId: string) {
-  const invalidate = useInvalidate(projectId)
+export function useCreateDataset(scope: DatasetScope) {
+  const invalidate = useInvalidate(scope)
   return useMutation({
-    mutationFn: (body: CreateDatasetInput) => datasetsApi.create(projectId, body),
+    mutationFn: (body: CreateDatasetInput) => datasetsApi.create(scope, body),
     onSuccess: () => {
       invalidate()
     },
   })
 }
 
-export function useUpdateDataset(projectId: string, id: string) {
-  const invalidate = useInvalidate(projectId)
+export function useUpdateDataset(scope: DatasetScope, id: string) {
+  const invalidate = useInvalidate(scope)
   return useMutation({
     mutationFn: (
       body: { name?: string; description?: string; version: number } & DatasetMeta,
-    ) => datasetsApi.update(projectId, id, body),
+    ) => datasetsApi.update(scope, id, body),
     onSuccess: invalidate,
   })
 }
@@ -96,34 +105,34 @@ export function useDatasetLineage(projectId: string, id: string) {
   })
 }
 
-export function useDeleteDataset(projectId: string) {
-  const invalidate = useInvalidate(projectId)
+export function useDeleteDataset(scope: DatasetScope) {
+  const invalidate = useInvalidate(scope)
   return useMutation({
     mutationFn: ({ id, version }: { id: string; version: number }) =>
-      datasetsApi.remove(projectId, id, version),
+      datasetsApi.remove(scope, id, version),
     onSuccess: invalidate,
   })
 }
 
-export function useDatasetVersions(projectId: string, id: string) {
+export function useDatasetVersions(scope: DatasetScope, id: string) {
   return useQuery({
-    queryKey: datasetKeys.versions(projectId, id),
-    queryFn: () => datasetsApi.listVersions(projectId, id),
-    enabled: !!projectId && !!id,
+    queryKey: datasetKeys.versions(scope, id),
+    queryFn: () => datasetsApi.listVersions(scope, id),
+    enabled: scopeEnabled(scope) && !!id,
   })
 }
 
-export function useUploadVersion(projectId: string, id: string) {
-  const invalidate = useInvalidate(projectId)
+export function useUploadVersion(scope: DatasetScope, id: string) {
+  const invalidate = useInvalidate(scope)
   return useMutation({
     mutationFn: ({ file, format }: { file: File; format: string }) =>
-      datasetsApi.uploadVersion(projectId, id, file, format),
+      datasetsApi.uploadVersion(scope, id, file, format),
     onSuccess: invalidate,
   })
 }
 
-export function useSetColumnRoles(projectId: string, id: string) {
-  const invalidate = useInvalidate(projectId)
+export function useSetColumnRoles(scope: DatasetScope, id: string) {
+  const invalidate = useInvalidate(scope)
   return useMutation({
     mutationFn: ({
       versionNo,
@@ -131,20 +140,20 @@ export function useSetColumnRoles(projectId: string, id: string) {
     }: {
       versionNo: number
       roles: Record<string, string>
-    }) => datasetsApi.setColumnRoles(projectId, id, versionNo, roles),
+    }) => datasetsApi.setColumnRoles(scope, id, versionNo, roles),
     onSuccess: invalidate,
   })
 }
 
 export function useDatasetPreview(
-  projectId: string,
+  scope: DatasetScope,
   id: string,
   params: PreviewParams,
   enabled = true,
 ) {
   return useQuery({
-    queryKey: datasetKeys.preview(projectId, id, params),
-    queryFn: () => datasetsApi.preview(projectId, id, params),
-    enabled: enabled && !!projectId && !!id,
+    queryKey: datasetKeys.preview(scope, id, params),
+    queryFn: () => datasetsApi.preview(scope, id, params),
+    enabled: enabled && scopeEnabled(scope) && !!id,
   })
 }

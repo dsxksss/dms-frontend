@@ -21,22 +21,42 @@ import { roleAtLeast } from '@/lib/roles'
 import { useProjectRole } from '@/hooks/use-projects'
 import { useToastError } from '@/hooks/use-toast-error'
 import { useDatasets, useDatasetTags, useDeleteDataset } from '@/hooks/use-datasets'
-import { datasetsApi, type Dataset } from '@/api/datasets'
+import { datasetsApi, type Dataset, type DatasetScope } from '@/api/datasets'
 import { CreateDatasetDialog } from './CreateDatasetDialog'
 
 const COLS = '1.6fr 1fr 130px 110px'
 
 /** 项目数据集列表（成员可见，Contributor+ 可写）。 */
-export function DatasetsPanel({ projectId }: { projectId: string }) {
+export function DatasetsPanel({
+  projectId,
+  scope,
+  detailBasePath,
+  canWrite: canWriteOverride,
+  title,
+  titleEn,
+  description,
+  embedded = false,
+}: {
+  projectId?: string
+  scope?: DatasetScope
+  detailBasePath?: string
+  canWrite?: boolean
+  title?: string
+  titleEn?: string
+  description?: string
+  embedded?: boolean
+}) {
   const { t } = useTranslation(['datasets', 'common'])
   const navigate = useNavigate()
   const role = useProjectRole(projectId)
-  const canWrite = roleAtLeast(role, 'contributor')
-  const del = useDeleteDataset(projectId)
+  const datasetScope = scope ?? projectId ?? ''
+  const basePath = detailBasePath ?? `/projects/${projectId}/datasets`
+  const canWrite = canWriteOverride ?? roleAtLeast(role, 'contributor')
+  const del = useDeleteDataset(datasetScope)
   const toastError = useToastError()
   const [tag, setTag] = useState<string | undefined>(undefined)
-  const query = useDatasets(projectId, tag)
-  const tags = useDatasetTags(projectId)
+  const query = useDatasets(datasetScope, tag)
+  const tags = useDatasetTags(datasetScope)
   const [createOpen, setCreateOpen] = useState(false)
   const [delTarget, setDelTarget] = useState<Dataset | null>(null)
   const data = query.data ?? []
@@ -61,11 +81,11 @@ export function DatasetsPanel({ projectId }: { projectId: string }) {
   )
 
   return (
-    <div className="px-[26px] py-[22px] max-w-[1200px]">
+    <div className={embedded ? 'space-y-4' : 'px-[26px] py-[22px] max-w-[1200px]'}>
       <PageHeader
-        title={t('title')}
-        titleEn="Datasets"
-        description={t('subtitle')}
+        title={title ?? t('title')}
+        titleEn={titleEn ?? 'Datasets'}
+        description={description ?? t('subtitle')}
         actions={hasData ? createBtn : undefined}
       />
 
@@ -105,7 +125,7 @@ export function DatasetsPanel({ projectId }: { projectId: string }) {
               key={ds.id}
               cols={COLS}
               onClick={() =>
-                navigate(`/projects/${projectId}/datasets/${ds.id}`)
+                navigate(`${basePath}/${ds.id}`)
               }
             >
               <div className="flex min-w-0 items-center gap-2.5">
@@ -148,14 +168,14 @@ export function DatasetsPanel({ projectId }: { projectId: string }) {
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
                       onClick={() =>
-                        navigate(`/projects/${projectId}/datasets/${ds.id}`)
+                        navigate(`${basePath}/${ds.id}`)
                       }
                     >
                       {t('row.open')}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() =>
-                        datasetsApi.exportDownload(projectId, ds.id, 'csv')
+                        datasetsApi.exportDownload(datasetScope, ds.id, 'csv')
                       }
                     >
                       <Download className="size-4" />
@@ -193,7 +213,7 @@ export function DatasetsPanel({ projectId }: { projectId: string }) {
       />
 
       <CreateDatasetDialog
-        projectId={projectId}
+        scope={datasetScope}
         open={createOpen}
         onOpenChange={setCreateOpen}
       />
