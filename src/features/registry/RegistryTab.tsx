@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type PointerEvent as ReactPointerEvent,
-} from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueries, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -46,11 +40,7 @@ import {
   TableCard,
   useResizableGridColumns,
 } from '@/components/data-grid'
-import {
-  DEFAULT_PAGE_LIMIT,
-  DEFAULT_PAGE_SIZE_OPTIONS,
-  Pagination,
-} from '@/components/pagination'
+import { DEFAULT_PAGE_LIMIT, Pagination } from '@/components/pagination'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { cn } from '@/lib/utils'
@@ -79,7 +69,6 @@ import {
 import { useToastError } from '@/hooks/use-toast-error'
 import { fieldDisplayName, registryApi } from '@/api/registry'
 import type { Entity, EntityType, TypeKind } from '@/api/registry'
-import type { FieldDef } from '@/api/registry'
 import { MaskedValue } from './MaskedValue'
 import { ReferenceValue, useRefResolver } from './ReferenceValue'
 import { AssetDrawer } from './AssetDrawer'
@@ -92,10 +81,6 @@ import { FromAssetRecordsDialog } from './FromAssetRecordsDialog'
 import { FromRegistryDialog } from '@/features/datasets/FromRegistryDialog'
 
 const TYPES_TAB = '__types__'
-const CANVAS_RECORD_THRESHOLD = 500
-const CANVAS_FIELD_THRESHOLD = 12
-const CANVAS_PAGE_LIMIT = 200
-const CANVAS_PAGE_SIZE_OPTIONS = [100, 200] as const
 
 /** 注册表主面板，按 kind 复用：药物资产(asset) / 数据资产(template，模板类型+模板数据)。 */
 export function RegistryTab({
@@ -620,15 +605,6 @@ function RecordsGrid({
   const searchValue = debouncedSearch.trim()
   const [searchField, setSearchField] = useState('__all__')
   const [sort, setSort] = useState<GridSortState>(null)
-  const [tableMode, setTableMode] = useState<'auto' | 'standard' | 'canvas'>(
-    'auto',
-  )
-  const typeRecordCount = recordCount ?? 0
-  const canvasPreferred =
-    typeRecordCount > CANVAS_RECORD_THRESHOLD ||
-    type.fields.length > CANVAS_FIELD_THRESHOLD
-  const useCanvasGrid =
-    tableMode === 'canvas' || (tableMode === 'auto' && canvasPreferred)
   const query = useRecords(projectId, kind, {
     type: type.id,
     search: searchValue || undefined,
@@ -667,25 +643,10 @@ function RecordsGrid({
     setSearch('')
     setSearchField('__all__')
     setSort(null)
-    setTableMode('auto')
     setPage((current) =>
       current.offset === 0 ? current : { ...current, offset: 0 },
     )
   }, [type.id])
-
-  useEffect(() => {
-    const pageSizeOptions = useCanvasGrid
-      ? CANVAS_PAGE_SIZE_OPTIONS
-      : DEFAULT_PAGE_SIZE_OPTIONS
-    const preferredLimit = useCanvasGrid
-      ? CANVAS_PAGE_LIMIT
-      : DEFAULT_PAGE_LIMIT
-    setPage((current) =>
-      (pageSizeOptions as readonly number[]).includes(current.limit)
-        ? current
-        : { limit: preferredLimit, offset: 0 },
-    )
-  }, [useCanvasGrid])
 
   useEffect(() => {
     setPage((current) =>
@@ -693,7 +654,7 @@ function RecordsGrid({
     )
   }, [searchValue, searchField, sort?.key, sort?.desc])
 
-  const shown = useCanvasGrid ? type.fields : type.fields.slice(0, 4)
+  const shown = type.fields.slice(0, 4)
   const shownKey = shown.map((field) => field.name).join('|')
   const searchFieldOptions = useMemo(
     () =>
@@ -739,7 +700,7 @@ function RecordsGrid({
   )
   const records = query.data?.items ?? []
   const total = query.data?.total ?? 0
-  const effectiveRecordCount = recordCount ?? total
+  const typeRecordCount = recordCount ?? total
 
   // 引用字段：软引用存的是目标记录 uuid。把可见列里的引用解析成被引用记录的「name」，
   // 否则用户看到一串 uuid。ref_type 是目标资产类型 key → 找到其 type.id → 拉该类型记录建 id→name。
@@ -841,67 +802,26 @@ function RecordsGrid({
           searchValue ? t('entities.searchResult', { total }) : undefined
         }
         actions={
-          <>
-            <div className="bg-card flex items-center rounded-lg border p-0.5">
-              <Button
-                type="button"
-                variant={!useCanvasGrid ? 'default' : 'ghost'}
-                size="xs"
-                className="h-7 rounded-md px-2.5"
-                onClick={() => setTableMode('standard')}
-              >
-                {t('entities.standardTable', {
-                  defaultValue: '标准表格',
-                })}
-              </Button>
-              <Button
-                type="button"
-                variant={useCanvasGrid ? 'default' : 'ghost'}
-                size="xs"
-                className="h-7 rounded-md px-2.5"
-                onClick={() => setTableMode('canvas')}
-              >
-                {t('entities.canvasTable', {
-                  defaultValue: '高性能表格',
-                })}
-              </Button>
-            </div>
-            {canDelete && effectiveRecordCount > 0 ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                disabled={deletingAll}
-                title={t('entities.deleteAll')}
-                aria-label={t('entities.deleteAll')}
-                onClick={openDeleteAll}
-              >
-                <Trash2 className="size-4" />
-                {t('entities.deleteAll')}
-              </Button>
-            ) : undefined}
-          </>
+          canDelete && typeRecordCount > 0 ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+              disabled={deletingAll}
+              title={t('entities.deleteAll')}
+              aria-label={t('entities.deleteAll')}
+              onClick={openDeleteAll}
+            >
+              <Trash2 className="size-4" />
+              {t('entities.deleteAll')}
+            </Button>
+          ) : undefined
         }
       />
       {records.length === 0 ? (
         <EmptyState
           title={t('entities.noMatches')}
           hint={t('entities.noMatchesHint')}
-        />
-      ) : useCanvasGrid ? (
-        <CanvasRecordsTable
-          fields={shown}
-          records={records}
-          total={total}
-          page={page}
-          pageSizeOptions={CANVAS_PAGE_SIZE_OPTIONS}
-          sort={sort}
-          lockedFields={lockedFields}
-          language={i18n.language}
-          onPageChange={setPage}
-          onSortChange={setSort}
-          onOpenRecord={setSelected}
-          resolveRef={resolveRef}
         />
       ) : (
         <TableCard>
@@ -1086,7 +1006,6 @@ function RecordsGrid({
               offset={page.offset}
               total={total}
               onChange={setPage}
-              pageSizeOptions={DEFAULT_PAGE_SIZE_OPTIONS}
             />
           </GridFooter>
         </TableCard>
@@ -1145,386 +1064,6 @@ function RecordsGrid({
       />
     </>
   )
-}
-
-function CanvasRecordsTable({
-  fields,
-  records,
-  total,
-  page,
-  pageSizeOptions,
-  sort,
-  lockedFields,
-  language,
-  onPageChange,
-  onSortChange,
-  onOpenRecord,
-  resolveRef,
-}: {
-  fields: FieldDef[]
-  records: Entity[]
-  total: number
-  page: { limit: number; offset: number }
-  pageSizeOptions: readonly number[]
-  sort: GridSortState
-  lockedFields: Set<string>
-  language: string
-  onPageChange: (page: { limit: number; offset: number }) => void
-  onSortChange: (next: GridSortState) => void
-  onOpenRecord: (record: Entity) => void
-  resolveRef: (field: FieldDef, value: unknown) => { name: string } | null
-}) {
-  const { t } = useTranslation('registry')
-  const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const scrollRef = useRef<HTMLDivElement | null>(null)
-  const [viewportWidth, setViewportWidth] = useState(0)
-  const [hoverRow, setHoverRow] = useState<number | null>(null)
-  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({})
-  const [resizing, setResizing] = useState<{
-    id: string
-    startX: number
-    startWidth: number
-  } | null>(null)
-
-  const fieldKey = fields.map((field) => field.name).join('|')
-  useEffect(() => {
-    setColumnWidths({})
-    setHoverRow(null)
-  }, [fieldKey])
-
-  useEffect(() => {
-    const node = scrollRef.current
-    if (!node) return
-    const update = () => setViewportWidth(node.clientWidth)
-    update()
-    const observer = new ResizeObserver(update)
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [])
-
-  const columns = useMemo(() => {
-    const dataColumns = fields.map((field) => {
-      const baseWidth =
-        field.type === 'sequence'
-          ? 420
-          : field.type === 'text'
-            ? 280
-            : field.type === 'reference'
-              ? 220
-              : 180
-      return {
-        id: field.name,
-        label: fieldDisplayName(field, language),
-        field,
-        width: columnWidths[field.name] ?? baseWidth,
-        min: 120,
-      }
-    })
-    return [
-      {
-        id: '__id__',
-        label: 'ID',
-        field: null,
-        width: columnWidths.__id__ ?? 132,
-        min: 92,
-      },
-      ...dataColumns,
-    ]
-  }, [columnWidths, fields, language])
-
-  const tableWidth = Math.max(
-    viewportWidth,
-    columns.reduce((sum, column) => sum + column.width, 0),
-  )
-  const headerHeight = 40
-  const rowHeight = 40
-  const tableHeight = headerHeight + Math.max(records.length, 1) * rowHeight
-
-  const columnStarts = useMemo(() => {
-    const starts: number[] = []
-    let next = 0
-    for (const column of columns) {
-      starts.push(next)
-      next += column.width
-    }
-    return starts
-  }, [columns])
-
-  const getColumnIndexAt = (x: number) => {
-    for (let index = 0; index < columns.length; index += 1) {
-      const start = columnStarts[index]
-      const end = start + columns[index].width
-      if (x >= start && x <= end) return index
-    }
-    return -1
-  }
-
-  const getResizeColumnAt = (x: number) => {
-    for (let index = 0; index < columns.length; index += 1) {
-      const end = columnStarts[index] + columns[index].width
-      if (Math.abs(x - end) <= 5) return columns[index]
-    }
-    return null
-  }
-
-  const getCanvasPoint = (event: ReactPointerEvent<HTMLCanvasElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect()
-    return {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
-    }
-  }
-
-  useEffect(() => {
-    if (!resizing) return
-    const previousCursor = document.body.style.cursor
-    const previousUserSelect = document.body.style.userSelect
-    document.body.style.cursor = 'col-resize'
-    document.body.style.userSelect = 'none'
-
-    const onPointerMove = (event: PointerEvent) => {
-      const nextWidth = Math.max(
-        72,
-        resizing.startWidth + event.clientX - resizing.startX,
-      )
-      setColumnWidths((current) => ({ ...current, [resizing.id]: nextWidth }))
-    }
-    const onPointerUp = () => {
-      document.body.style.cursor = previousCursor
-      document.body.style.userSelect = previousUserSelect
-      setResizing(null)
-    }
-
-    window.addEventListener('pointermove', onPointerMove)
-    window.addEventListener('pointerup', onPointerUp, { once: true })
-    return () => {
-      document.body.style.cursor = previousCursor
-      document.body.style.userSelect = previousUserSelect
-      window.removeEventListener('pointermove', onPointerMove)
-      window.removeEventListener('pointerup', onPointerUp)
-    }
-  }, [resizing])
-
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const dpr = window.devicePixelRatio || 1
-    const width = Math.max(1, tableWidth)
-    const height = Math.max(1, tableHeight)
-    canvas.width = Math.round(width * dpr)
-    canvas.height = Math.round(height * dpr)
-    canvas.style.width = `${width}px`
-    canvas.style.height = `${height}px`
-
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    const css = getComputedStyle(document.documentElement)
-    const color = (name: string, fallback: string) =>
-      css.getPropertyValue(name).trim() || fallback
-    const card = color('--card', '#ffffff')
-    const surface = color('--surface-2', '#fafbfd')
-    const divider = color('--divider', '#f1f3f7')
-    const border = color('--border', '#e9edf4')
-    const foreground = color('--foreground', '#1b2330')
-    const muted = color('--muted-foreground', '#727d8d')
-    const brand = color('--brand', '#2f6bff')
-    const hover = 'rgba(47, 107, 255, 0.06)'
-
-    ctx.clearRect(0, 0, width, height)
-    ctx.fillStyle = card
-    ctx.fillRect(0, 0, width, height)
-
-    ctx.fillStyle = surface
-    ctx.fillRect(0, 0, width, headerHeight)
-    ctx.strokeStyle = border
-    ctx.beginPath()
-    ctx.moveTo(0, headerHeight + 0.5)
-    ctx.lineTo(width, headerHeight + 0.5)
-    ctx.stroke()
-
-    ctx.font = '600 11px Inter, ui-sans-serif, system-ui, sans-serif'
-    ctx.textBaseline = 'middle'
-    columns.forEach((column, index) => {
-      const x = columnStarts[index]
-      const active =
-        sort?.key === (column.id === '__id__' ? '__id__' : column.id)
-      ctx.save()
-      ctx.beginPath()
-      ctx.rect(x + 16, 0, column.width - 28, headerHeight)
-      ctx.clip()
-      ctx.fillStyle = active ? brand : muted
-      ctx.fillText(
-        `${column.label.toUpperCase()} ${active ? (sort?.desc ? '↓' : '↑') : '↕'}`,
-        x + 16,
-        headerHeight / 2,
-      )
-      ctx.restore()
-
-      ctx.strokeStyle = border
-      ctx.beginPath()
-      ctx.moveTo(x + column.width + 0.5, 12)
-      ctx.lineTo(x + column.width + 0.5, headerHeight - 12)
-      ctx.stroke()
-    })
-
-    records.forEach((record, rowIndex) => {
-      const y = headerHeight + rowIndex * rowHeight
-      if (hoverRow === rowIndex) {
-        ctx.fillStyle = hover
-        ctx.fillRect(0, y, width, rowHeight)
-      }
-      ctx.strokeStyle = divider
-      ctx.beginPath()
-      ctx.moveTo(0, y + rowHeight + 0.5)
-      ctx.lineTo(width, y + rowHeight + 0.5)
-      ctx.stroke()
-
-      columns.forEach((column, columnIndex) => {
-        const x = columnStarts[columnIndex]
-        const value =
-          column.id === '__id__'
-            ? shortId(record.id)
-            : getCanvasCellValue(record, column.field, lockedFields, resolveRef)
-        ctx.save()
-        ctx.beginPath()
-        ctx.rect(x + 16, y, Math.max(0, column.width - 24), rowHeight)
-        ctx.clip()
-        ctx.fillStyle = column.id === '__id__' ? brand : foreground
-        ctx.font =
-          column.id === '__id__' || column.field?.type === 'sequence'
-            ? '600 12px ui-monospace, SFMono-Regular, Menlo, monospace'
-            : '500 13px Inter, ui-sans-serif, system-ui, sans-serif'
-        ctx.fillText(value, x + 16, y + rowHeight / 2)
-        ctx.restore()
-      })
-    })
-
-    if (records.length === 0) {
-      ctx.fillStyle = muted
-      ctx.font = '500 13px Inter, ui-sans-serif, system-ui, sans-serif'
-      ctx.fillText(t('entities.noMatches'), 16, headerHeight + rowHeight / 2)
-    }
-  }, [
-    columnStarts,
-    columns,
-    hoverRow,
-    lockedFields,
-    records,
-    resolveRef,
-    sort,
-    t,
-    tableHeight,
-    tableWidth,
-  ])
-
-  const handlePointerMove = (event: ReactPointerEvent<HTMLCanvasElement>) => {
-    const point = getCanvasPoint(event)
-    if (point.y < headerHeight && getResizeColumnAt(point.x)) {
-      event.currentTarget.style.cursor = 'col-resize'
-      setHoverRow(null)
-      return
-    }
-    event.currentTarget.style.cursor =
-      point.y < headerHeight ? 'pointer' : 'default'
-    if (point.y < headerHeight) {
-      setHoverRow(null)
-      return
-    }
-    const rowIndex = Math.floor((point.y - headerHeight) / rowHeight)
-    setHoverRow(rowIndex >= 0 && rowIndex < records.length ? rowIndex : null)
-  }
-
-  const handlePointerDown = (event: ReactPointerEvent<HTMLCanvasElement>) => {
-    const point = getCanvasPoint(event)
-    if (point.y >= headerHeight) return
-    const column = getResizeColumnAt(point.x)
-    if (!column) return
-    event.preventDefault()
-    setResizing({
-      id: column.id,
-      startX: event.clientX,
-      startWidth: column.width,
-    })
-  }
-
-  const handleClick = (event: ReactPointerEvent<HTMLCanvasElement>) => {
-    if (resizing) return
-    const point = getCanvasPoint(event)
-    if (point.y < headerHeight) {
-      if (getResizeColumnAt(point.x)) return
-      const columnIndex = getColumnIndexAt(point.x)
-      const column = columns[columnIndex]
-      if (!column) return
-      const key = column.id === '__id__' ? '__id__' : column.id
-      onSortChange(nextCanvasSort(sort, key))
-      return
-    }
-    const rowIndex = Math.floor((point.y - headerHeight) / rowHeight)
-    const record = records[rowIndex]
-    if (record) onOpenRecord(record)
-  }
-
-  return (
-    <TableCard>
-      <div className="border-divider bg-surface-2 text-muted-foreground border-b px-4 py-2 text-[12px]">
-        {t('entities.canvasTableHint', {
-          defaultValue:
-            '高性能 Canvas 表格：适合大量记录和宽字段浏览，点击行打开详情。',
-        })}
-      </div>
-      <div
-        ref={scrollRef}
-        className="max-h-[620px] min-h-[280px] overflow-auto"
-        onMouseLeave={() => setHoverRow(null)}
-      >
-        <canvas
-          ref={canvasRef}
-          role="grid"
-          aria-label={t('entities.canvasTable', {
-            defaultValue: '高性能表格',
-          })}
-          className="block"
-          onClick={handleClick}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-        />
-      </div>
-      <GridFooter>
-        <span>{t('table.total', { ns: 'common', total })}</span>
-        <Pagination
-          limit={page.limit}
-          offset={page.offset}
-          total={total}
-          onChange={onPageChange}
-          pageSizeOptions={pageSizeOptions}
-        />
-      </GridFooter>
-    </TableCard>
-  )
-}
-
-function nextCanvasSort(current: GridSortState, key: string): GridSortState {
-  if (current?.key !== key) return { key, desc: false }
-  if (!current.desc) return { key, desc: true }
-  return null
-}
-
-function getCanvasCellValue(
-  record: Entity,
-  field: FieldDef | null,
-  lockedFields: Set<string>,
-  resolveRef: (field: FieldDef, value: unknown) => { name: string } | null,
-) {
-  if (!field) return shortId(record.id)
-  if (lockedFields.has(field.name)) return '*****'
-  const value = record.data[field.name]
-  if (value == null || value === '') return '-'
-  const resolved = field.type === 'reference' ? resolveRef(field, value) : null
-  const text = resolved ? resolved.name : String(value)
-  return field.unit_symbol ? `${text} ${field.unit_symbol}` : text
 }
 
 async function fetchAllTypeRecords(
