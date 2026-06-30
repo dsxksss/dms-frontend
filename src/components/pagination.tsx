@@ -29,8 +29,9 @@ export function Pagination({
   const safeLimit = pageSizeOptions.includes(limit) ? limit : DEFAULT_PAGE_LIMIT
   const pages = Math.max(1, Math.ceil(total / safeLimit))
   const page = Math.min(pages, Math.max(1, Math.floor(offset / safeLimit) + 1))
-  const minPageSize = Math.min(...pageSizeOptions)
-  if (pages <= 1 && total <= minPageSize) return null
+  const showPageSize = pageSizeOptions.length > 1 && total > 0
+  const showNavigation = pages > 1
+  if (!showPageSize && !showNavigation) return null
 
   const go = (p: number) =>
     onChange({
@@ -48,7 +49,7 @@ export function Pagination({
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
-      {pageSizeOptions.length > 1 && (
+      {showPageSize && (
         <div className="flex items-center gap-1.5">
           <span className="text-muted-foreground text-[12px]">
             {t('table.rowsPerPage')}
@@ -67,33 +68,37 @@ export function Pagination({
           </Select>
         </div>
       )}
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={page <= 1}
-        onClick={() => go(page - 1)}
-      >
-        {t('table.prev')}
-      </Button>
-      {nums.map((n) => (
-        <Button
-          key={n}
-          variant={n === page ? 'default' : 'outline'}
-          size="sm"
-          className="min-w-8"
-          onClick={() => go(n)}
-        >
-          {n}
-        </Button>
-      ))}
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={page >= pages}
-        onClick={() => go(page + 1)}
-      >
-        {t('table.next')}
-      </Button>
+      {showNavigation && (
+        <>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => go(page - 1)}
+          >
+            {t('table.prev')}
+          </Button>
+          {nums.map((n) => (
+            <Button
+              key={n}
+              variant={n === page ? 'default' : 'outline'}
+              size="sm"
+              className="min-w-8"
+              onClick={() => go(n)}
+            >
+              {n}
+            </Button>
+          ))}
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page >= pages}
+            onClick={() => go(page + 1)}
+          >
+            {t('table.next')}
+          </Button>
+        </>
+      )}
     </div>
   )
 }

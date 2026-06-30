@@ -677,7 +677,27 @@ function RecordsGrid({
     ],
     [shownKey],
   )
-  const { template: cols, startResize } = useResizableGridColumns(columns)
+  const {
+    template: cols,
+    startResize,
+    widths,
+  } = useResizableGridColumns(columns)
+  const tableMinWidth = useMemo(
+    () =>
+      columns.reduce(
+        (total, column) => total + (widths[column.id] ?? column.width),
+        0,
+      ),
+    [columns, widths],
+  )
+  const tableGridStyle = useMemo(
+    () => ({
+      gridTemplateColumns: cols,
+      minWidth: tableMinWidth,
+      width: '100%',
+    }),
+    [cols, tableMinWidth],
+  )
   const records = query.data?.items ?? []
   const total = query.data?.total ?? 0
   const typeRecordCount = recordCount ?? total
@@ -804,176 +824,180 @@ function RecordsGrid({
           hint={t('entities.noMatchesHint')}
         />
       ) : (
-        <TableCard className="overflow-x-auto">
-          <div
-            className="bg-surface-2 grid items-center border-b px-4 py-[11px]"
-            style={{ gridTemplateColumns: cols, minWidth: 'max-content' }}
-          >
-            <div className="th relative min-w-0 pr-4">
-              <GridSortButton
-                sortKey="__id__"
-                sort={sort}
-                onSortChange={setSort}
-                label={t('entities.sortColumn', { column: 'ID' })}
-              >
-                ID
-              </GridSortButton>
-              <GridColumnResizeHandle
-                label={t('entities.resizeColumn', { column: 'ID' })}
-                onPointerDown={(event) => startResize('__id__', event)}
-              />
-            </div>
-            {shown.map((f) => {
-              const label = fieldDisplayName(f, i18n.language)
-              return (
-                <div
-                  key={f.name}
-                  className="th relative flex min-w-0 items-center gap-1 truncate pr-4"
+        <TableCard>
+          <div className="overflow-x-auto">
+            <div
+              className="bg-surface-2 grid items-center border-b px-4 py-[11px]"
+              style={tableGridStyle}
+            >
+              <div className="th relative min-w-0 pr-4">
+                <GridSortButton
+                  sortKey="__id__"
+                  sort={sort}
+                  onSortChange={setSort}
+                  label={t('entities.sortColumn', { column: 'ID' })}
                 >
-                  <GridSortButton
-                    sortKey={f.name}
-                    sort={sort}
-                    onSortChange={setSort}
-                    label={t('entities.sortColumn', { column: label })}
+                  ID
+                </GridSortButton>
+                <GridColumnResizeHandle
+                  label={t('entities.resizeColumn', { column: 'ID' })}
+                  onPointerDown={(event) => startResize('__id__', event)}
+                />
+              </div>
+              {shown.map((f) => {
+                const label = fieldDisplayName(f, i18n.language)
+                return (
+                  <div
+                    key={f.name}
+                    className="th relative flex min-w-0 items-center gap-1 truncate pr-4"
                   >
-                    {label}
-                  </GridSortButton>
-                  {lockedFields.has(f.name) && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-xs"
-                      className="size-5 text-[#E0492C] hover:bg-[#FFF3F0] hover:text-[#E0492C]"
-                      title={
-                        requestedFields.has(f.name)
-                          ? t('accessRequests.pending')
-                          : t('accessRequests.requestTitle', {
-                              field: label,
-                            })
-                      }
-                      disabled={
-                        requestedFields.has(f.name) || requestAccess.isPending
-                      }
-                      onClick={() => onRequestAccess(f.name)}
+                    <GridSortButton
+                      sortKey={f.name}
+                      sort={sort}
+                      onSortChange={setSort}
+                      label={t('entities.sortColumn', { column: label })}
                     >
-                      <Lock className="size-3" />
-                    </Button>
-                  )}
-                  <GridColumnResizeHandle
-                    label={t('entities.resizeColumn', {
-                      column: label,
-                    })}
-                    onPointerDown={(event) => startResize(f.name, event)}
-                  />
-                </div>
-              )
-            })}
-            <div />
-          </div>
-
-          {records.map((r) => (
-            <ContextMenu key={r.id}>
-              <ContextMenuTrigger asChild>
-                <div
-                  className="trow border-divider grid cursor-pointer items-center border-b px-4 py-3 text-[13px] last:border-b-0"
-                  style={{ gridTemplateColumns: cols, minWidth: 'max-content' }}
-                  onClick={() => setSelected(r)}
-                >
-                  <div className="mono text-brand truncate text-[12px] font-semibold">
-                    {shortId(r.id)}
-                  </div>
-                  {shown.map((f) => {
-                    const v = r.data[f.name]
-                    const locked = lockedFields.has(f.name)
-                    const resolved =
-                      f.type === 'reference' ? resolveRef(f, v) : null
-                    return (
-                      <div key={f.name} className="truncate pr-2">
-                        {locked ? (
-                          <MaskedValue />
-                        ) : v == null || v === '' ? (
-                          <span className="text-muted-foreground">—</span>
-                        ) : resolved ? (
-                          <ReferenceValue resolved={resolved} />
-                        ) : (
-                          <span
-                            className={cn(
-                              f.type === 'sequence' && 'mono text-[12px]',
-                            )}
-                          >
-                            {String(v)}
-                            {f.unit_symbol && (
-                              <span className="text-muted-foreground ml-1 text-[11px] font-medium">
-                                {f.unit_symbol}
-                              </span>
-                            )}
-                          </span>
-                        )}
-                      </div>
-                    )
-                  })}
-                  <div onClick={(e) => e.stopPropagation()}>
-                    {(canUpdate || canDelete) && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon-sm">
-                            <MoreHorizontal className="size-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {canUpdate && (
-                            <DropdownMenuItem onClick={() => setEditTarget(r)}>
-                              <Pencil className="size-4" />
-                              {t('entities.edit')}
-                            </DropdownMenuItem>
-                          )}
-                          {canDelete && (
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => setDeleteTarget(r)}
-                            >
-                              <Trash2 className="size-4" />
-                              {t('actions.delete', {
-                                ns: 'common',
-                                defaultValue: '删除',
-                              })}
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      {label}
+                    </GridSortButton>
+                    {lockedFields.has(f.name) && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        className="size-5 text-[#E0492C] hover:bg-[#FFF3F0] hover:text-[#E0492C]"
+                        title={
+                          requestedFields.has(f.name)
+                            ? t('accessRequests.pending')
+                            : t('accessRequests.requestTitle', {
+                                field: label,
+                              })
+                        }
+                        disabled={
+                          requestedFields.has(f.name) || requestAccess.isPending
+                        }
+                        onClick={() => onRequestAccess(f.name)}
+                      >
+                        <Lock className="size-3" />
+                      </Button>
                     )}
-                  </div>
-                </div>
-              </ContextMenuTrigger>
-              <ContextMenuContent className="w-40">
-                <ContextMenuItem onClick={() => setSelected(r)}>
-                  <Eye className="size-4" />
-                  {t('actions.open', { ns: 'common', defaultValue: '查看' })}
-                </ContextMenuItem>
-                {canUpdate && (
-                  <ContextMenuItem onClick={() => setEditTarget(r)}>
-                    <Pencil className="size-4" />
-                    {t('entities.edit')}
-                  </ContextMenuItem>
-                )}
-                {canDelete && (
-                  <>
-                    <ContextMenuSeparator />
-                    <ContextMenuItem
-                      variant="destructive"
-                      onClick={() => setDeleteTarget(r)}
-                    >
-                      <Trash2 className="size-4" />
-                      {t('actions.delete', {
-                        ns: 'common',
-                        defaultValue: '删除',
+                    <GridColumnResizeHandle
+                      label={t('entities.resizeColumn', {
+                        column: label,
                       })}
+                      onPointerDown={(event) => startResize(f.name, event)}
+                    />
+                  </div>
+                )
+              })}
+              <div />
+            </div>
+
+            {records.map((r) => (
+              <ContextMenu key={r.id}>
+                <ContextMenuTrigger asChild>
+                  <div
+                    className="trow border-divider grid cursor-pointer items-center border-b px-4 py-3 text-[13px] last:border-b-0"
+                    style={tableGridStyle}
+                    onClick={() => setSelected(r)}
+                  >
+                    <div className="mono text-brand truncate text-[12px] font-semibold">
+                      {shortId(r.id)}
+                    </div>
+                    {shown.map((f) => {
+                      const v = r.data[f.name]
+                      const locked = lockedFields.has(f.name)
+                      const resolved =
+                        f.type === 'reference' ? resolveRef(f, v) : null
+                      return (
+                        <div key={f.name} className="truncate pr-2">
+                          {locked ? (
+                            <MaskedValue />
+                          ) : v == null || v === '' ? (
+                            <span className="text-muted-foreground">—</span>
+                          ) : resolved ? (
+                            <ReferenceValue resolved={resolved} />
+                          ) : (
+                            <span
+                              className={cn(
+                                f.type === 'sequence' && 'mono text-[12px]',
+                              )}
+                            >
+                              {String(v)}
+                              {f.unit_symbol && (
+                                <span className="text-muted-foreground ml-1 text-[11px] font-medium">
+                                  {f.unit_symbol}
+                                </span>
+                              )}
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })}
+                    <div onClick={(e) => e.stopPropagation()}>
+                      {(canUpdate || canDelete) && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon-sm">
+                              <MoreHorizontal className="size-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {canUpdate && (
+                              <DropdownMenuItem
+                                onClick={() => setEditTarget(r)}
+                              >
+                                <Pencil className="size-4" />
+                                {t('entities.edit')}
+                              </DropdownMenuItem>
+                            )}
+                            {canDelete && (
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() => setDeleteTarget(r)}
+                              >
+                                <Trash2 className="size-4" />
+                                {t('actions.delete', {
+                                  ns: 'common',
+                                  defaultValue: '删除',
+                                })}
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                  </div>
+                </ContextMenuTrigger>
+                <ContextMenuContent className="w-40">
+                  <ContextMenuItem onClick={() => setSelected(r)}>
+                    <Eye className="size-4" />
+                    {t('actions.open', { ns: 'common', defaultValue: '查看' })}
+                  </ContextMenuItem>
+                  {canUpdate && (
+                    <ContextMenuItem onClick={() => setEditTarget(r)}>
+                      <Pencil className="size-4" />
+                      {t('entities.edit')}
                     </ContextMenuItem>
-                  </>
-                )}
-              </ContextMenuContent>
-            </ContextMenu>
-          ))}
+                  )}
+                  {canDelete && (
+                    <>
+                      <ContextMenuSeparator />
+                      <ContextMenuItem
+                        variant="destructive"
+                        onClick={() => setDeleteTarget(r)}
+                      >
+                        <Trash2 className="size-4" />
+                        {t('actions.delete', {
+                          ns: 'common',
+                          defaultValue: '删除',
+                        })}
+                      </ContextMenuItem>
+                    </>
+                  )}
+                </ContextMenuContent>
+              </ContextMenu>
+            ))}
+          </div>
 
           <GridFooter>
             <span>{t('table.total', { ns: 'common', total })}</span>

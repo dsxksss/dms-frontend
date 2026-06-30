@@ -57,6 +57,24 @@ Latest check: 2026-06-30 in the in-app browser, after reloading `http://localhos
 
 ## Resolved Findings
 
+2026-06-30 - Registry table rows misalign with headers for long sequence values
+Route: `/projects/:id/registry`
+Repro: On the `Sequence` registry type, the record grid header columns started at the expected positions, but body cell content drifted horizontally so `NAME`, `ID`, and `SEQ` values no longer lined up with their headers.
+Expected: Header and body rows share one column width calculation even when long sequence text creates horizontal overflow.
+Actual: Header and each row were independent CSS grids using `min-width: max-content`, so long row content could change that row's grid width and redistribute `fr` columns differently from the header.
+Fix: The project registry table now computes a shared minimum table width from the resizable column state and applies the same `gridTemplateColumns`, `minWidth`, and `width: 100%` style to every header and body grid row. The footer remains outside the horizontal scroll body.
+Verification: `npm run build` passed. Browser verified `/projects/019f03a2-cce1-7df3-a08c-ffdfdeae1640/registry` on the `序列 Sequence` type after the rows settled: header/body cell left-position deltas were `[0,0,0,0,0]`, all visible body grid widths were `1425`, `共 12 条` and `每页行数 12` were visible. Resizing `SEQ` widened that column from `363.5` to `415.5`, created horizontal overflow (`scrollWidth=1461`, `clientWidth=1425`), and kept header/body deltas at `[0,0,0,0,0]`; no browser console errors were reported.
+Commit: frontend this commit
+
+2026-06-30 - Registry table pagination hidden by single-page horizontal layout
+Route: `/projects/:id/registry`
+Repro: On the `Sequence` registry type with 12 records and a very wide sequence column, the record table footer showed only the total count next to the horizontal scrollbar but no visible shared pagination/page-size control.
+Expected: Registry tables use the shared pagination footer, including the 12 / 24 / 48 page-size selector, and the footer stays visible below the horizontally scrollable table body.
+Actual: `Pagination` returned `null` when the total was at or below the smallest page size, and the registry footer lived inside the same horizontal scroll container as the wide table grid.
+Fix: `Pagination` now keeps the page-size selector visible for non-empty single-page results and only hides previous/next/page-number navigation when there is one page. The project registry table now wraps only the header and rows in the horizontal scroll container, leaving `GridFooter` fixed below the scrollable table body.
+Verification: `npm run build` passed. Browser verified `/projects/019f03a2-cce1-7df3-a08c-ffdfdeae1640/registry` on the `序列 Sequence` type: `共 12 条` and `每页行数 12` are visible, selecting `24` works and keeps 12 rows visible, the page-size selector is outside `.overflow-x-auto`, and no browser console errors were reported.
+Commit: frontend this commit
+
 2026-06-30 - Project audit folded groups and pagination
 Route: `/projects/:id/audit`
 Repro: Consecutive audit entries were hard to scan as a flat list. After grouping was added, the audit page initially paginated raw audit records before folding them, so a 12-item page could collapse down to only a few visible rows and group counts could be truncated at page boundaries. Folded child rows also looked too much like top-level rows.
