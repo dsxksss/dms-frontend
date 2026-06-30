@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { TableCard } from '@/components/data-grid'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
-import { Pagination } from '@/components/pagination'
+import { DEFAULT_PAGE_LIMIT, Pagination } from '@/components/pagination'
 import { columnRoleTone } from '@/components/tone'
 import { useDebounce } from '@/hooks/use-debounce'
 import { useDatasetPreview } from '@/hooks/use-datasets'
@@ -28,7 +28,7 @@ export function DatasetPreviewPanel({
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState<string | undefined>(undefined)
   const [desc, setDesc] = useState(false)
-  const [page, setPage] = useState({ limit: 25, offset: 0 })
+  const [page, setPage] = useState({ limit: DEFAULT_PAGE_LIMIT, offset: 0 })
   const debounced = useDebounce(search, 300)
 
   // 列名 → schema（role/type）映射，用于表头徽标与 id 单元上色。

@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select'
 import { PageHeader } from '@/components/page-header'
 import { TableCard } from '@/components/data-grid'
-import { Pagination } from '@/components/pagination'
+import { DEFAULT_PAGE_LIMIT, Pagination } from '@/components/pagination'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
 import { TONE_HEX, type Tone } from '@/components/tone'
 import { useAudit } from '@/hooks/use-audit'
@@ -50,7 +50,7 @@ function actionTone(action: string): Tone {
 export function AuditPage() {
   const { t } = useTranslation('audit')
   const [entityType, setEntityType] = useState(ALL)
-  const [page, setPage] = useState({ limit: 30, offset: 0 })
+  const [page, setPage] = useState({ limit: DEFAULT_PAGE_LIMIT, offset: 0 })
   const query = useAudit({
     entity_type: entityType === ALL ? undefined : entityType,
     ...page,

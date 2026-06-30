@@ -29,7 +29,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { TableCard, GridFooter } from '@/components/data-grid'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
-import { Pagination } from '@/components/pagination'
+import { DEFAULT_PAGE_LIMIT, Pagination } from '@/components/pagination'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { cn } from '@/lib/utils'
 import { shortId } from '@/lib/format'
@@ -201,7 +201,7 @@ function OrgRecordsGrid({
   isAdmin: boolean
 }) {
   const { t, i18n } = useTranslation('orgs')
-  const [page, setPage] = useState({ limit: 20, offset: 0 })
+  const [page, setPage] = useState({ limit: DEFAULT_PAGE_LIMIT, offset: 0 })
   const query = useOrgRecords(orgId, kind, { type: type.id, ...page })
   const del = useDeleteOrgRecord(orgId, kind)
   const toastError = useToastError()

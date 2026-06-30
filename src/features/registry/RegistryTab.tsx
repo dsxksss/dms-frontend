@@ -40,7 +40,7 @@ import {
   TableCard,
   useResizableGridColumns,
 } from '@/components/data-grid'
-import { Pagination } from '@/components/pagination'
+import { DEFAULT_PAGE_LIMIT, Pagination } from '@/components/pagination'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { cn } from '@/lib/utils'
@@ -417,7 +417,7 @@ function TrashRecordsDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const { t, i18n } = useTranslation('registry')
-  const [page, setPage] = useState({ limit: 20, offset: 0 })
+  const [page, setPage] = useState({ limit: DEFAULT_PAGE_LIMIT, offset: 0 })
   const query = useRecords(
     projectId,
     kind,
@@ -599,7 +599,7 @@ function RecordsGrid({
   onCreateFromAsset: () => void
 }) {
   const { t, i18n } = useTranslation('registry')
-  const [page, setPage] = useState({ limit: 20, offset: 0 })
+  const [page, setPage] = useState({ limit: DEFAULT_PAGE_LIMIT, offset: 0 })
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 300)
   const searchValue = debouncedSearch.trim()

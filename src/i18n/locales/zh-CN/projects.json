@@ -158,6 +158,7 @@
     "title": "操作记录",
     "subtitle": "项目内关键调整、权限变更与数据操作追踪。",
     "empty": "暂无操作记录",
+    "groupCount": "连续 {{count}} 次",
     "actions": {
       "projectCreated": "创建了项目",
       "projectUpdated": "更新了项目信息",

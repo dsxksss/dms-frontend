@@ -4,6 +4,8 @@ import { useQueries } from '@tanstack/react-query'
 import {
   Activity,
   Boxes,
+  ChevronDown,
+  ChevronRight,
   Database,
   FolderClosed,
   LayoutGrid,
@@ -26,7 +28,7 @@ import { PageHeader } from '@/components/page-header'
 import { StatCard } from '@/components/stat-card'
 import { BrandTile } from '@/components/brand-tile'
 import { TableCard } from '@/components/data-grid'
-import { Pagination } from '@/components/pagination'
+import { DEFAULT_PAGE_LIMIT, Pagination } from '@/components/pagination'
 import { BiLabel, useIsZh } from '@/components/bilingual'
 import { UserAvatar } from '@/components/user-avatar'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
@@ -48,6 +50,7 @@ import { MembersPanel } from '@/features/projects/MembersPanel'
 import { NotebookPanel } from '@/features/notebook/NotebookPanel'
 import { ChangesView } from '@/features/audit/ChangesView'
 import type { AuditEntry } from '@/api/audit'
+import { cn } from '@/lib/utils'
 
 const NAV = [
   { seg: '', end: true, icon: <LayoutGrid />, zh: '概览', en: 'Overview' },
@@ -165,9 +168,38 @@ export function ProjectFilesSection() {
 export function ProjectAuditSection() {
   const projectId = useProjectId()
   const { t } = useTranslation('projects')
-  const [page, setPage] = useState({ limit: 30, offset: 0 })
-  const audit = useProjectAudit(projectId, page)
+  const [page, setPage] = useState({ limit: DEFAULT_PAGE_LIMIT, offset: 0 })
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
+    () => new Set(),
+  )
+  const auditCount = useProjectAudit(projectId, { limit: 1, offset: 0 })
+  const rawTotal = auditCount.data?.total ?? 0
+  const audit = useProjectAudit(
+    projectId,
+    { limit: Math.max(rawTotal, DEFAULT_PAGE_LIMIT), offset: 0 },
+    auditCount.isSuccess,
+  )
   const entries = audit.data?.items ?? []
+  const allGroups = groupProjectAuditEntries(entries)
+  const groupTotal = allGroups.length
+  const maxGroupOffset = Math.max(
+    0,
+    (Math.ceil(groupTotal / page.limit) - 1) * page.limit,
+  )
+  const groupOffset = Math.min(page.offset, maxGroupOffset)
+  const groups = allGroups.slice(groupOffset, groupOffset + page.limit)
+  const isLoading = auditCount.isLoading || audit.isLoading
+  const isError = auditCount.isError || audit.isError
+  const error = auditCount.error ?? audit.error
+
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups((current) => {
+      const next = new Set(current)
+      if (next.has(groupId)) next.delete(groupId)
+      else next.add(groupId)
+      return next
+    })
+  }
 
   return (
     <div className="mx-auto max-w-[900px] px-8 py-7">
@@ -177,24 +209,35 @@ export function ProjectAuditSection() {
         description={t('audit.subtitle')}
         size="md"
       />
-      {audit.isLoading ? (
+      {isLoading ? (
         <TableSkeleton rows={7} />
-      ) : audit.isError ? (
-        <ErrorState error={audit.error} onRetry={() => audit.refetch()} />
-      ) : entries.length === 0 ? (
+      ) : isError ? (
+        <ErrorState
+          error={error}
+          onRetry={() => {
+            void auditCount.refetch()
+            void audit.refetch()
+          }}
+        />
+      ) : allGroups.length === 0 ? (
         <EmptyState title={t('audit.empty')} />
       ) : (
         <>
           <TableCard className="py-1.5">
-            {entries.map((entry) => (
-              <ProjectAuditRow key={entry.id} entry={entry} />
+            {groups.map((group) => (
+              <ProjectAuditItem
+                key={group.id}
+                group={group}
+                expanded={expandedGroups.has(group.id)}
+                onToggle={() => toggleGroup(group.id)}
+              />
             ))}
           </TableCard>
           <div className="mt-4 flex justify-end">
             <Pagination
               limit={page.limit}
-              offset={page.offset}
-              total={audit.data?.total ?? 0}
+              offset={groupOffset}
+              total={groupTotal}
               onChange={setPage}
             />
           </div>
@@ -202,6 +245,45 @@ export function ProjectAuditSection() {
       )}
     </div>
   )
+}
+
+type ProjectAuditGroup = {
+  id: string
+  key: string
+  entries: AuditEntry[]
+}
+
+const AUDIT_GROUP_GAP_MS = 2 * 60 * 1000
+
+function auditGroupKey(entry: AuditEntry) {
+  return [
+    entry.actor_id ?? entry.user_handle ?? entry.user_name ?? '',
+    entry.action,
+    entry.entity_type,
+  ].join('|')
+}
+
+function groupProjectAuditEntries(entries: AuditEntry[]): ProjectAuditGroup[] {
+  const groups: ProjectAuditGroup[] = []
+  for (const entry of entries) {
+    const key = auditGroupKey(entry)
+    const latest = groups.at(-1)
+    const latestEntry = latest?.entries.at(-1)
+    const gap =
+      latestEntry == null
+        ? Number.POSITIVE_INFINITY
+        : Math.abs(
+            new Date(latestEntry.occurred_at).getTime() -
+              new Date(entry.occurred_at).getTime(),
+          )
+
+    if (latest && latest.key === key && gap <= AUDIT_GROUP_GAP_MS) {
+      latest.entries.push(entry)
+    } else {
+      groups.push({ id: entry.id, key, entries: [entry] })
+    }
+  }
+  return groups
 }
 export function ProjectMembersSection() {
   return <MembersPanel projectId={useProjectId()} />
@@ -446,7 +528,13 @@ export function ProjectOverviewSection() {
   )
 }
 
-function ProjectAuditRow({ entry }: { entry: AuditEntry }) {
+function ProjectAuditRow({
+  entry,
+  compact = false,
+}: {
+  entry: AuditEntry
+  compact?: boolean
+}) {
   const { t } = useTranslation(['projects', 'audit'])
   const tone = actionTone(entry.action)
   const [bg, fg] = TONE_HEX[tone]
@@ -454,24 +542,42 @@ function ProjectAuditRow({ entry }: { entry: AuditEntry }) {
   const actionText = projectAuditText(entry, t)
 
   return (
-    <div className="flex gap-3 border-b border-divider px-5 py-[13px] last:border-b-0">
-      <div
-        className="flex size-8 shrink-0 items-center justify-center rounded-[9px]"
-        style={{ background: bg, color: fg }}
-      >
-        <Activity className="size-4" />
-      </div>
+    <div
+      className={cn(
+        'flex gap-3 border-b border-divider px-5 py-[13px] last:border-b-0',
+        compact &&
+          'ml-10 gap-2 border-l border-divider/80 bg-card/80 py-2 pr-4 pl-3',
+      )}
+    >
+      {!compact && (
+        <div
+          className="flex size-8 shrink-0 items-center justify-center rounded-[9px]"
+          style={{ background: bg, color: fg }}
+        >
+          <Activity className="size-4" />
+        </div>
+      )}
       <div className="min-w-0 flex-1">
-        <div className="text-[13px]">
+        <div className={cn('text-[13px]', compact && 'text-[12px] leading-snug')}>
           <b>{actor}</b>{' '}
           <span className="text-[#5a6473]">
             {actionText}
           </span>{' '}
-          <span className="mono text-[11.5px] font-semibold text-brand">
+          <span
+            className={cn(
+              'mono text-[11.5px] font-semibold text-brand',
+              compact && 'text-[10.5px]',
+            )}
+          >
             {entry.entity_type}/{shortId(entry.entity_id)}
           </span>
         </div>
-        <div className="mt-[3px] flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+        <div
+          className={cn(
+            'mt-[3px] flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground',
+            compact && 'gap-2 text-[10.5px]',
+          )}
+        >
           <span>{formatDateTime(entry.occurred_at)}</span>
           {entry.ip_address && <span className="mono">IP {entry.ip_address}</span>}
           {entry.request_id && <span className="mono">{entry.request_id}</span>}
@@ -491,10 +597,110 @@ function ProjectAuditRow({ entry }: { entry: AuditEntry }) {
         {entry.result === 'failure' && (
           <Badge variant="danger">{t('meta.failure', { ns: 'audit' })}</Badge>
         )}
-        <Badge variant={tone}>
+        <Badge variant={tone} className={compact ? 'px-2 py-[2px] text-[10.5px]' : undefined}>
           {projectAuditBadge(entry, t)}
         </Badge>
       </div>
+    </div>
+  )
+}
+
+function ProjectAuditItem({
+  group,
+  expanded,
+  onToggle,
+}: {
+  group: ProjectAuditGroup
+  expanded: boolean
+  onToggle: () => void
+}) {
+  if (group.entries.length === 1) {
+    return <ProjectAuditRow entry={group.entries[0]} />
+  }
+  return (
+    <ProjectAuditGroupRow
+      group={group}
+      expanded={expanded}
+      onToggle={onToggle}
+    />
+  )
+}
+
+function ProjectAuditGroupRow({
+  group,
+  expanded,
+  onToggle,
+}: {
+  group: ProjectAuditGroup
+  expanded: boolean
+  onToggle: () => void
+}) {
+  const { t } = useTranslation(['projects', 'audit'])
+  const first = group.entries[0]
+  const last = group.entries[group.entries.length - 1]
+  const tone = actionTone(first.action)
+  const [bg, fg] = TONE_HEX[tone]
+  const actor = first.user_name || first.user_handle || t('none', { ns: 'audit' })
+  const actionText = projectAuditText(first, t)
+  const Icon = expanded ? ChevronDown : ChevronRight
+
+  return (
+    <div className="border-b border-divider last:border-b-0">
+      <button
+        type="button"
+        className="flex w-full gap-3 px-5 py-[13px] text-left transition hover:bg-muted/40"
+        aria-expanded={expanded}
+        onClick={onToggle}
+      >
+        <div
+          className="flex size-8 shrink-0 items-center justify-center rounded-[9px]"
+          style={{ background: bg, color: fg }}
+        >
+          <Activity className="size-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-[13px]">
+            <Icon className="size-3.5 shrink-0 text-muted-foreground" />
+            <b>{actor}</b>
+            <span className="text-[#5a6473]">{actionText}</span>
+            <span className="mono text-[11.5px] font-semibold text-brand">
+              {first.entity_type}
+            </span>
+            <span className="text-[12px] font-semibold text-muted-foreground">
+              {t('audit.groupCount', { count: group.entries.length })}
+            </span>
+          </div>
+          <div className="mt-[3px] flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+            <span>
+              {formatDateTime(first.occurred_at)} -{' '}
+              {formatDateTime(last.occurred_at)}
+            </span>
+            {first.ip_address && <span className="mono">IP {first.ip_address}</span>}
+            {first.hash && (
+              <span
+                className="inline-flex items-center gap-1 text-[#15803D]"
+                title={`${t('meta.integrity', { ns: 'audit' })}\nhash: ${first.hash}`}
+              >
+                <ShieldCheck className="size-3" />
+                {t('meta.integrityShort', { ns: 'audit' })}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex h-fit shrink-0 items-center gap-1.5">
+          {group.entries.some((entry) => entry.result === 'failure') && (
+            <Badge variant="danger">{t('meta.failure', { ns: 'audit' })}</Badge>
+          )}
+          <Badge variant={tone}>{projectAuditBadge(first, t)}</Badge>
+        </div>
+      </button>
+      {expanded && (
+        <div className="border-t border-divider bg-muted/20 py-1">
+          {group.entries.map((entry) => (
+            <ProjectAuditRow key={entry.id} entry={entry} compact />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

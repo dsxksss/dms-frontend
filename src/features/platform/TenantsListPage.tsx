@@ -13,7 +13,7 @@ import {
   TableCard,
   Th,
 } from '@/components/data-grid'
-import { Pagination } from '@/components/pagination'
+import { DEFAULT_PAGE_LIMIT, Pagination } from '@/components/pagination'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
 import { BrandTile } from '@/components/brand-tile'
 import { cn } from '@/lib/utils'
@@ -30,7 +30,7 @@ export function TenantsListPage() {
   const { t } = useTranslation('platform')
   const navigate = useNavigate()
   const [createOpen, setCreateOpen] = useState(false)
-  const [page, setPage] = useState({ limit: 30, offset: 0 })
+  const [page, setPage] = useState({ limit: DEFAULT_PAGE_LIMIT, offset: 0 })
   const query = useTenants(page)
   const rows = query.data?.items ?? []
   const hasRows = rows.length > 0

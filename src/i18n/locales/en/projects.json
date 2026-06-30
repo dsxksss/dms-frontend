@@ -151,6 +151,7 @@
     "title": "Activity",
     "subtitle": "Track key changes, access updates, and data operations in this project.",
     "empty": "No activity records",
+    "groupCount": "{{count}} consecutive",
     "actions": {
       "projectCreated": "created the project",
       "projectUpdated": "updated project details",
