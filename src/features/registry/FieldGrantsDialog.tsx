@@ -31,6 +31,7 @@ import {
 import { useMembers } from '@/hooks/use-projects'
 import { useToastError } from '@/hooks/use-toast-error'
 import { shortId } from '@/lib/format'
+import { fieldDisplayName } from '@/api/registry'
 import type { EntityType } from '@/api/registry'
 
 /** 敏感字段授权：把某敏感字段单独授权给指定用户可见。 */
@@ -45,7 +46,7 @@ export function FieldGrantsDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const { t } = useTranslation('registry')
+  const { t, i18n } = useTranslation('registry')
   const sensitive = type.fields.filter((f) => f.sensitive)
   const grants = useFieldGrants(projectId, type.kind, type.id)
   const requests = useFieldAccessRequests(projectId, type.kind, type.id, 'pending')
@@ -88,6 +89,11 @@ export function FieldGrantsDialog({
       .then(() => toast.success(t('accessRequests.rejected')))
       .catch(toastError)
 
+  const fieldLabel = (name: string) => {
+    const f = type.fields.find((item) => item.name === name)
+    return f ? fieldDisplayName(f, i18n.language) : name
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px]">
@@ -118,7 +124,7 @@ export function FieldGrantsDialog({
                       <UserAvatar name={r.user_id} seed={r.user_id} size={24} />
                       <span className="min-w-0 flex-1 truncate text-[12.5px]">
                         {shortId(r.user_id)} ·{' '}
-                        <span className="mono text-brand">{r.field}</span>
+                        <span className="text-brand">{fieldLabel(r.field)}</span>
                       </span>
                       <Button
                         variant="ghost"
@@ -152,7 +158,7 @@ export function FieldGrantsDialog({
                 <SelectContent>
                   {sensitive.map((f) => (
                     <SelectItem key={f.name} value={f.name}>
-                      {f.name}
+                      {fieldDisplayName(f, i18n.language)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -207,7 +213,7 @@ export function FieldGrantsDialog({
                       <UserAvatar name={g.user_id} seed={g.user_id} size={24} />
                       <span className="flex-1 truncate text-[12.5px]">
                         {shortId(g.user_id)} ·{' '}
-                        <span className="mono text-brand">{g.field}</span>
+                        <span className="text-brand">{fieldLabel(g.field)}</span>
                       </span>
                       <Button
                         variant="ghost"

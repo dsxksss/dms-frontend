@@ -31,6 +31,8 @@ const ALL_TYPES: FieldType[] = [
 
 const emptyField = (): FieldDefInput => ({
   name: '',
+  zh_label: '',
+  en_label: '',
   type: 'string',
   required: false,
   unique: false,
@@ -39,7 +41,8 @@ const emptyField = (): FieldDefInput => ({
 })
 
 const NO_UNIT = '__no_unit__'
-const GRID = 'grid-cols-[1.25fr_0.9fr_1fr_52px_52px_52px_30px]'
+const NAME_GRID = 'grid-cols-[1fr_1fr_1fr_30px]'
+const CONTROL_GRID = 'grid-cols-[0.9fr_1fr_52px_52px_52px]'
 
 /** Schema builder 字段编辑器：开关网格（必填/唯一/敏感），敏感开关为红色。 */
 export function FieldBuilder({
@@ -89,13 +92,18 @@ export function FieldBuilder({
         </p>
       ) : (
         <div className="space-y-2.5">
+          <div className={cn('grid gap-2 px-1 text-[11px] font-bold text-muted-foreground', NAME_GRID)}>
+            <div>{t('fieldBuilder.zhLabel')}</div>
+            <div>{t('fieldBuilder.enLabel')}</div>
+            <div>{t('fieldBuilder.name')}</div>
+            <div />
+          </div>
           <div
             className={cn(
               'grid gap-2 px-1 text-[11px] font-bold text-muted-foreground',
-              GRID,
+              CONTROL_GRID,
             )}
           >
-            <div>{t('fieldBuilder.name')}</div>
             <div className="flex items-center gap-1">
               {t('fieldBuilder.type')}
               <InfoHint>{t('fieldBuilder.typeHint')}</InfoHint>
@@ -110,17 +118,38 @@ export function FieldBuilder({
               {t('fieldBuilder.sensitive')}
               <InfoHint>{t('fieldBuilder.sensitiveHint')}</InfoHint>
             </div>
-            <div />
           </div>
           {value.map((f, i) => (
             <div key={i}>
-              <div className={cn('grid items-center gap-2', GRID)}>
+              <div className={cn('grid items-center gap-2', NAME_GRID)}>
+                <Input
+                  className="h-9"
+                  placeholder={t('fieldBuilder.zhLabel')}
+                  value={f.zh_label ?? ''}
+                  onChange={(e) => update(i, { zh_label: e.target.value })}
+                />
+                <Input
+                  className="h-9"
+                  placeholder={t('fieldBuilder.enLabel')}
+                  value={f.en_label ?? ''}
+                  onChange={(e) => update(i, { en_label: e.target.value })}
+                />
                 <Input
                   className="h-9"
                   placeholder={t('fieldBuilder.name')}
                   value={f.name}
                   onChange={(e) => update(i, { name: e.target.value })}
                 />
+                <button
+                  type="button"
+                  className="flex size-7 items-center justify-center text-muted-foreground hover:text-destructive"
+                  onClick={() => remove(i)}
+                  title={t('actions.delete', { ns: 'common', defaultValue: '删除' })}
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              </div>
+              <div className={cn('mt-2 grid items-center gap-2', CONTROL_GRID)}>
                 <Select
                   value={f.type}
                   onValueChange={(v) =>
@@ -202,13 +231,6 @@ export function FieldBuilder({
                     onCheckedChange={(c) => update(i, { sensitive: c })}
                   />
                 </div>
-                <button
-                  type="button"
-                  className="flex size-7 items-center justify-center text-muted-foreground hover:text-destructive"
-                  onClick={() => remove(i)}
-                >
-                  <Trash2 className="size-4" />
-                </button>
               </div>
 
               {f.type === 'enum' && (

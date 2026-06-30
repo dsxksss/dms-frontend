@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { shortId } from '@/lib/format'
 import { useEntityTypes } from '@/hooks/use-registry'
 import { registryApi } from '@/api/registry'
+import { fieldDisplayName } from '@/api/registry'
 import type { Entity, EntityType, FieldDef } from '@/api/registry'
 import { MaskedValue } from './MaskedValue'
 
@@ -99,7 +100,7 @@ function ReferenceCard({
   record: Entity
   locked: Set<string>
 }) {
-  const { t } = useTranslation('registry')
+  const { t, i18n } = useTranslation('registry')
   const data = record.data
   const name = String(data.name ?? shortId(record.id))
   return (
@@ -117,7 +118,7 @@ function ReferenceCard({
           return (
             <div key={f.name} className="flex gap-2 text-[12px]">
               <span className="w-[92px] shrink-0 truncate text-muted-foreground">
-                {f.name}
+                {fieldDisplayName(f, i18n.language)}
               </span>
               <span className="min-w-0 flex-1 break-all">
                 {isLocked ? (

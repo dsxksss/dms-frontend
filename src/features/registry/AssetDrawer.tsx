@@ -18,6 +18,7 @@ import { useEntityTypes, useMyFieldAccess, useRecord } from '@/hooks/use-registr
 import { roleAtLeast } from '@/lib/roles'
 import { formatDateTime, shortId } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { fieldDisplayName } from '@/api/registry'
 import type { Entity, EntityType } from '@/api/registry'
 import { MaskedValue } from './MaskedValue'
 import { ReferenceValue, useRefResolver } from './ReferenceValue'
@@ -40,7 +41,7 @@ export function AssetDrawer({
   onOpenChange: (open: boolean) => void
   onEdit: () => void
 }) {
-  const { t } = useTranslation('registry')
+  const { t, i18n } = useTranslation('registry')
   const role = useProjectRole(projectId)
   const canManage = roleAtLeast(role, 'manager')
   const canAudit = useCan('audit:read')
@@ -105,7 +106,12 @@ export function AssetDrawer({
                       className="flex items-center gap-3 border-b border-divider py-2.5"
                     >
                       <div className="flex w-[130px] shrink-0 items-center gap-1.5 text-[12.5px] text-muted-foreground">
-                        {f.name}
+                        <span className="min-w-0 truncate">
+                          {fieldDisplayName(f, i18n.language)}
+                        </span>
+                        {fieldDisplayName(f, i18n.language) !== f.name && (
+                          <span className="mono truncate text-[10px]">{f.name}</span>
+                        )}
                         {f.sensitive && (
                           <ShieldCheck className="size-3 text-[#E0492C]" />
                         )}
@@ -212,7 +218,7 @@ function LinkedAssetPanel({
   projectId: string
   entity: Entity
 }) {
-  const { t } = useTranslation('registry')
+  const { t, i18n } = useTranslation('registry')
   const linkedId = entity.asset_record_id ?? ''
   const linked = useRecord(projectId, 'asset', linkedId, !!linkedId)
   const types = useEntityTypes(projectId)
@@ -276,7 +282,12 @@ function LinkedAssetPanel({
               className="flex items-center gap-3 border-b border-divider px-3 py-2.5 last:border-b-0"
             >
               <div className="flex w-[130px] shrink-0 items-center gap-1.5 text-[12.5px] text-muted-foreground">
-                {f.name}
+                <span className="min-w-0 truncate">
+                  {fieldDisplayName(f, i18n.language)}
+                </span>
+                {fieldDisplayName(f, i18n.language) !== f.name && (
+                  <span className="mono truncate text-[10px]">{f.name}</span>
+                )}
                 {f.sensitive && <ShieldCheck className="size-3 text-[#E0492C]" />}
               </div>
               <div className="min-w-0 flex-1">

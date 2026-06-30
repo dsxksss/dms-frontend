@@ -25,6 +25,13 @@ import {
 import { useToastError } from '@/hooks/use-toast-error'
 import type { PlatformSetting } from '@/platform/api'
 
+function settingLabel(setting: PlatformSetting, language: string) {
+  if (language.toLowerCase().startsWith('zh')) {
+    return setting.zh_label || setting.label || setting.name || setting.key
+  }
+  return setting.en_label || setting.label || setting.name || setting.key
+}
+
 export function PlatformSettingsPage() {
   const { t } = useTranslation('platform')
   const query = usePlatformSettings()
@@ -107,7 +114,7 @@ function SettingRow({
   onChange: (v: unknown) => void
   last: boolean
 }) {
-  const { t } = useTranslation('platform')
+  const { t, i18n } = useTranslation('platform')
   const tone = applyTone(setting.apply)
   const applyLabel =
     setting.apply === 'restart' ? t('settings.restart') : t('settings.live')
@@ -121,7 +128,9 @@ function SettingRow({
     >
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[13px] font-bold">{setting.label}</span>
+          <span className="text-[13px] font-bold">
+            {settingLabel(setting, i18n.language)}
+          </span>
           <Badge variant={tone}>{applyLabel}</Badge>
           {!setting.editable && (
             <span

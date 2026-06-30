@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
+import { fieldDisplayName } from '@/api/registry'
 import type { EntityType, FieldDef } from '@/api/registry'
 
 export function TypeFieldsDialog({
@@ -56,7 +57,8 @@ export function TypeFieldsDialog({
 }
 
 function FieldRow({ field }: { field: FieldDef }) {
-  const { t } = useTranslation('registry')
+  const { t, i18n } = useTranslation('registry')
+  const label = fieldDisplayName(field, i18n.language)
   const detail =
     field.type === 'enum'
       ? field.options.join(', ') || '—'
@@ -67,7 +69,12 @@ function FieldRow({ field }: { field: FieldDef }) {
   return (
     <div className="grid grid-cols-[1.2fr_0.9fr_0.8fr_1fr_1.4fr] items-center border-b px-3 py-2.5 text-[12.5px] last:border-b-0">
       <div className="min-w-0">
-        <div className="truncate font-semibold">{field.name}</div>
+        <div className="truncate font-semibold">{label}</div>
+        {label !== field.name && (
+          <div className="mono truncate text-[11px] text-muted-foreground">
+            {field.name}
+          </div>
+        )}
       </div>
       <div>{t(`fieldType.${field.type}`)}</div>
       <div className="mono text-[12px] text-muted-foreground">

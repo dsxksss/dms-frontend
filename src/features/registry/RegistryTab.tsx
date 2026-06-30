@@ -58,7 +58,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useToastError } from '@/hooks/use-toast-error'
-import { registryApi } from '@/api/registry'
+import { fieldDisplayName, registryApi } from '@/api/registry'
 import type { Entity, EntityType, TypeKind } from '@/api/registry'
 import { MaskedValue } from './MaskedValue'
 import { ReferenceValue, useRefResolver } from './ReferenceValue'
@@ -387,7 +387,7 @@ function TrashRecordsDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const { t } = useTranslation('registry')
+  const { t, i18n } = useTranslation('registry')
   const [page, setPage] = useState({ limit: 20, offset: 0 })
   const query = useRecords(
     projectId,
@@ -452,7 +452,7 @@ function TrashRecordsDialog({
                     : shown
                         .map((field) => {
                           const value = record.data[field.name]
-                          return `${field.name}: ${
+                          return `${fieldDisplayName(field, i18n.language)}: ${
                             value == null || value === '' ? '-' : String(value)
                           }`
                         })
@@ -516,7 +516,7 @@ function RecordsGrid({
   onCreate: () => void
   onCreateFromAsset: () => void
 }) {
-  const { t } = useTranslation('registry')
+  const { t, i18n } = useTranslation('registry')
   const [page, setPage] = useState({ limit: 20, offset: 0 })
   const query = useRecords(projectId, kind, { type: type.id, ...page })
   const access = useMyFieldAccess(projectId, kind, type.id)
@@ -600,7 +600,7 @@ function RecordsGrid({
           <div className="th">ID</div>
           {shown.map((f) => (
             <div key={f.name} className="th flex items-center gap-1 truncate">
-              <span className="truncate">{f.name}</span>
+              <span className="truncate">{fieldDisplayName(f, i18n.language)}</span>
               {lockedFields.has(f.name) && (
                 <Button
                   type="button"
@@ -610,7 +610,9 @@ function RecordsGrid({
                   title={
                     requestedFields.has(f.name)
                       ? t('accessRequests.pending')
-                      : t('accessRequests.requestTitle', { field: f.name })
+                      : t('accessRequests.requestTitle', {
+                          field: fieldDisplayName(f, i18n.language),
+                        })
                   }
                   disabled={requestedFields.has(f.name) || requestAccess.isPending}
                   onClick={() => onRequestAccess(f.name)}

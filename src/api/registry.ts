@@ -29,6 +29,8 @@ export const SCALAR_FIELD_TYPES: FieldType[] = [
 
 export interface FieldDef {
   name: string
+  zh_label?: string | null
+  en_label?: string | null
   type: FieldType
   required: boolean
   unique: boolean
@@ -152,6 +154,8 @@ export const RELATION_KINDS = {
 
 export interface FieldDefInput {
   name: string
+  zh_label?: string | null
+  en_label?: string | null
   type: FieldType
   required: boolean
   unique: boolean
@@ -182,6 +186,24 @@ export function entityTypeDisplayName(type: EntityType, language = ''): string {
       ? type.name_zh || type.name || type.name_en
       : type.name_en || type.name || type.name_zh
   return preferred || type.key
+}
+
+export function fieldDisplayName(
+  field: Pick<FieldDef, 'name' | 'zh_label' | 'en_label'>,
+  language = '',
+): string {
+  const preferred = language.toLowerCase().startsWith('zh')
+    ? field.zh_label || field.name || field.en_label
+    : field.en_label || field.name || field.zh_label
+  return preferred || field.name
+}
+
+export function fieldDisplayWithName(
+  field: Pick<FieldDef, 'name' | 'zh_label' | 'en_label'>,
+  language = '',
+): string {
+  const label = fieldDisplayName(field, language)
+  return label === field.name ? label : `${label} (${field.name})`
 }
 
 const pbase = (pid: string) => `/v1/projects/${pid}`

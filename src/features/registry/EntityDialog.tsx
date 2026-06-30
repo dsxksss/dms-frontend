@@ -27,6 +27,7 @@ import {
 } from '@/hooks/use-registry'
 import { useToastError } from '@/hooks/use-toast-error'
 import { shortId } from '@/lib/format'
+import { fieldDisplayName } from '@/api/registry'
 import type { Entity, EntityType, FieldDef, TypeKind } from '@/api/registry'
 import { SchemaForm } from './SchemaForm'
 
@@ -178,7 +179,7 @@ function AssetRecordLinker({
   onChange: (id: string | null) => void
   onAssetSelected: (asset: Entity) => void
 }) {
-  const { t } = useTranslation('registry')
+  const { t, i18n } = useTranslation('registry')
   const types = useEntityTypes(projectId)
   const assetTypes = (types.data ?? []).filter((ty) => ty.kind === 'asset')
   const boundType = template.bound_asset_type_id
@@ -291,7 +292,7 @@ function AssetRecordLinker({
                 .filter((f) => !['reference', 'structure'].includes(f.type))
                 .map((f) => (
                   <SelectItem key={f.name} value={f.name}>
-                    {f.name}
+                    {fieldDisplayName(f, i18n.language)}
                   </SelectItem>
                 ))}
             </SelectContent>

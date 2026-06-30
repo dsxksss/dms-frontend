@@ -12,6 +12,34 @@ import { useAuth } from '@/auth/auth-context'
 import { useUpdateMe, useUser } from '@/hooks/use-membership'
 import { useToastError } from '@/hooks/use-toast-error'
 
+type SettingsField = {
+  name: string
+  zh_label: string
+  en_label: string
+}
+
+const SETTINGS_FIELDS = {
+  displayName: {
+    name: 'display_name',
+    zh_label: '显示名',
+    en_label: 'Display name',
+  },
+  searchable: {
+    name: 'searchable',
+    zh_label: '可被搜索（目录可见）',
+    en_label: 'Searchable (visible in directory)',
+  },
+  language: {
+    name: 'language',
+    zh_label: '语言',
+    en_label: 'Language',
+  },
+} satisfies Record<string, SettingsField>
+
+function settingsFieldLabel(field: SettingsField, language: string) {
+  return language.toLowerCase().startsWith('zh') ? field.zh_label : field.en_label
+}
+
 export function SettingsPage() {
   const { t, i18n } = useTranslation('common')
   const { me } = useAuth()
@@ -52,7 +80,9 @@ export function SettingsPage() {
         </div>
         <div className="space-y-4 px-5 py-4">
           <div className="space-y-1.5">
-            <Label htmlFor="display-name">{t('settings.displayName')}</Label>
+            <Label htmlFor="display-name">
+              {settingsFieldLabel(SETTINGS_FIELDS.displayName, i18n.language)}
+            </Label>
             <Input
               id="display-name"
               placeholder={t('settings.displayNamePlaceholder')}
@@ -62,7 +92,9 @@ export function SettingsPage() {
           </div>
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <Label className="font-bold">{t('settings.searchable')}</Label>
+              <Label className="font-bold">
+                {settingsFieldLabel(SETTINGS_FIELDS.searchable, i18n.language)}
+              </Label>
               <p className="mt-0.5 text-[12px] text-muted-foreground">
                 {t('settings.searchableHint')}
               </p>
@@ -86,7 +118,9 @@ export function SettingsPage() {
           </div>
         </div>
         <div className="flex items-center justify-between px-5 py-4">
-          <Label className="font-bold">{t('lang.label')}</Label>
+          <Label className="font-bold">
+            {settingsFieldLabel(SETTINGS_FIELDS.language, i18n.language)}
+          </Label>
           <div className="flex gap-2">
             <Button
               variant={isZh ? 'default' : 'outline'}

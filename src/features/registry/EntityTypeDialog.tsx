@@ -32,6 +32,14 @@ import { FieldBuilder } from './FieldBuilder'
 
 const NONE = '__none__'
 
+const cleanFields = (fields: FieldDefInput[]): FieldDefInput[] =>
+  fields.map((f) => ({
+    ...f,
+    name: f.name.trim(),
+    zh_label: f.zh_label?.trim() || undefined,
+    en_label: f.en_label?.trim() || undefined,
+  }))
+
 /** Schema builder：定义资产类型 / 数据模版（key + 名称 + 字段）。 */
 export function EntityTypeDialog({
   projectId,
@@ -74,6 +82,8 @@ export function EntityTypeDialog({
       setFields(
         (type?.fields ?? []).map((f) => ({
           name: f.name,
+          zh_label: f.zh_label ?? undefined,
+          en_label: f.en_label ?? undefined,
           type: f.type,
           required: f.required,
           unique: f.unique,
@@ -106,7 +116,7 @@ export function EntityTypeDialog({
           name_zh: nameZh.trim() || null,
           name_en: nameEn.trim() || null,
           description: description.trim() || null,
-          fields,
+          fields: cleanFields(fields),
           version: type!.version,
         })
         toast.success(t('types.updated'))
@@ -117,7 +127,7 @@ export function EntityTypeDialog({
           name_zh: nameZh.trim() || undefined,
           name_en: nameEn.trim() || undefined,
           description: description.trim() || undefined,
-          fields,
+          fields: cleanFields(fields),
           bound_asset_type_id:
             kind === 'template' && bound !== NONE ? bound : undefined,
           from_asset_type_id:

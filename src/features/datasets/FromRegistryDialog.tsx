@@ -30,6 +30,7 @@ import { AppError } from '@/lib/errors'
 import { isWemol } from '@/lib/edition'
 import { sha256Hex } from '@/lib/sha256'
 import { InfoHint } from '@/components/info-hint'
+import { fieldDisplayName } from '@/api/registry'
 import type { EntityType } from '@/api/registry'
 import {
   DatasetMetaFields,
@@ -55,7 +56,7 @@ export function FromRegistryDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const { t } = useTranslation('datasets')
+  const { t, i18n } = useTranslation('datasets')
   const navigate = useNavigate()
   const toastError = useToastError()
   const convert = useDatasetFromRegistry(projectId)
@@ -172,7 +173,7 @@ export function FromRegistryDialog({
                       onCheckedChange={() => toggle(f.name)}
                     />
                     <span className={locked ? 'text-muted-foreground' : ''}>
-                      {f.name}
+                      {fieldDisplayName(f, i18n.language)}
                     </span>
                     {f.sensitive && <Lock className="size-3 text-[#E0492C]" />}
                   </label>

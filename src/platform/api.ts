@@ -55,7 +55,10 @@ export interface TenantAdminView {
 /** GET /v1/platform/settings 的单项（平台全局运行时/部署级配置）。 */
 export interface PlatformSetting {
   key: string
+  name?: string
   label: string
+  zh_label?: string
+  en_label?: string
   value_type: 'bool' | 'string' | 'enum'
   /** live=改后即时生效；restart=需重新部署。 */
   apply: 'live' | 'restart'

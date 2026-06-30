@@ -1,6 +1,6 @@
 # Frontend UI Validation Tracker
 
-Last baseline: 2026-06-30, branch `feat/backend-sync-0624`, frontend commit `e0e7f58`.
+Last baseline: 2026-06-30, branch `feat/backend-sync-0624`, frontend commit `73ee923`.
 
 ## Purpose
 
@@ -40,6 +40,15 @@ Known intentionally skipped or confirmation-required actions:
 No open findings at this baseline.
 
 ## Resolved Findings
+
+2026-06-30 - Field labels support independent zh/en display names
+Route: `/projects/:id/registry`, `/orgs/:id`, `/settings`, `/system/settings`
+Repro: Dynamic registry fields and settings-like fields relied on a single display string or technical `name`, making bilingual UI and field editing inconvenient.
+Expected: Fields support separate `zh_label` and `en_label` display names while keeping `name`/`key` as the stable technical identifier.
+Actual: Registry field UIs rendered `f.name` directly; platform settings returned a single `label`; personal settings labels were static i18n text without an explicit field metadata model.
+Fix: Added optional `zh_label/en_label` to backend registry field definitions; added `zh_label/en_label/name` metadata to platform settings responses; added frontend field label helpers, field-builder inputs, and label-aware display across registry lists, forms, drawers, grants, conversion dialogs, org registry, platform settings, and personal settings.
+Verification: `cargo check` passed in `dms-backend`; `npm run build` passed in `dms-frontend`; browser verified `/settings` labels and `/projects/019f03a2-cce1-7df3-a08c-ffdfdeae1640/registry` new asset type dialog shows `中文标签 / 英文标签 / 字段名` after adding a field, with no console errors.
+Commit: backend `b62da42`; frontend this commit
 
 Use this format for future fixes:
 

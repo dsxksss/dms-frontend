@@ -104,6 +104,8 @@
     "title": "Fields",
     "add": "Add field",
     "name": "Field name",
+    "zhLabel": "Chinese label",
+    "enLabel": "English label",
     "type": "Type",
     "typeHint": "The field's data type. Common: text / number / enum. Sequence = biological macromolecule sequence (protein/nucleic acid); Structure = upload a molecular structure file; Reference = points to a record of another asset type (paired with \"reference target type\").",
     "unit": "Unit",

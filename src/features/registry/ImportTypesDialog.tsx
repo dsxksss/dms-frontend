@@ -21,6 +21,8 @@ import type { EntityType, FieldDef, FieldDefInput, TypeKind } from '@/api/regist
 
 const toInput = (f: FieldDef): FieldDefInput => ({
   name: f.name,
+  zh_label: f.zh_label ?? undefined,
+  en_label: f.en_label ?? undefined,
   type: f.type,
   required: f.required,
   unique: f.unique,

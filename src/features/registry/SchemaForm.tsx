@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import { fieldDisplayName } from '@/api/registry'
 import type { FieldDef } from '@/api/registry'
 import { EntityPicker } from './EntityPicker'
 import { DateTimePicker } from './DateTimePicker'
@@ -29,7 +30,7 @@ export function SchemaForm({
   errors?: Record<string, string>
   onChange: (name: string, value: unknown) => void
 }) {
-  const { t } = useTranslation('registry')
+  const { t, i18n } = useTranslation('registry')
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -45,7 +46,12 @@ export function SchemaForm({
             className={cn('space-y-1.5', wide && 'sm:col-span-2')}
           >
             <Label className="flex items-center gap-1.5 text-[12px] text-[#5a6473]">
-              {f.name}
+              {fieldDisplayName(f, i18n.language)}
+              {fieldDisplayName(f, i18n.language) !== f.name && (
+                <span className="mono text-[10px] font-normal text-muted-foreground">
+                  {f.name}
+                </span>
+              )}
               {f.required && <span className="text-destructive">*</span>}
               {f.sensitive && (
                 <span className="text-[10px] font-bold text-[#E0492C]">

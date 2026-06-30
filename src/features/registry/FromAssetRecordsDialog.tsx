@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { registryApi } from '@/api/registry'
+import { fieldDisplayName, registryApi } from '@/api/registry'
 import type { Entity, EntityType, FieldDef } from '@/api/registry'
 import { useEntityTypes, useRecords } from '@/hooks/use-registry'
 import { useToastError } from '@/hooks/use-toast-error'
@@ -41,7 +41,7 @@ export function FromAssetRecordsDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const { t } = useTranslation('registry')
+  const { t, i18n } = useTranslation('registry')
   const qc = useQueryClient()
   const toastError = useToastError()
   const types = useEntityTypes(projectId)
@@ -129,8 +129,16 @@ export function FromAssetRecordsDialog({
       onOpenChange(false)
     } catch (e) {
       if (e instanceof MissingRequiredField) {
+        const missingField = type.fields.find((f) => f.name === e.field)
         setErrors({ [e.field]: t('errors.required') })
-        toast.error(t('entities.bulkMissingRequired', { field: e.field, asset: e.asset }))
+        toast.error(
+          t('entities.bulkMissingRequired', {
+            field: missingField
+              ? fieldDisplayName(missingField, i18n.language)
+              : e.field,
+            asset: e.asset,
+          }),
+        )
       } else {
         toastError(e)
       }
@@ -206,7 +214,7 @@ export function FromAssetRecordsDialog({
                       .filter((f) => !isNonMatchableField(f))
                       .map((f) => (
                         <SelectItem key={f.name} value={f.name}>
-                          {f.name}
+                          {fieldDisplayName(f, i18n.language)}
                         </SelectItem>
                       ))}
                   </SelectContent>

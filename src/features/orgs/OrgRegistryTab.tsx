@@ -45,11 +45,20 @@ import {
   useDeleteOrgRecord,
   useImportOrgEntities,
 } from '@/hooks/use-org-registry'
+import { fieldDisplayName } from '@/api/registry'
 import type { Entity, EntityType, FieldDefInput, TypeKind } from '@/api/registry'
 import { FieldBuilder } from '@/features/registry/FieldBuilder'
 import { SchemaForm } from '@/features/registry/SchemaForm'
 import { MaskedValue } from '@/features/registry/MaskedValue'
 import { ImportEntitiesDialog } from '@/features/registry/ImportEntitiesDialog'
+
+const cleanFields = (fields: FieldDefInput[]): FieldDefInput[] =>
+  fields.map((f) => ({
+    ...f,
+    name: f.name.trim(),
+    zh_label: f.zh_label?.trim() || undefined,
+    en_label: f.en_label?.trim() || undefined,
+  }))
 
 /**
  * 组织级药物资产 / 数据（场景 2.4）。读=组织成员；建类型/写记录=组织 admin。
@@ -191,7 +200,7 @@ function OrgRecordsGrid({
   type: EntityType
   isAdmin: boolean
 }) {
-  const { t } = useTranslation('orgs')
+  const { t, i18n } = useTranslation('orgs')
   const [page, setPage] = useState({ limit: 20, offset: 0 })
   const query = useOrgRecords(orgId, kind, { type: type.id, ...page })
   const del = useDeleteOrgRecord(orgId, kind)
@@ -235,7 +244,7 @@ function OrgRecordsGrid({
           <div className="th">ID</div>
           {shown.map((f) => (
             <div key={f.name} className="th flex items-center gap-1 truncate">
-              <span className="truncate">{f.name}</span>
+              <span className="truncate">{fieldDisplayName(f, i18n.language)}</span>
               {f.sensitive && !isAdmin && (
                 <Lock className="size-3 shrink-0 text-[#E0492C]" />
               )}
@@ -367,7 +376,7 @@ function OrgTypeDialog({
       await create.mutateAsync({
         key: key.trim() || slugify(name),
         name: name.trim(),
-        fields,
+        fields: cleanFields(fields),
       })
       toast.success(t('registry.typeCreated'))
       onOpenChange(false)
