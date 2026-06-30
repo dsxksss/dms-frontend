@@ -1,138 +1,160 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import type { ColumnDef } from '@tanstack/react-table'
+import { toast } from 'sonner'
 import { Plus } from 'lucide-react'
-
-import { PageHeader } from '@/components/page-header'
-import { DataTable } from '@/components/data-table'
-import { EmptyState } from '@/components/states'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { useTenants } from '@/hooks/use-platform'
-import { formatBytes, formatDateTime } from '@/lib/format'
+import { Switch } from '@/components/ui/switch'
+import { PageHeader } from '@/components/page-header'
+import {
+  GridFooter,
+  GridHeader,
+  GridRow,
+  TableCard,
+  Th,
+} from '@/components/data-grid'
+import { DEFAULT_PAGE_LIMIT, Pagination } from '@/components/pagination'
+import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
+import { BrandTile } from '@/components/brand-tile'
+import { cn } from '@/lib/utils'
+import { formatBytes } from '@/lib/format'
+import { useSetTenantActive, useTenants } from '@/hooks/use-platform'
+import { useToastError } from '@/hooks/use-toast-error'
 import type { TenantAdminView } from '@/platform/api'
-import { PlanBadge } from './plan-badge'
 import { CreateTenantDialog } from './CreateTenantDialog'
+import { PlanBadge } from './plan-badge'
+
+const COLS = '1.5fr 120px 90px 90px 110px 140px'
 
 export function TenantsListPage() {
   const { t } = useTranslation('platform')
   const navigate = useNavigate()
-  const [page, setPage] = useState({ limit: 20, offset: 0 })
   const [createOpen, setCreateOpen] = useState(false)
+  const [page, setPage] = useState({ limit: DEFAULT_PAGE_LIMIT, offset: 0 })
   const query = useTenants(page)
-
-  const columns = useMemo<ColumnDef<TenantAdminView, unknown>[]>(
-    () => [
-      {
-        accessorKey: 'name',
-        header: t('tenants.columns.name'),
-        cell: ({ row }) => (
-          <button
-            className="hover:text-brand text-left font-medium hover:underline"
-            onClick={() => navigate(row.original.id)}
-          >
-            {row.original.name}
-          </button>
-        ),
-      },
-      {
-        accessorKey: 'slug',
-        header: t('tenants.columns.slug'),
-        cell: ({ row }) => (
-          <span className="font-mono text-xs">{row.original.slug}</span>
-        ),
-      },
-      {
-        accessorKey: 'plan',
-        header: t('tenants.columns.plan'),
-        cell: ({ row }) => <PlanBadge plan={row.original.plan} />,
-      },
-      {
-        id: 'usage',
-        header: t('tenants.columns.usage'),
-        cell: ({ row }) => {
-          const u = row.original.usage
-          return (
-            <span className="text-muted-foreground text-xs tabular-nums">
-              {t('tenants.usageSummary', {
-                orgs: u.orgs,
-                users: u.users,
-                storage: formatBytes(u.storage_used),
-              })}
-            </span>
-          )
-        },
-      },
-      {
-        accessorKey: 'active',
-        header: t('tenants.columns.status'),
-        cell: ({ row }) =>
-          row.original.active ? (
-            <Badge
-              variant="outline"
-              className="border-transparent bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-            >
-              {t('tenants.active')}
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="text-muted-foreground">
-              {t('tenants.suspended')}
-            </Badge>
-          ),
-      },
-      {
-        accessorKey: 'created_at',
-        header: t('tenants.columns.created'),
-        cell: ({ row }) => (
-          <span className="text-muted-foreground text-xs">
-            {formatDateTime(row.original.created_at)}
-          </span>
-        ),
-      },
-    ],
-    [t, navigate],
-  )
+  const rows = query.data?.items ?? []
+  const hasRows = rows.length > 0
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-[1180px] px-8 py-7">
       <PageHeader
         title={t('tenants.title')}
+        titleEn="Tenants"
         description={t('tenants.subtitle')}
-        actions={
+        actions={hasRows ? (
           <Button onClick={() => setCreateOpen(true)}>
             <Plus className="size-4" />
             {t('tenants.create.title')}
           </Button>
-        }
+        ) : undefined}
       />
-      <DataTable
-        columns={columns}
-        data={query.data?.items ?? []}
-        loading={query.isLoading}
-        error={query.isError ? query.error : undefined}
-        onRetry={() => query.refetch()}
-        empty={
-          <EmptyState
-            title={t('tenants.empty')}
-            description={t('tenants.emptyDesc')}
-            action={
-              <Button onClick={() => setCreateOpen(true)}>
-                <Plus className="size-4" />
-                {t('tenants.create.title')}
-              </Button>
-            }
-          />
-        }
-        pagination={{
-          limit: page.limit,
-          offset: page.offset,
-          total: query.data?.total ?? 0,
-          onChange: setPage,
-        }}
-      />
+
+      {query.isLoading ? (
+        <TableSkeleton rows={6} />
+      ) : query.isError ? (
+        <ErrorState error={query.error} onRetry={() => query.refetch()} />
+      ) : rows.length === 0 ? (
+        <EmptyState
+          title={t('tenants.empty')}
+          hint={t('tenants.emptyDesc')}
+          action={
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="size-4" />
+              {t('tenants.create.title')}
+            </Button>
+          }
+        />
+      ) : (
+        <TableCard>
+          <GridHeader cols={COLS}>
+            <Th>{t('tenants.columns.name')}</Th>
+            <Th>{t('tenants.columns.plan')}</Th>
+            <Th>{t('stats.orgs')}</Th>
+            <Th>{t('stats.users')}</Th>
+            <Th>{t('tenants.usageStorage')}</Th>
+            <Th>{t('tenants.columns.status')}</Th>
+          </GridHeader>
+          {rows.map((tn) => (
+            <TenantRow
+              key={tn.id}
+              tenant={tn}
+              onOpen={() => navigate(`/system/tenants/${tn.id}`)}
+            />
+          ))}
+          <GridFooter>
+            <span>
+              {rows.length} / {query.data?.total ?? rows.length}
+            </span>
+            <Pagination
+              limit={page.limit}
+              offset={page.offset}
+              total={query.data?.total ?? 0}
+              onChange={setPage}
+            />
+          </GridFooter>
+        </TableCard>
+      )}
 
       <CreateTenantDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
+  )
+}
+
+function TenantRow({
+  tenant,
+  onOpen,
+}: {
+  tenant: TenantAdminView
+  onOpen: () => void
+}) {
+  const { t } = useTranslation('platform')
+  const setActive = useSetTenantActive(tenant.id)
+  const toastError = useToastError()
+
+  const toggle = (next: boolean) => {
+    setActive
+      .mutateAsync(next)
+      .then(() =>
+        toast.success(
+          next ? t('tenants.activatedDone') : t('tenants.suspendedDone'),
+        ),
+      )
+      .catch(toastError)
+  }
+
+  return (
+    <GridRow cols={COLS} onClick={onOpen}>
+      <div className="flex min-w-0 items-center gap-2.5">
+        <BrandTile name={tenant.name} seed={tenant.id} size={34} />
+        <div className="min-w-0">
+          <div className="truncate text-[13px] font-bold">{tenant.name}</div>
+          <div className="mono truncate text-[11px] text-muted-foreground">
+            @{tenant.slug}
+          </div>
+        </div>
+      </div>
+      <div>
+        <PlanBadge plan={tenant.plan} />
+      </div>
+      <div className="mono text-[12.5px]">{tenant.usage.orgs}</div>
+      <div className="mono text-[12.5px]">{tenant.usage.users}</div>
+      <div className="mono text-[12.5px]">
+        {formatBytes(tenant.usage.storage_used)}
+      </div>
+      <div
+        className="flex items-center gap-2"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Switch checked={tenant.active} onCheckedChange={toggle} />
+        <span
+          className={cn(
+            'text-[11.5px] font-semibold',
+            tenant.active ? 'text-[#15803D]' : 'text-muted-foreground',
+          )}
+        >
+          {tenant.active ? t('tenants.active') : t('tenants.suspended')}
+        </span>
+      </div>
+    </GridRow>
   )
 }

@@ -12,7 +12,7 @@ export function PlatformAuthProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<PlatformMe | null>(null)
   const booted = useRef(false)
 
-  // 启动引导：有 refresh token 则尝试拉 /platform/me（client 会在 401 时自动刷新）。
+  // 启动时：有 refresh token 则尝试拉 /platform/me（client 会在 401 时自动刷新）。
   useEffect(() => {
     if (booted.current) return
     booted.current = true

@@ -1,8 +1,14 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import {
   registryApi,
   type CreateTypeBody,
   type FieldDefInput,
+  type FieldAccessRequest,
   type TypeKind,
 } from '@/api/registry'
 
@@ -10,6 +16,7 @@ const root = (projectId: string) => ['registry', projectId] as const
 
 export const registryKeys = {
   types: (pid: string) => [...root(pid), 'types'] as const,
+  deletedTypes: (pid: string) => [...root(pid), 'deleted-types'] as const,
   records: (pid: string, params: unknown) =>
     [...root(pid), 'records', params] as const,
   record: (pid: string, rid: string) => [...root(pid), 'record', rid] as const,
@@ -19,11 +26,24 @@ export const registryKeys = {
     [...root(pid), 'component-tree', rid] as const,
   fieldGrants: (pid: string, tid: string) =>
     [...root(pid), 'field-grants', tid] as const,
+  fieldAccess: (pid: string, tid: string) =>
+    [...root(pid), 'field-access', tid] as const,
+  fieldAccessRequests: (pid: string, tid: string, status?: string) =>
+    [...root(pid), 'field-access-requests', tid, status] as const,
+  myFieldAccessRequests: (pid: string, tid: string, status?: string) =>
+    [...root(pid), 'my-field-access-requests', tid, status] as const,
+  myAllFieldAccessRequests: (status?: string) =>
+    ['registry', 'me', 'field-access-requests', status] as const,
+  incomingFieldAccessRequests: (status?: string) =>
+    ['registry', 'me', 'incoming-field-access-requests', status] as const,
 }
 
 function useInvalidateRegistry(projectId: string) {
   const qc = useQueryClient()
-  return () => qc.invalidateQueries({ queryKey: root(projectId) })
+  return () => {
+    qc.invalidateQueries({ queryKey: root(projectId) })
+    qc.invalidateQueries({ queryKey: ['registry', 'me'] })
+  }
 }
 
 // ---- 类型 ----
@@ -32,6 +52,14 @@ export function useEntityTypes(projectId: string) {
   return useQuery({
     queryKey: registryKeys.types(projectId),
     queryFn: () => registryApi.listTypes(projectId),
+  })
+}
+
+export function useDeletedEntityTypes(projectId: string, enabled = true) {
+  return useQuery({
+    queryKey: registryKeys.deletedTypes(projectId),
+    queryFn: () => registryApi.listDeletedTypes(projectId),
+    enabled,
   })
 }
 
@@ -53,6 +81,9 @@ export function useUpdateType(
   return useMutation({
     mutationFn: (body: {
       name?: string
+      name_zh?: string | null
+      name_en?: string | null
+      description?: string | null
       fields?: FieldDefInput[]
       version: number
     }) => registryApi.updateType(projectId, kind, typeId, body),
@@ -60,11 +91,67 @@ export function useUpdateType(
   })
 }
 
+export function useDeleteType(projectId: string) {
+  const invalidate = useInvalidateRegistry(projectId)
+  return useMutation({
+    mutationFn: ({
+      kind,
+      typeId,
+      version,
+    }: {
+      kind: TypeKind
+      typeId: string
+      version: number
+    }) => registryApi.deleteType(projectId, kind, typeId, version),
+    onSuccess: invalidate,
+  })
+}
+
+export function useRestoreType(projectId: string) {
+  const invalidate = useInvalidateRegistry(projectId)
+  return useMutation({
+    mutationFn: ({
+      kind,
+      typeId,
+      version,
+    }: {
+      kind: TypeKind
+      typeId: string
+      version: number
+    }) => registryApi.restoreType(projectId, kind, typeId, version),
+    onSuccess: invalidate,
+  })
+}
+
+export function usePurgeType(projectId: string) {
+  const invalidate = useInvalidateRegistry(projectId)
+  return useMutation({
+    mutationFn: ({
+      kind,
+      typeId,
+      version,
+    }: {
+      kind: TypeKind
+      typeId: string
+      version: number
+    }) => registryApi.purgeType(projectId, kind, typeId, version),
+    onSuccess: invalidate,
+  })
+}
+
 export function useSeedDrugRd(projectId: string) {
   const invalidate = useInvalidateRegistry(projectId)
   return useMutation({
-    mutationFn: () => registryApi.seedDrugRd(projectId),
+    mutationFn: (keys?: string[]) => registryApi.seedDrugRd(projectId, keys),
     onSuccess: invalidate,
+  })
+}
+
+export function useDrugRdCatalog(projectId: string, enabled = true) {
+  return useQuery({
+    queryKey: [...registryKeys.types(projectId), 'catalog'],
+    queryFn: () => registryApi.drugRdCatalog(projectId),
+    enabled: enabled && !!projectId,
   })
 }
 
@@ -103,6 +190,19 @@ export function useFieldGrants(
   })
 }
 
+/** 当前用户对某类型敏感字段的列级可见性（表头锁渲染用）。 */
+export function useMyFieldAccess(
+  projectId: string,
+  kind: TypeKind,
+  typeId: string,
+) {
+  return useQuery({
+    queryKey: registryKeys.fieldAccess(projectId, typeId),
+    queryFn: () => registryApi.myFieldAccess(projectId, kind, typeId),
+    enabled: !!typeId,
+  })
+}
+
 export function useGrantField(
   projectId: string,
   kind: TypeKind,
@@ -129,16 +229,125 @@ export function useRevokeField(
   })
 }
 
+export function useRequestFieldAccess(
+  projectId: string,
+  kind: TypeKind,
+  typeId: string,
+) {
+  const invalidate = useInvalidateRegistry(projectId)
+  return useMutation({
+    mutationFn: ({ field, message }: { field: string; message?: string }) =>
+      registryApi.requestFieldAccess(projectId, kind, typeId, {
+        field,
+        message,
+      }),
+    onSuccess: invalidate,
+  })
+}
+
+export function useFieldAccessRequests(
+  projectId: string,
+  kind: TypeKind,
+  typeId: string,
+  status?: 'pending' | 'approved' | 'rejected',
+) {
+  return useQuery({
+    queryKey: registryKeys.fieldAccessRequests(projectId, typeId, status),
+    queryFn: () =>
+      registryApi.listFieldAccessRequests(projectId, kind, typeId, status),
+    enabled: !!typeId,
+  })
+}
+
+export function useMyFieldAccessRequests(
+  projectId: string,
+  kind: TypeKind,
+  typeId: string,
+  status?: 'pending' | 'approved' | 'rejected',
+) {
+  return useQuery({
+    queryKey: registryKeys.myFieldAccessRequests(projectId, typeId, status),
+    queryFn: () =>
+      registryApi.listMyFieldAccessRequests(projectId, kind, typeId, status),
+    enabled: !!typeId,
+  })
+}
+
+export function useApproveFieldAccessRequest(projectId: string) {
+  const invalidate = useInvalidateRegistry(projectId)
+  return useMutation({
+    mutationFn: (requestId: string) =>
+      registryApi.approveFieldAccessRequest(projectId, requestId),
+    onSuccess: invalidate,
+  })
+}
+
+export function useRejectFieldAccessRequest(projectId: string) {
+  const invalidate = useInvalidateRegistry(projectId)
+  return useMutation({
+    mutationFn: (requestId: string) =>
+      registryApi.rejectFieldAccessRequest(projectId, requestId),
+    onSuccess: invalidate,
+  })
+}
+
+export function useMyAllFieldAccessRequests(
+  status?: 'pending' | 'approved' | 'rejected',
+) {
+  return useQuery({
+    queryKey: registryKeys.myAllFieldAccessRequests(status),
+    queryFn: () => registryApi.myAllFieldAccessRequests(status),
+  })
+}
+
+export function useIncomingFieldAccessRequests(
+  status: FieldAccessRequest['status'] | 'all' = 'pending',
+) {
+  const queryStatus = status === 'all' ? undefined : status
+  return useQuery({
+    queryKey: registryKeys.incomingFieldAccessRequests(status),
+    queryFn: () => registryApi.incomingFieldAccessRequests(queryStatus),
+  })
+}
+
+export function useMarkFieldAccessRequestRead() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (requestId: string) =>
+      registryApi.markFieldAccessRequestRead(requestId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['registry', 'me'] }),
+  })
+}
+
+export function useMarkAllFieldAccessRequestsRead() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => registryApi.markAllFieldAccessRequestsRead(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['registry', 'me'] }),
+  })
+}
+
 // ---- 记录（assets / data）----
 export function useRecords(
   projectId: string,
   kind: TypeKind,
-  params: { type: string; contains?: string; limit?: number; offset?: number },
+  params: {
+    type: string
+    contains?: string
+    search?: string
+    search_field?: string
+    sort?: string
+    desc?: boolean
+    deleted?: boolean
+    limit?: number
+    offset?: number
+  },
   enabled = true,
 ) {
   return useQuery({
     queryKey: registryKeys.records(projectId, { kind, ...params }),
     queryFn: () => registryApi.listRecords(projectId, kind, params),
+    placeholderData: keepPreviousData,
     enabled: enabled && !!params.type,
   })
 }
@@ -164,7 +373,9 @@ export function useCreateRecord(projectId: string, kind: TypeKind) {
       data: Record<string, unknown>
       asset_record_id?: string
     }) => registryApi.createRecord(projectId, kind, body),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate()
+    },
   })
 }
 
@@ -186,6 +397,24 @@ export function useDeleteRecord(projectId: string, kind: TypeKind) {
   return useMutation({
     mutationFn: ({ id, version }: { id: string; version: number }) =>
       registryApi.deleteRecord(projectId, kind, id, version),
+    onSuccess: invalidate,
+  })
+}
+
+export function useRestoreRecord(projectId: string, kind: TypeKind) {
+  const invalidate = useInvalidateRegistry(projectId)
+  return useMutation({
+    mutationFn: ({ id, version }: { id: string; version: number }) =>
+      registryApi.restoreRecord(projectId, kind, id, version),
+    onSuccess: invalidate,
+  })
+}
+
+export function usePurgeRecord(projectId: string, kind: TypeKind) {
+  const invalidate = useInvalidateRegistry(projectId)
+  return useMutation({
+    mutationFn: ({ id, version }: { id: string; version: number }) =>
+      registryApi.purgeRecord(projectId, kind, id, version),
     onSuccess: invalidate,
   })
 }

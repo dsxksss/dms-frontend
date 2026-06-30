@@ -35,12 +35,16 @@ npm run dev        # http://localhost:5173 （/v1 经 proxy 转发到后端 8080
 
 ## 部署
 
+> 📘 **完整前后端部署流程见 [docs/deployment.md](docs/deployment.md)**：架构、配置、初始化、
+> WeMol SSO、本地联调与生产 docker-compose 组合栈。
+
 ```bash
 docker build -t dms-frontend .
 # 前端经 nginx 反代 /v1 到同网络的 backend:8080（同源、无 CORS、透传 X-Forwarded-For）
 docker compose up -d        # web → :8088（后端见 docker-compose.yml 注释）
 ```
 
+- 架构=**前后端分离**：dist 由 **nginx 容器**托管 + 反代 `/v1` 到后端；**后端是纯 API，不托管前端文件**。
 - 多阶段 `Dockerfile`（node 构建 → nginx 托管），`nginx.conf` 含 SPA 回退 + API 反代。
 - 后端在另一仓库（dms-backend）；compose 里以服务名 `backend` 反代，或解开注释一键起后端+DB。
 - CI：`.github/workflows/ci.yml`（lint / typecheck / test / build）。

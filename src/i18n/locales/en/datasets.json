@@ -1,6 +1,49 @@
 {
   "title": "Datasets",
   "subtitle": "Datasets within the project (visible to members, writable by Contributor+)",
+  "meta": {
+    "tags": "Tags",
+    "tagsPlaceholder": "Type and press Enter",
+    "author": "Author",
+    "authorPlaceholder": "e.g. Jane Doe / Lab A",
+    "references": "References",
+    "referencesPlaceholder": "One per line (DOI / URL / citation)",
+    "referencesHint": "One reference per line"
+  },
+  "filter": { "allTags": "All tags" },
+  "fromRegistry": {
+    "button": "To dataset",
+    "title": "Data to dataset",
+    "subtitle": "Pick fields from \"{{type}}\" project records, mask sensitive ones, and generate an AI-ready dataset.",
+    "fields": "Export fields",
+    "maskedHint": "Sensitive fields (🔒) are masked/excluded by default.",
+    "rawSensitive": "Export raw sensitive fields",
+    "rawSensitiveHint": "Includes plaintext smiles/mol/seq; requires Manager + e-signature.",
+    "refMode": "Reference column export",
+    "refModeTip": "Reference columns (e.g. HEAVY/LIGHT/LINKER) store the referenced record's uuid. Options: (1) Record name (e.g. \"Seq-005\", a readable label); (2) Actual content (the referenced record's main content field — sequence string, compound SMILES — best for analysis; but these are sensitive fields, so you must also enable \"Export raw sensitive fields\" to get plaintext, otherwise it falls back to the name); (3) Business id (the id field); (4) Raw uuid (precise, joinable).",
+    "refModeName": "Record name (e.g. Seq-005)",
+    "refModeContent": "Actual content (sequence / SMILES …)",
+    "refModeId": "Business id",
+    "refModeRaw": "Raw uuid",
+    "refModeContentMaskedHint": "Actual content is a sensitive field and is currently masked → falls back to the record name. To export plaintext, also enable \"Export raw sensitive fields\" above (requires e-signature).",
+    "rawSensitiveTip": "By default the dataset excludes sensitive fields (masked). Turn this on to also export plaintext smiles/mol/sequence — a high-sensitivity action, Manager-only, requiring an e-signature for traceability. AI training usually doesn't need plaintext structures, so keep it off.",
+    "esignPassword": "E-signature (re-enter password)",
+    "esignWemolPassword": "E-signature (re-enter WeMol password)",
+    "esignLoginName": "WeMol username (optional)",
+    "esignLoginHint": "Defaults to your display name; fill in if your WeMol login differs",
+    "esignLoginTip": "WeMol SSO accounts re-authenticate the e-signature with your WeMol username + password. Leave blank to try your display name; the system verifies the WeMol account is really you and rejects a mismatch.",
+    "esignHint": "Exporting raw sensitive data requires an approved e-signature (21 CFR Part 11)",
+    "esignTip": "21 CFR Part 11 compliance: high-risk actions like exporting sensitive plaintext require re-entering your login password as an e-signature. The signer, time and meaning are recorded immutably.",
+    "submit": "Generate dataset",
+    "done": "Dataset generated",
+    "needEsign": "Exporting raw sensitive fields requires a valid approved e-signature for this asset type. Re-enter your password and try again."
+  },
+  "lineage": {
+    "title": "Lineage",
+    "desc": "derived_from sources of this dataset (source types and records).",
+    "empty": "No lineage (not generated from registry data).",
+    "kind": { "entity_type": "Source type", "entity": "Source record" }
+  },
   "columns": {
     "name": "Name",
     "description": "Description",
@@ -20,15 +63,29 @@
     "namePlaceholder": "Dataset name",
     "description": "Description",
     "descriptionPlaceholder": "Optional description",
+    "initialFile": "Initial file",
+    "pickFile": "Choose CSV / Excel",
+    "changeFile": "Change file",
+    "clearFile": "Remove file",
+    "fileHint": "Optional. If selected, the dataset is created and the file is uploaded as its first version.",
     "visibility": "Visibility",
+    "uploadCsv": "Upload CSV to create",
+    "uploadCsvDescription": "Choose CSV files or a CSV folder. Files create datasets by file name; a folder creates one dataset by folder name.",
+    "uploadCsvFile": "Upload CSV files",
+    "uploadCsvFileHint": "Choose one or more CSV files. Each CSV creates one dataset using the file name.",
+    "uploadCsvFolder": "Upload CSV folder",
+    "uploadCsvFolderHint": "Create one dataset using the folder name, then upload CSV files inside as versions.",
+    "uploadingCsv": "Uploading...",
+    "noCsvFiles": "No CSV files found",
     "submit": "Create",
+    "submitWithFile": "Create and upload",
     "nameRequired": "Name is required"
   },
   "edit": { "title": "Edit dataset" },
   "row": { "open": "Open", "edit": "Edit", "delete": "Delete" },
   "empty": {
     "title": "No datasets yet",
-    "description": "Create a dataset, upload a CSV/Excel version, then preview and export."
+    "description": "Two ways: ① click \"New dataset\" to upload a CSV/Excel; ② easier — go to Drug Assets and click \"To dataset\" to turn entered records into a masked dataset in one click."
   },
   "delete": {
     "title": "Delete dataset?",
@@ -37,6 +94,9 @@
   },
   "toast": {
     "created": "Dataset created",
+    "createdWithFile": "Dataset created and first version uploaded",
+    "createdFromCsv": "Created datasets from {{count}} CSV files",
+    "createdFolderFromCsv": "Created \"{{name}}\" and uploaded {{count}} CSV versions",
     "updated": "Dataset updated",
     "deleted": "Dataset deleted",
     "uploaded": "New version uploaded",
@@ -70,6 +130,7 @@
     "size": "Size",
     "columns": "Columns",
     "roles": "Column roles (AI-ready)",
+    "rolesHint": "Label each column's role for AI training: feature = input, label = prediction target, id = identifier (not trained on), ignore = skip. Once set, the dataset is ready to feed a model.",
     "saveRoles": "Save column roles",
     "pickFile": "Choose file (CSV/XLSX)"
   },
@@ -89,10 +150,14 @@
     "exportCsv": "Export CSV",
     "exportParquet": "Export Parquet",
     "empty": "No data. Upload a version first.",
-    "noVersion": "Upload a version first"
+    "noVersion": "Upload a version first",
+    "columnRoles": "Column roles",
+    "footer": "Showing {{shown}} / {{total}} rows · click a header to sort · column roles feed the AI training pipeline.",
+    "rows": "rows",
+    "cols": "cols"
   },
   "links": {
-    "title": "Linked data assets",
+    "title": "Collaboration",
     "add": "Add link",
     "project": "Project",
     "kind": "Kind",
@@ -100,5 +165,8 @@
     "empty": "No links",
     "removeTitle": "Remove link?",
     "kindPlaceholder": "e.g. derived_from"
+  },
+  "collab": {
+    "managedInSettings": "Resource-level collaboration grants are managed in project settings."
   }
 }

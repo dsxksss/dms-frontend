@@ -53,7 +53,9 @@ function SelectTrigger({
 function SelectContent({
   className,
   children,
-  position = "item-aligned",
+  // 默认用 popper：锚定在触发器下方、碰撞自动翻转/平移，不受外层 overflow-hidden（如表格卡片）
+  // 影响，也不依赖触发器内有 <SelectValue>。默认的 item-aligned 在这些场景会算出近 0 高度 → 下拉「打不开」。
+  position = "popper",
   align = "center",
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Content>) {

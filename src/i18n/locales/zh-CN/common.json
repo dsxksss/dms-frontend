@@ -1,10 +1,24 @@
 {
   "app": {
-    "name": "DMS 数据资产平台",
-    "shortName": "DMS",
-    "tagline": "药物研发的数据资产管理"
+    "name": "Bio-Data OS 药研数据资产平台",
+    "shortName": "Bio-Data OS",
+    "tagline": "药物研发的数据资产平台"
   },
   "comingSoon": "即将上线",
+  "search": {
+    "trigger": "搜索 Search…",
+    "placeholder": "搜索项目、组织、数据集、资产、文件…",
+    "searching": "搜索中…",
+    "projects": "项目",
+    "organizations": "组织",
+    "datasets": "数据集",
+    "assets": "药物资产",
+    "data": "药物数据",
+    "files": "文件",
+    "notebook": "实验记录本",
+    "protocols": "实验方案",
+    "empty": "没有匹配的结果"
+  },
   "settings": {
     "appearance": "外观",
     "appearanceDesc": "主题与界面语言偏好",
@@ -24,14 +38,22 @@
     "organizations": "组织",
     "inbox": "邀请",
     "audit": "审计日志",
-    "settings": "设置"
+    "settings": "设置",
+    "workspace": "工作区",
+    "account": "账户",
+    "search": "搜索…",
+    "menu": "菜单",
+    "notifications": "通知"
   },
   "resourceGrants": {
     "title": "协作者",
-    "desc": "给具体的人按操作单独放行（在角色之外叠加）。仅项目 Manager 可设置。",
+    "desc": "给项目成员按操作单独放行（在角色之外叠加）。仅项目 Manager 可设置。",
     "user": "用户",
     "action": "操作",
     "add": "授权",
+    "addUser": "授权给项目成员",
+    "matrixDesc": "勾选即在该成员角色之外额外放行此动作，取消勾选即撤销；角色本身已覆盖的动作显示为锁定。",
+    "noMembers": "暂无成员",
     "empty": "暂无单独授权",
     "granted": "已授权",
     "revoked": "已撤销",
@@ -41,10 +63,16 @@
       "update": "修改",
       "delete": "删除",
       "manage": "管理"
-    }
+    },
+    "permissions": "权限",
+    "fromRole": "来自成员角色（不可在此撤销）",
+    "presets": "快捷角色",
+    "presetViewer": "查看者",
+    "presetContributor": "贡献者",
+    "presetManager": "管理者",
+    "presetClear": "清空"
   },
   "actions": {
-    "getStarted": "开始使用",
     "create": "新建",
     "edit": "编辑",
     "save": "保存",
@@ -59,7 +87,8 @@
     "upload": "上传",
     "download": "下载",
     "back": "返回",
-    "more": "更多"
+    "more": "更多",
+    "open": "打开"
   },
   "theme": {
     "label": "主题",
@@ -101,6 +130,9 @@
       "generic": "已达套餐上限，请升级套餐"
     },
     "validation": "提交内容有误，请检查",
+    "grantTargetMustBeProjectMember": "只能授权给项目成员，请先邀请对方加入项目",
+    "typeStillHasRecords": "该类型下还有记录，需先删除这些记录后再删除类型",
+    "typeBoundByDataTemplate": "该药物资产类型仍被数据资产类型绑定，请先解绑或删除对应数据资产类型",
     "server": "服务器错误",
     "unknown": "未知错误"
   }

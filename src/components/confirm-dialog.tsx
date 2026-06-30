@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { Loader2 } from 'lucide-react'
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -11,28 +10,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 
+/** 确认对话框（删除 / 破坏性操作）。受控 open；onConfirm 可异步，loading 时禁用。 */
 export function ConfirmDialog({
   open,
   onOpenChange,
   title,
   description,
   confirmText,
+  cancelText,
   destructive,
   loading,
   onConfirm,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  title: string
+  title: ReactNode
   description?: ReactNode
-  confirmText?: string
+  confirmText?: ReactNode
+  cancelText?: ReactNode
   destructive?: boolean
   loading?: boolean
   onConfirm: () => void
 }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation('common')
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -44,22 +46,16 @@ export function ConfirmDialog({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}>
-            {t('actions.cancel')}
+            {cancelText ?? t('actions.cancel', { defaultValue: '取消' })}
           </AlertDialogCancel>
-          <AlertDialogAction
-            onClick={(e) => {
-              e.preventDefault()
-              onConfirm()
-            }}
+          <Button
+            variant={destructive ? 'destructive' : 'default'}
             disabled={loading}
-            className={cn(
-              destructive &&
-                'bg-destructive text-destructive-foreground hover:bg-destructive/90',
-            )}
+            onClick={onConfirm}
           >
             {loading && <Loader2 className="size-4 animate-spin" />}
-            {confirmText ?? t('actions.confirm')}
-          </AlertDialogAction>
+            {confirmText ?? t('actions.confirm', { defaultValue: '确认' })}
+          </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

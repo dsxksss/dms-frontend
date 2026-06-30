@@ -29,6 +29,8 @@ export interface SignBody {
   content_hash: string
   /** 签署时重新认证（§11.200）。 */
   password: string
+  /** 外部身份(SSO)用户再认证用的登录名；缺省回退到本人显示名。本地密码用户忽略。 */
+  login_name?: string
 }
 
 const base = (projectId: string) => `/v1/projects/${projectId}/signatures`

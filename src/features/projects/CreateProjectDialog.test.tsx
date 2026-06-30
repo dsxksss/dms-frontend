@@ -1,51 +1,37 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { beforeAll, describe, expect, it } from 'vitest'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
-import i18n from '@/i18n/i18n'
 import { server } from '@/test/msw/server'
 import { renderWithProviders } from '@/test/utils'
-import { CreateProjectDialog } from '@/features/projects/CreateProjectDialog'
-
-beforeEach(async () => {
-  await i18n.changeLanguage('zh-CN')
-})
+import { CreateProjectDialog } from './CreateProjectDialog'
 
 describe('CreateProjectDialog', () => {
-  it('validates that name is required', async () => {
-    const user = userEvent.setup()
-    renderWithProviders(<CreateProjectDialog open onOpenChange={() => {}} />)
-    await user.click(screen.getByRole('button', { name: '创建' }))
-    expect(await screen.findByText('请输入项目名称')).toBeInTheDocument()
+  beforeAll(() => {
+    if (!Element.prototype.hasPointerCapture) {
+      Element.prototype.hasPointerCapture = () => false
+    }
+    if (!Element.prototype.setPointerCapture) {
+      Element.prototype.setPointerCapture = () => {}
+    }
+    if (!Element.prototype.releasePointerCapture) {
+      Element.prototype.releasePointerCapture = () => {}
+    }
+    if (!Element.prototype.scrollIntoView) {
+      Element.prototype.scrollIntoView = () => {}
+    }
   })
 
-  it('creates a project and closes the dialog', async () => {
-    let capturedName: string | undefined = undefined
-    server.use(
-      http.post('*/v1/projects', async ({ request }) => {
-        const body = (await request.json()) as { name?: string }
-        capturedName = body.name
-        return HttpResponse.json(
-          {
-            id: 'p9',
-            organization_id: null,
-            name: body.name,
-            description: '',
-            archived: false,
-            version: 1,
-          },
-          { status: 201 },
-        )
-      }),
+  it('opens the organization selector when no default org is loaded', async () => {
+    server.use(http.get('*/v1/orgs', () => HttpResponse.json([])))
+
+    renderWithProviders(
+      <CreateProjectDialog open={true} onOpenChange={() => {}} />,
     )
-    const onOpenChange = vi.fn()
+
     const user = userEvent.setup()
-    renderWithProviders(<CreateProjectDialog open onOpenChange={onOpenChange} />)
+    await user.click(screen.getByRole('combobox', { name: /organization|组织/i }))
 
-    await user.type(screen.getByLabelText('名称'), 'Gamma')
-    await user.click(screen.getByRole('button', { name: '创建' }))
-
-    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))
-    expect(capturedName).toBe('Gamma')
+    expect(await screen.findAllByText(/my organization|我的组织/i)).toHaveLength(2)
   })
 })

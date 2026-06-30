@@ -1,6 +1,8 @@
 {
   "title": "组织",
   "subtitle": "企业内的组织与团队、作用域角色授予",
+  "defaultBadge": "我的组织",
+  "notMemberDesc": "你不是该组织的成员，无法查看其成员、团队、资产与数据。如需访问，请联系组织管理员邀请你加入。",
   "create": {
     "title": "新建组织",
     "slug": "标识 slug（可选）",
@@ -19,6 +21,7 @@
   "created": "组织已创建",
   "addMember": {
     "title": "添加组织成员",
+    "alreadyMember": "已是成员",
     "user": "用户",
     "userPlaceholder": "搜索姓名或邮箱…",
     "role": "角色",
@@ -26,6 +29,13 @@
     "added": "成员已添加",
     "userRequired": "请选择用户",
     "empty": "该组织暂无可选成员"
+  },
+  "members": {
+    "you": "（你）",
+    "removeTitle": "移除成员？",
+    "removeDescription": "将该成员从组织中移除。",
+    "remove": "移除",
+    "removed": "成员已移除"
   },
   "orgRole": { "admin": "管理员", "member": "成员" },
   "teams": {
@@ -66,7 +76,8 @@
       "owner": "所有者",
       "manager": "管理者",
       "contributor": "贡献者",
-      "viewer": "查看者"
+      "viewer": "查看者",
+      "auditor": "审计管理员"
     }
   },
   "permissions": {
@@ -85,5 +96,52 @@
       "write": "管理"
     }
   },
-  "tabs": { "teams": "团队", "members": "成员", "grants": "角色授予", "join": "加入申请" }
+  "registry": {
+    "createAssetType": "新建资产类型",
+    "createTemplate": "新建数据模版",
+    "createRecord": "新建记录",
+    "noTypes": "暂无类型",
+    "noTypesAdmin": "点击右上「新建类型」开始建组织级资产/数据。",
+    "noTypesMember": "组织管理员尚未创建类型。",
+    "notMember": "你不是该组织的成员",
+    "notMemberHint": "组织级资产/数据仅对该组织成员可见。请联系组织管理员邀请你加入。",
+    "emptyRecords": "暂无记录",
+    "emptyRecordsHint": "组织管理员点右上「新建记录」录入第一条组织级资产/数据。",
+    "deleted": "记录已删除",
+    "recordCreated": "记录已创建",
+    "recordUpdated": "记录已更新",
+    "typeCreated": "类型已创建",
+    "typeKey": "标识 key",
+    "typeName": "名称",
+    "create": "创建",
+    "edit": "编辑",
+    "delete": "删除",
+    "total": "共 {{total}} 条"
+  },
+  "datasets": {
+    "description": "组织内共享的数据集，组织成员可查看，组织管理员可维护。"
+  },
+  "tabs": {
+    "teams": "团队",
+    "members": "成员",
+    "assets": "组织资产",
+    "data": "组织数据",
+    "grants": "角色授予",
+    "join": "加入申请",
+    "settings": "设置"
+  },
+  "settings": {
+    "title": "组织设置",
+    "name": "组织名称",
+    "saveName": "保存名称",
+    "discoverable": "允许被搜索并申请加入",
+    "discoverableHint": "开启后，本企业其他用户可搜索到该组织并申请加入；关闭则只能由管理员邀请。",
+    "saved": "已保存",
+    "deleteTitle": "删除组织",
+    "deleteHint": "只有组织创建者可以删除组织；若组织下仍有项目，需要先移动或删除项目。",
+    "delete": "删除组织",
+    "deleteConfirmTitle": "删除组织？",
+    "deleteConfirmDesc": "该操作不可撤销。组织成员、团队与邀请记录会被移除。",
+    "deleted": "组织已删除"
+  }
 }

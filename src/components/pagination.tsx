@@ -1,4 +1,3 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import {
@@ -9,74 +8,97 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-export interface PaginationState {
-  limit: number
-  offset: number
-  total: number
-}
+export const DEFAULT_PAGE_LIMIT = 12
+export const DEFAULT_PAGE_SIZE_OPTIONS = [12, 24, 48] as const
 
-const PAGE_SIZES = [10, 20, 50, 100]
-
+/** 分页条（原型 上一页 / 页码 / 下一页）。单页时不渲染。 */
 export function Pagination({
   limit,
   offset,
   total,
   onChange,
-}: PaginationState & { onChange: (next: { limit: number; offset: number }) => void }) {
-  const { t } = useTranslation()
-  const page = Math.floor(offset / limit) + 1
-  const pageCount = Math.max(1, Math.ceil(total / limit))
-  const canPrev = offset > 0
-  const canNext = page < pageCount
+  pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
+}: {
+  limit: number
+  offset: number
+  total: number
+  onChange: (p: { limit: number; offset: number }) => void
+  pageSizeOptions?: readonly number[]
+}) {
+  const { t } = useTranslation('common')
+  const safeLimit = pageSizeOptions.includes(limit) ? limit : DEFAULT_PAGE_LIMIT
+  const pages = Math.max(1, Math.ceil(total / safeLimit))
+  const page = Math.min(pages, Math.max(1, Math.floor(offset / safeLimit) + 1))
+  const showPageSize = pageSizeOptions.length > 1 && total > 0
+  const showNavigation = pages > 1
+  if (!showPageSize && !showNavigation) return null
+
+  const go = (p: number) =>
+    onChange({
+      limit: safeLimit,
+      offset: Math.max(0, (Math.min(pages, Math.max(1, p)) - 1) * safeLimit),
+    })
+
+  const changeLimit = (nextLimit: string) => {
+    onChange({ limit: Number(nextLimit), offset: 0 })
+  }
+
+  // 当前页附近的窗口（最多 5 个页码）
+  const start = Math.max(1, Math.min(page - 2, pages - 4))
+  const nums = Array.from({ length: Math.min(5, pages) }, (_, i) => start + i)
 
   return (
-    <div className="text-muted-foreground flex items-center justify-between gap-4 px-2 py-2 text-sm">
-      <span className="tabular-nums">{t('table.total', { total })}</span>
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <span>{t('table.rowsPerPage')}</span>
-          <Select
-            value={String(limit)}
-            onValueChange={(v) => onChange({ limit: Number(v), offset: 0 })}
-          >
-            <SelectTrigger size="sm" className="w-[4.5rem]">
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      {showPageSize && (
+        <div className="flex items-center gap-1.5">
+          <span className="text-muted-foreground text-[12px]">
+            {t('table.rowsPerPage')}
+          </span>
+          <Select value={String(safeLimit)} onValueChange={changeLimit}>
+            <SelectTrigger className="h-8 w-[74px]">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
-              {PAGE_SIZES.map((s) => (
-                <SelectItem key={s} value={String(s)}>
-                  {s}
+            <SelectContent align="end">
+              {pageSizeOptions.map((size) => (
+                <SelectItem key={size} value={String(size)}>
+                  {size}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-        <span className="tabular-nums">
-          {t('table.page', { page })} / {pageCount}
-        </span>
-        <div className="flex items-center gap-1">
+      )}
+      {showNavigation && (
+        <>
           <Button
             variant="outline"
-            size="icon"
-            className="size-8"
-            disabled={!canPrev}
-            onClick={() => onChange({ limit, offset: Math.max(0, offset - limit) })}
-            aria-label={t('table.prev')}
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => go(page - 1)}
           >
-            <ChevronLeft className="size-4" />
+            {t('table.prev')}
           </Button>
+          {nums.map((n) => (
+            <Button
+              key={n}
+              variant={n === page ? 'default' : 'outline'}
+              size="sm"
+              className="min-w-8"
+              onClick={() => go(n)}
+            >
+              {n}
+            </Button>
+          ))}
           <Button
             variant="outline"
-            size="icon"
-            className="size-8"
-            disabled={!canNext}
-            onClick={() => onChange({ limit, offset: offset + limit })}
-            aria-label={t('table.next')}
+            size="sm"
+            disabled={page >= pages}
+            onClick={() => go(page + 1)}
           >
-            <ChevronRight className="size-4" />
+            {t('table.next')}
           </Button>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   )
 }

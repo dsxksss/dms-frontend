@@ -1,154 +1,111 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Download, Globe } from 'lucide-react'
-
+import { Database } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/page-header'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Pagination } from '@/components/pagination'
+import { GridHeader, GridRow, TableCard, Th } from '@/components/data-grid'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
+import { cn } from '@/lib/utils'
 import {
   usePublicDatasets,
-  usePublicDatasetPreview,
+  usePublicDatasetTags,
 } from '@/hooks/use-public-datasets'
-import { useToastError } from '@/hooks/use-toast-error'
-import { systemDatasetsApi } from '@/api/datasets'
-import { cn } from '@/lib/utils'
 
-function PreviewPanel({ datasetId }: { datasetId: string }) {
-  const { t } = useTranslation('datasets')
-  const toastError = useToastError()
-  const [page, setPage] = useState({ limit: 20, offset: 0 })
-  const query = usePublicDatasetPreview(datasetId, page)
-  const cols = query.data?.columns ?? []
+const COLS = '1.8fr 1fr 150px'
 
-  const doExport = async (format: 'csv' | 'parquet') => {
-    try {
-      await systemDatasetsApi.exportDownload(datasetId, format)
-    } catch (e) {
-      toastError(e)
-    }
-  }
-
-  return (
-    <div className="space-y-3">
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={() => doExport('csv')}>
-          <Download className="size-4" />
-          {t('preview.exportCsv')}
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => doExport('parquet')}>
-          <Download className="size-4" />
-          {t('preview.exportParquet')}
-        </Button>
-      </div>
-      {query.isLoading ? (
-        <TableSkeleton rows={6} cols={4} />
-      ) : query.isError ? (
-        <ErrorState error={query.error} onRetry={() => query.refetch()} />
-      ) : query.data && query.data.rows.length > 0 ? (
-        <>
-          <div className="overflow-x-auto rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {cols.map((c) => (
-                    <TableHead key={c} className="whitespace-nowrap">
-                      {c}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {query.data.rows.map((row, i) => (
-                  <TableRow key={i}>
-                    {row.map((cell, j) => (
-                      <TableCell key={j} className="tabular-nums whitespace-nowrap">
-                        {cell}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <Pagination
-            limit={page.limit}
-            offset={page.offset}
-            total={query.data.total}
-            onChange={setPage}
-          />
-        </>
-      ) : (
-        <EmptyState title={t('preview.empty')} />
-      )}
-    </div>
-  )
-}
-
+/** 公共（系统）数据集：跨企业全局只读，由平台超管发布。 */
 export function PublicDatasetsPage() {
-  const { t } = useTranslation('datasets')
-  const query = usePublicDatasets()
-  const [selected, setSelected] = useState<string | null>(null)
-
-  const items = query.data ?? []
-  const current = items.find((d) => d.id === selected) ?? items[0]
+  const { t } = useTranslation('common')
+  const { t: td } = useTranslation('datasets')
+  const [tag, setTag] = useState<string | undefined>(undefined)
+  const query = usePublicDatasets(tag)
+  const tags = usePublicDatasetTags()
+  const data = query.data ?? []
 
   return (
-    <div className="space-y-6">
-      <PageHeader title={t('public.title')} description={t('public.subtitle')} />
+    <div className="mx-auto max-w-[1000px] px-8 py-7">
+      <PageHeader
+        title={t('nav.publicDatasets')}
+        titleEn="Public datasets"
+        description={t('app.tagline')}
+        size="md"
+      />
+
+      {(tags.data?.length ?? 0) > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setTag(undefined)}
+            className={cn(
+              'rounded-full border px-2.5 py-1 text-[12px] font-semibold transition',
+              !tag
+                ? 'border-brand bg-accent text-brand'
+                : 'border-transparent bg-[#F0F2F6] text-muted-foreground hover:text-foreground',
+            )}
+          >
+            {td('filter.allTags')}
+          </button>
+          {tags.data!.map((tg) => (
+            <button
+              key={tg}
+              type="button"
+              onClick={() => setTag(tg)}
+              className={cn(
+                'rounded-full border px-2.5 py-1 text-[12px] font-semibold transition',
+                tag === tg
+                  ? 'border-brand bg-accent text-brand'
+                  : 'border-transparent bg-[#F0F2F6] text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {tg}
+            </button>
+          ))}
+        </div>
+      )}
 
       {query.isLoading ? (
-        <TableSkeleton rows={4} cols={2} />
+        <TableSkeleton rows={4} />
       ) : query.isError ? (
         <ErrorState error={query.error} onRetry={() => query.refetch()} />
-      ) : items.length === 0 ? (
-        <EmptyState
-          icon={<Globe className="size-8" />}
-          title={t('public.empty')}
-          description={t('public.emptyDesc')}
-        />
+      ) : data.length === 0 ? (
+        <EmptyState title={t('table.empty')} />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[18rem_1fr]">
-          <div className="space-y-1.5">
-            {items.map((d) => (
-              <button
-                key={d.id}
-                onClick={() => setSelected(d.id)}
-                className={cn(
-                  'w-full rounded-md border px-3 py-2 text-left text-sm transition-colors',
-                  current?.id === d.id
-                    ? 'border-brand/50 bg-sidebar-accent'
-                    : 'hover:bg-sidebar-accent/60',
-                )}
-              >
-                <div className="font-medium">{d.name}</div>
-                {d.description && (
-                  <div className="text-muted-foreground truncate text-xs">
-                    {d.description}
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
-          <Card>
-            <CardContent className="pt-6">
-              {current ? (
-                <PreviewPanel datasetId={current.id} />
-              ) : (
-                <EmptyState title={t('public.pick')} />
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        <TableCard>
+          <GridHeader cols={COLS}>
+            <Th>{t('settings.displayName', { defaultValue: '名称' })}</Th>
+            <Th>{td('meta.tags')}</Th>
+            <Th>{t('nav.publicDatasets')}</Th>
+          </GridHeader>
+          {data.map((d) => (
+            <GridRow key={d.id} cols={COLS}>
+              <div className="flex items-center gap-2.5">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-[9px] bg-accent text-brand">
+                  <Database className="size-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="truncate font-bold">{d.name}</div>
+                  {d.description && (
+                    <div className="truncate text-[11.5px] text-muted-foreground">
+                      {d.description}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-1">
+                {d.tags.slice(0, 3).map((tg) => (
+                  <Badge key={tg} variant="info">
+                    {tg}
+                  </Badge>
+                ))}
+              </div>
+              <div>
+                <Badge variant="success">
+                  {t('readonly', { defaultValue: '全企业只读' })}
+                </Badge>
+              </div>
+            </GridRow>
+          ))}
+        </TableCard>
       )}
     </div>
   )

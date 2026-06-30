@@ -1,0 +1,706 @@
+import { Outlet, useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { useQueries } from '@tanstack/react-query'
+import {
+  Activity,
+  Boxes,
+  ChevronDown,
+  ChevronRight,
+  Database,
+  FolderClosed,
+  LayoutGrid,
+  Notebook,
+  ShieldCheck,
+  Settings,
+  Table2,
+  Users,
+} from 'lucide-react'
+import { useState } from 'react'
+import { Badge } from '@/components/ui/badge'
+import {
+  Sidebar,
+  SidebarFooter,
+  SidebarNav,
+  SidebarNavItem,
+} from '@/components/sidebar'
+import { Topbar, type Crumb } from '@/components/topbar'
+import { PageHeader } from '@/components/page-header'
+import { StatCard } from '@/components/stat-card'
+import { BrandTile } from '@/components/brand-tile'
+import { TableCard } from '@/components/data-grid'
+import { DEFAULT_PAGE_LIMIT, Pagination } from '@/components/pagination'
+import { BiLabel, useIsZh } from '@/components/bilingual'
+import { UserAvatar } from '@/components/user-avatar'
+import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
+import { SidebarUser } from '@/components/sidebar-user'
+import { useProject, useProjectRole, useMembers } from '@/hooks/use-projects'
+import { useOrgs } from '@/hooks/use-orgs'
+import { useEntityTypes } from '@/hooks/use-registry'
+import { useDatasets } from '@/hooks/use-datasets'
+import { useFilesSummary } from '@/hooks/use-files'
+import { useProjectAudit } from '@/hooks/use-audit'
+import { useCan } from '@/auth/auth-context'
+import { registryApi } from '@/api/registry'
+import { formatDateTime, shortId } from '@/lib/format'
+import { TONE_HEX, type Tone } from '@/components/tone'
+import { RegistryTab } from '@/features/registry/RegistryTab'
+import { DatasetsPanel } from '@/features/datasets/DatasetsPanel'
+import { FilesPanel } from '@/features/files/FilesPanel'
+import { MembersPanel } from '@/features/projects/MembersPanel'
+import { NotebookPanel } from '@/features/notebook/NotebookPanel'
+import { ChangesView } from '@/features/audit/ChangesView'
+import type { AuditEntry } from '@/api/audit'
+import { cn } from '@/lib/utils'
+
+const NAV = [
+  { seg: '', end: true, icon: <LayoutGrid />, zh: '概览', en: 'Overview' },
+  { seg: '/registry', icon: <Boxes />, zh: '药物资产', en: 'Drug Assets' },
+  { seg: '/data', icon: <Table2 />, zh: '数据资产', en: 'Data Assets' },
+  { seg: '/datasets', icon: <Database />, zh: '数据集', en: 'Datasets', count: 'datasets' },
+  { seg: '/notebook', icon: <Notebook />, zh: '实验记录本', en: 'Notebook' },
+  { seg: '/files', icon: <FolderClosed />, zh: '文件', en: 'Files', count: 'files' },
+  { seg: '/audit', icon: <Activity />, zh: '操作记录', en: 'Activity' },
+  { seg: '/members', icon: <Settings />, zh: '设置', en: 'Settings' },
+] as const
+
+function useProjectId() {
+  return useParams<{ id: string }>().id ?? ''
+}
+
+/** 项目内上下文外壳：白侧栏（项目导航）+ 顶栏 + 内容（原型 ctxProject）。 */
+export function ProjectLayout() {
+  const projectId = useProjectId()
+  const isZh = useIsZh()
+  const canAudit = useCan('audit:read')
+  const project = useProject(projectId)
+  const role = useProjectRole(projectId)
+  const orgs = useOrgs()
+  // 项目统一归属组织；展示其组织名（默认组织即「我的组织」）。
+  const orgName = orgs.data?.find(
+    (o) => o.id === project.data?.organization_id,
+  )?.name
+
+  const datasets = useDatasets(projectId)
+  const files = useFilesSummary(projectId)
+  const members = useMembers(projectId)
+  const counts: Record<string, number | undefined> = {
+    datasets: datasets.data?.length,
+    files: files.data?.total,
+    members: members.data?.length,
+  }
+
+  const name = project.data?.name ?? ''
+  const crumbs: Crumb[] = [{ label: name, to: `/projects/${projectId}` }]
+
+  return (
+    <div className="flex h-screen overflow-hidden">
+      <Sidebar>
+        <div className="px-3.5 pt-4 pb-3">
+          <SidebarNavItem to="/projects" icon={<span className="text-base">←</span>}>
+            <span className="text-[12.5px]">{isZh ? '返回项目列表' : 'All projects'}</span>
+          </SidebarNavItem>
+        </div>
+        <div className="px-3 pb-2.5">
+          <div className="flex items-center gap-2.5 rounded-[9px] bg-accent px-2.5 py-2.5">
+            <BrandTile name={name || '·'} seed={projectId} size={24} />
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[13px] font-bold">{name}</div>
+              <div className="truncate text-[10.5px] text-muted-foreground">
+                {orgName ?? (isZh ? '我的组织' : 'My Organization')}
+              </div>
+            </div>
+          </div>
+        </div>
+        <SidebarNav>
+          {NAV.filter((n) => {
+            if (n.seg !== '/audit') return true
+            return role === 'owner' || role === 'manager' || canAudit
+          }).map((n) => (
+            <SidebarNavItem
+              key={n.seg}
+              to={`/projects/${projectId}${n.seg}`}
+              end={'end' in n ? n.end : undefined}
+              icon={n.icon}
+              badge={'count' in n ? counts[n.count] : undefined}
+            >
+              <BiLabel zh={n.zh} en={n.en} />
+            </SidebarNavItem>
+          ))}
+        </SidebarNav>
+        <SidebarFooter>
+          <SidebarUser role={role} />
+        </SidebarFooter>
+      </Sidebar>
+
+      <div className="relative flex min-w-0 flex-1 flex-col">
+        <Topbar crumbs={crumbs} />
+        <div className="flex-1 overflow-auto">
+          {project.isError ? (
+            <div className="p-8">
+              <ErrorState error={project.error} onRetry={() => project.refetch()} />
+            </div>
+          ) : (
+            <Outlet />
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ============ sections ============ */
+
+export function ProjectRegistrySection() {
+  return <RegistryTab projectId={useProjectId()} kind="asset" />
+}
+export function ProjectDataSection() {
+  return <RegistryTab projectId={useProjectId()} kind="template" />
+}
+export function ProjectDatasetsSection() {
+  return <DatasetsPanel projectId={useProjectId()} />
+}
+export function ProjectNotebookSection() {
+  return <NotebookPanel projectId={useProjectId()} />
+}
+export function ProjectFilesSection() {
+  return <FilesPanel projectId={useProjectId()} />
+}
+export function ProjectAuditSection() {
+  const projectId = useProjectId()
+  const { t } = useTranslation('projects')
+  const [page, setPage] = useState({ limit: DEFAULT_PAGE_LIMIT, offset: 0 })
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
+    () => new Set(),
+  )
+  const auditCount = useProjectAudit(projectId, { limit: 1, offset: 0 })
+  const rawTotal = auditCount.data?.total ?? 0
+  const audit = useProjectAudit(
+    projectId,
+    { limit: Math.max(rawTotal, DEFAULT_PAGE_LIMIT), offset: 0 },
+    auditCount.isSuccess,
+  )
+  const entries = audit.data?.items ?? []
+  const allGroups = groupProjectAuditEntries(entries)
+  const groupTotal = allGroups.length
+  const maxGroupOffset = Math.max(
+    0,
+    (Math.ceil(groupTotal / page.limit) - 1) * page.limit,
+  )
+  const groupOffset = Math.min(page.offset, maxGroupOffset)
+  const groups = allGroups.slice(groupOffset, groupOffset + page.limit)
+  const isLoading = auditCount.isLoading || audit.isLoading
+  const isError = auditCount.isError || audit.isError
+  const error = auditCount.error ?? audit.error
+
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups((current) => {
+      const next = new Set(current)
+      if (next.has(groupId)) next.delete(groupId)
+      else next.add(groupId)
+      return next
+    })
+  }
+
+  return (
+    <div className="mx-auto max-w-[900px] px-8 py-7">
+      <PageHeader
+        title={t('audit.title')}
+        titleEn="Activity"
+        description={t('audit.subtitle')}
+        size="md"
+      />
+      {isLoading ? (
+        <TableSkeleton rows={7} />
+      ) : isError ? (
+        <ErrorState
+          error={error}
+          onRetry={() => {
+            void auditCount.refetch()
+            void audit.refetch()
+          }}
+        />
+      ) : allGroups.length === 0 ? (
+        <EmptyState title={t('audit.empty')} />
+      ) : (
+        <>
+          <TableCard className="py-1.5">
+            {groups.map((group) => (
+              <ProjectAuditItem
+                key={group.id}
+                group={group}
+                expanded={expandedGroups.has(group.id)}
+                onToggle={() => toggleGroup(group.id)}
+              />
+            ))}
+          </TableCard>
+          <div className="mt-4 flex justify-end">
+            <Pagination
+              limit={page.limit}
+              offset={groupOffset}
+              total={groupTotal}
+              onChange={setPage}
+            />
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+type ProjectAuditGroup = {
+  id: string
+  key: string
+  entries: AuditEntry[]
+}
+
+const AUDIT_GROUP_GAP_MS = 2 * 60 * 1000
+
+function auditGroupKey(entry: AuditEntry) {
+  return [
+    entry.actor_id ?? entry.user_handle ?? entry.user_name ?? '',
+    entry.action,
+    entry.entity_type,
+  ].join('|')
+}
+
+function groupProjectAuditEntries(entries: AuditEntry[]): ProjectAuditGroup[] {
+  const groups: ProjectAuditGroup[] = []
+  for (const entry of entries) {
+    const key = auditGroupKey(entry)
+    const latest = groups.at(-1)
+    const latestEntry = latest?.entries.at(-1)
+    const gap =
+      latestEntry == null
+        ? Number.POSITIVE_INFINITY
+        : Math.abs(
+            new Date(latestEntry.occurred_at).getTime() -
+              new Date(entry.occurred_at).getTime(),
+          )
+
+    if (latest && latest.key === key && gap <= AUDIT_GROUP_GAP_MS) {
+      latest.entries.push(entry)
+    } else {
+      groups.push({ id: entry.id, key, entries: [entry] })
+    }
+  }
+  return groups
+}
+export function ProjectMembersSection() {
+  return <MembersPanel projectId={useProjectId()} />
+}
+
+/* ============ overview dashboard ============ */
+
+// 统一品牌强调色（对齐「中性灰 + 单一强调色」主题，不再每卡/每条一色）。
+const STAT_TINT = ['#EAF0FF', '#2F6BFF'] as const
+const BAR_COLOR = '#2F6BFF'
+
+function actionTone(action: string): Tone {
+  const v = action.split('.').pop() ?? action
+  if (/creat|add|grant|invit|sign|approv|restor|activat/.test(v)) {
+    if (/sign/.test(v)) return 'purple'
+    if (/grant|invit|approv/.test(v)) return 'info'
+    return 'success'
+  }
+  if (/updat|edit|chang|patch|rename|move|archive|unarchive/.test(v)) return 'warning'
+  if (/delet|remov|revok|abort|suspend|reject|unshare/.test(v)) return 'danger'
+  return 'neutral'
+}
+
+const PROJECT_AUDIT_ACTION_KEYS: Record<string, string> = {
+  'project.created': 'projectCreated',
+  'project.updated': 'projectUpdated',
+  'project.deleted': 'projectDeleted',
+  'project.archived': 'projectArchived',
+  'project.unarchived': 'projectUnarchived',
+  'project.visibility_set': 'visibilitySet',
+  'project.member_set': 'memberSet',
+  'project.member_removed': 'memberRemoved',
+  'project.shared': 'shared',
+  'project.unshared': 'unshared',
+  'entity_type.created': 'entityTypeCreated',
+  'entity_type.updated': 'entityTypeUpdated',
+  'entity_type.deleted': 'entityTypeDeleted',
+  'entity.created': 'entityCreated',
+  'entity.updated': 'entityUpdated',
+  'entity.deleted': 'entityDeleted',
+  'entity.imported': 'entityImported',
+  'entity_relation.created': 'relationCreated',
+  'entity_relation.deleted': 'relationDeleted',
+  'dataset.created': 'datasetCreated',
+  'dataset.updated': 'datasetUpdated',
+  'dataset.deleted': 'datasetDeleted',
+  'dataset.row_imported': 'datasetRowsImported',
+  'file.uploaded': 'fileUploaded',
+  'file.updated': 'fileUpdated',
+  'file.deleted': 'fileDeleted',
+  'file.moved': 'fileMoved',
+  'file.confidential_set': 'fileConfidentialSet',
+  'file.file_granted': 'fileGranted',
+  'file.file_revoked': 'fileRevoked',
+  'notebook_entry.created': 'notebookCreated',
+  'notebook_entry.updated': 'notebookUpdated',
+  'notebook_entry.deleted': 'notebookDeleted',
+  'notebook_entry.signed': 'notebookSigned',
+  'protocol.created': 'protocolCreated',
+  'protocol.updated': 'protocolUpdated',
+  'protocol.deleted': 'protocolDeleted',
+  'run.created': 'runCreated',
+  'run.results_updated': 'runResultsUpdated',
+  'run.deleted': 'runDeleted',
+  'field_access_request.field_access_requested': 'fieldAccessRequested',
+  'field_access_request.field_access_approved': 'fieldAccessApproved',
+  'field_access_request.field_access_rejected': 'fieldAccessRejected',
+  'field_grant.field_granted': 'fieldGranted',
+  'field_grant.field_revoked': 'fieldRevoked',
+  'resource_grant.granted': 'resourceGrantGranted',
+  'resource_grant.revoked': 'resourceGrantRevoked',
+}
+
+type ProjectT = (key: string, options?: Record<string, unknown>) => string
+
+function projectAuditActionKey(entry: AuditEntry) {
+  return (
+    PROJECT_AUDIT_ACTION_KEYS[`${entry.entity_type}.${entry.action}`] ??
+    PROJECT_AUDIT_ACTION_KEYS[entry.action]
+  )
+}
+
+function projectAuditText(entry: AuditEntry, t: ProjectT) {
+  const key = projectAuditActionKey(entry)
+  if (key) return t(`audit.actions.${key}`)
+  return entry.event_description || entry.action
+}
+
+function projectAuditBadge(entry: AuditEntry, t: ProjectT) {
+  const key = projectAuditActionKey(entry)
+  if (key) return t(`audit.badges.${key}`, { defaultValue: t(`audit.actions.${key}`) })
+  const verb = entry.action.split('.').pop() ?? entry.action
+  return t(`actionLabels.${verb}`, { ns: 'audit', defaultValue: verb })
+}
+
+export function ProjectOverviewSection() {
+  const projectId = useProjectId()
+  const { t } = useTranslation('projects')
+  const isZh = useIsZh()
+  const canAudit = useCan('audit:read')
+  const role = useProjectRole(projectId)
+  const canProjectAudit = canAudit || role === 'owner' || role === 'manager'
+
+  const project = useProject(projectId)
+  const members = useMembers(projectId)
+  const datasets = useDatasets(projectId)
+  const types = useEntityTypes(projectId)
+  const assetTypes = (types.data ?? []).filter((ty) => ty.kind === 'asset')
+
+  const counts = useQueries({
+    queries: assetTypes.map((ty) => ({
+      queryKey: ['registry', projectId, 'count', 'asset', ty.id],
+      queryFn: () =>
+        registryApi
+          .listRecords(projectId, 'asset', { type: ty.id, limit: 1 })
+          .then((r) => r.total),
+      staleTime: 30_000,
+    })),
+  })
+  const assetTotal = counts.reduce((s, q) => s + (q.data ?? 0), 0)
+  const maxBar = Math.max(1, ...counts.map((q) => q.data ?? 0))
+
+  const audit = useProjectAudit(projectId, { limit: 6 }, canProjectAudit)
+  const memberList = members.data ?? []
+
+  return (
+    <div className="mx-auto max-w-[1180px] px-[30px] py-[26px]">
+      <PageHeader
+        title={project.data?.name ?? ''}
+        titleEn={isZh ? '概览' : undefined}
+        size="md"
+        description={project.data?.description}
+        actions={
+          <div className="flex items-center">
+            {memberList.slice(0, 4).map((m, i) => (
+              <UserAvatar
+                key={m.user_id}
+                name={m.user_id}
+                seed={m.user_id}
+                size={28}
+                ring
+                className={i > 0 ? '-ml-[7px]' : ''}
+              />
+            ))}
+            {memberList.length > 4 && (
+              <span className="-ml-[7px] flex size-7 items-center justify-center rounded-full bg-[#E9EDF4] text-[10.5px] font-bold text-[#5a6473] ring-2 ring-white">
+                +{memberList.length - 4}
+              </span>
+            )}
+          </div>
+        }
+      />
+
+      <div className="mb-[18px] grid grid-cols-2 gap-3.5 lg:grid-cols-3">
+        <StatCard
+          label={t('tabs.registry')}
+          value={assetTotal}
+          tint={STAT_TINT}
+          icon={<Boxes />}
+        />
+        <StatCard
+          label={t('tabs.datasets')}
+          value={datasets.data?.length ?? 0}
+          tint={STAT_TINT}
+          icon={<Database />}
+        />
+        <StatCard
+          label={t('members.title')}
+          value={memberList.length}
+          tint={STAT_TINT}
+          icon={<Users />}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
+        <div className="card-shadow rounded-[14px] border bg-card px-5 py-[18px]">
+          <div className="mb-3.5 text-[14px] font-bold">{t('overview.byType')}</div>
+          {assetTypes.length === 0 ? (
+            <p className="text-[12.5px] text-muted-foreground">
+              {t('overview.none')}
+            </p>
+          ) : (
+            assetTypes.map((ty, i) => {
+              const c = counts[i]?.data ?? 0
+              return (
+                <div key={ty.id} className="mb-3 flex items-center gap-3">
+                  <div className="w-[90px] truncate text-[12.5px] font-semibold">
+                    {ty.name}
+                  </div>
+                  <div className="h-[9px] flex-1 overflow-hidden rounded-full bg-divider">
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${(c / maxBar) * 100}%`,
+                        background: BAR_COLOR,
+                      }}
+                    />
+                  </div>
+                  <div className="mono w-9 text-right text-[12px] text-muted-foreground">
+                    {c}
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
+
+        <div className="card-shadow rounded-[14px] border bg-card px-5 py-[18px]">
+          <div className="mb-3.5 text-[14px] font-bold">{t('overview.recent')}</div>
+          {!canProjectAudit ? (
+            <p className="text-[12.5px] text-muted-foreground">
+              {t('overview.noActivity')}
+            </p>
+          ) : (audit.data?.items ?? []).length === 0 ? (
+            <p className="text-[12.5px] text-muted-foreground">
+              {t('overview.noActivity')}
+            </p>
+          ) : (
+            (audit.data?.items ?? []).map((a) => (
+              <div key={a.id} className="mb-3.5 flex gap-2.5">
+                <UserAvatar
+                  name={a.user_name || '?'}
+                  seed={a.actor_id || a.id}
+                  size={24}
+                  className="mt-0.5"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="text-[12.5px] leading-snug">
+                    <b>{a.user_name || a.user_handle || '—'}</b>{' '}
+                    {projectAuditText(a, t)}
+                  </div>
+                  <div className="mt-0.5 text-[11px] text-muted-foreground">
+                    {formatDateTime(a.occurred_at)}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ProjectAuditRow({
+  entry,
+  compact = false,
+}: {
+  entry: AuditEntry
+  compact?: boolean
+}) {
+  const { t } = useTranslation(['projects', 'audit'])
+  const tone = actionTone(entry.action)
+  const [bg, fg] = TONE_HEX[tone]
+  const actor = entry.user_name || entry.user_handle || t('none', { ns: 'audit' })
+  const actionText = projectAuditText(entry, t)
+
+  return (
+    <div
+      className={cn(
+        'flex gap-3 border-b border-divider px-5 py-[13px] last:border-b-0',
+        compact &&
+          'ml-10 gap-2 border-l border-divider/80 bg-card/80 py-2 pr-4 pl-3',
+      )}
+    >
+      {!compact && (
+        <div
+          className="flex size-8 shrink-0 items-center justify-center rounded-[9px]"
+          style={{ background: bg, color: fg }}
+        >
+          <Activity className="size-4" />
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
+        <div className={cn('text-[13px]', compact && 'text-[12px] leading-snug')}>
+          <b>{actor}</b>{' '}
+          <span className="text-[#5a6473]">
+            {actionText}
+          </span>{' '}
+          <span
+            className={cn(
+              'mono text-[11.5px] font-semibold text-brand',
+              compact && 'text-[10.5px]',
+            )}
+          >
+            {entry.entity_type}/{shortId(entry.entity_id)}
+          </span>
+        </div>
+        <div
+          className={cn(
+            'mt-[3px] flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground',
+            compact && 'gap-2 text-[10.5px]',
+          )}
+        >
+          <span>{formatDateTime(entry.occurred_at)}</span>
+          {entry.ip_address && <span className="mono">IP {entry.ip_address}</span>}
+          {entry.request_id && <span className="mono">{entry.request_id}</span>}
+          {entry.hash && (
+            <span
+              className="inline-flex items-center gap-1 text-[#15803D]"
+              title={`${t('meta.integrity', { ns: 'audit' })}\nhash: ${entry.hash}`}
+            >
+              <ShieldCheck className="size-3" />
+              {t('meta.integrityShort', { ns: 'audit' })}
+            </span>
+          )}
+          <ChangesView entry={entry} />
+        </div>
+      </div>
+      <div className="flex h-fit shrink-0 items-center gap-1.5">
+        {entry.result === 'failure' && (
+          <Badge variant="danger">{t('meta.failure', { ns: 'audit' })}</Badge>
+        )}
+        <Badge variant={tone} className={compact ? 'px-2 py-[2px] text-[10.5px]' : undefined}>
+          {projectAuditBadge(entry, t)}
+        </Badge>
+      </div>
+    </div>
+  )
+}
+
+function ProjectAuditItem({
+  group,
+  expanded,
+  onToggle,
+}: {
+  group: ProjectAuditGroup
+  expanded: boolean
+  onToggle: () => void
+}) {
+  if (group.entries.length === 1) {
+    return <ProjectAuditRow entry={group.entries[0]} />
+  }
+  return (
+    <ProjectAuditGroupRow
+      group={group}
+      expanded={expanded}
+      onToggle={onToggle}
+    />
+  )
+}
+
+function ProjectAuditGroupRow({
+  group,
+  expanded,
+  onToggle,
+}: {
+  group: ProjectAuditGroup
+  expanded: boolean
+  onToggle: () => void
+}) {
+  const { t } = useTranslation(['projects', 'audit'])
+  const first = group.entries[0]
+  const last = group.entries[group.entries.length - 1]
+  const tone = actionTone(first.action)
+  const [bg, fg] = TONE_HEX[tone]
+  const actor = first.user_name || first.user_handle || t('none', { ns: 'audit' })
+  const actionText = projectAuditText(first, t)
+  const Icon = expanded ? ChevronDown : ChevronRight
+
+  return (
+    <div className="border-b border-divider last:border-b-0">
+      <button
+        type="button"
+        className="flex w-full gap-3 px-5 py-[13px] text-left transition hover:bg-muted/40"
+        aria-expanded={expanded}
+        onClick={onToggle}
+      >
+        <div
+          className="flex size-8 shrink-0 items-center justify-center rounded-[9px]"
+          style={{ background: bg, color: fg }}
+        >
+          <Activity className="size-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-[13px]">
+            <Icon className="size-3.5 shrink-0 text-muted-foreground" />
+            <b>{actor}</b>
+            <span className="text-[#5a6473]">{actionText}</span>
+            <span className="mono text-[11.5px] font-semibold text-brand">
+              {first.entity_type}
+            </span>
+            <span className="text-[12px] font-semibold text-muted-foreground">
+              {t('audit.groupCount', { count: group.entries.length })}
+            </span>
+          </div>
+          <div className="mt-[3px] flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+            <span>
+              {formatDateTime(first.occurred_at)} -{' '}
+              {formatDateTime(last.occurred_at)}
+            </span>
+            {first.ip_address && <span className="mono">IP {first.ip_address}</span>}
+            {first.hash && (
+              <span
+                className="inline-flex items-center gap-1 text-[#15803D]"
+                title={`${t('meta.integrity', { ns: 'audit' })}\nhash: ${first.hash}`}
+              >
+                <ShieldCheck className="size-3" />
+                {t('meta.integrityShort', { ns: 'audit' })}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex h-fit shrink-0 items-center gap-1.5">
+          {group.entries.some((entry) => entry.result === 'failure') && (
+            <Badge variant="danger">{t('meta.failure', { ns: 'audit' })}</Badge>
+          )}
+          <Badge variant={tone}>{projectAuditBadge(first, t)}</Badge>
+        </div>
+      </button>
+      {expanded && (
+        <div className="border-t border-divider bg-muted/20 py-1">
+          {group.entries.map((entry) => (
+            <ProjectAuditRow key={entry.id} entry={entry} compact />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}

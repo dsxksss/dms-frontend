@@ -18,14 +18,12 @@ import zhAudit from './locales/zh-CN/audit.json'
 import enAudit from './locales/en/audit.json'
 import zhOrgs from './locales/zh-CN/orgs.json'
 import enOrgs from './locales/en/orgs.json'
-import zhProtocols from './locales/zh-CN/protocols.json'
-import enProtocols from './locales/en/protocols.json'
 import zhMembership from './locales/zh-CN/membership.json'
 import enMembership from './locales/en/membership.json'
-import zhSignatures from './locales/zh-CN/signatures.json'
-import enSignatures from './locales/en/signatures.json'
 import zhPlatform from './locales/zh-CN/platform.json'
 import enPlatform from './locales/en/platform.json'
+import zhNotebook from './locales/zh-CN/notebook.json'
+import enNotebook from './locales/en/notebook.json'
 
 export const SUPPORTED_LANGS = ['zh-CN', 'en'] as const
 export type Lang = (typeof SUPPORTED_LANGS)[number]
@@ -41,9 +39,8 @@ export const resources = {
     audit: zhAudit,
     orgs: zhOrgs,
     membership: zhMembership,
-    protocols: zhProtocols,
-    signatures: zhSignatures,
     platform: zhPlatform,
+    notebook: zhNotebook,
   },
   en: {
     common: enCommon,
@@ -55,9 +52,8 @@ export const resources = {
     audit: enAudit,
     orgs: enOrgs,
     membership: enMembership,
-    protocols: enProtocols,
-    signatures: enSignatures,
     platform: enPlatform,
+    notebook: enNotebook,
   },
 } as const
 
@@ -79,9 +75,8 @@ void i18n
       'audit',
       'orgs',
       'membership',
-      'protocols',
-      'signatures',
       'platform',
+      'notebook',
     ],
     interpolation: { escapeValue: false },
     detection: {

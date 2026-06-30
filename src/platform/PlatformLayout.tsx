@@ -1,123 +1,137 @@
-import { Suspense, type ComponentType } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
-import { Building2, Database, Gauge, Loader2, LogOut, Settings } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Suspense } from 'react'
+import { Outlet, useLocation } from 'react-router-dom'
+import {
+  Building2,
+  Database,
+  Gauge,
+  Loader2,
+  LogOut,
+  Settings,
+} from 'lucide-react'
+import {
+  Sidebar,
+  SidebarFooter,
+  SidebarNav,
+  SidebarNavItem,
+} from '@/components/sidebar'
+import { Topbar, type Crumb } from '@/components/topbar'
+import { PlatformMark } from '@/components/brand-mark'
+import { BiLabel, useIsZh } from '@/components/bilingual'
+import { UserAvatar } from '@/components/user-avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ThemeToggle } from '@/components/theme-toggle'
-import { LangToggle } from '@/components/lang-toggle'
 import { usePlatformAuth } from '@/platform/platform-auth'
-import { cn } from '@/lib/utils'
 
-interface NavItem {
-  to: string
-  labelKey: string
-  icon: ComponentType<{ className?: string }>
-  end?: boolean
-}
+const NAV = [
+  { to: '/system', end: true, icon: <Gauge />, zh: '概览', en: 'Overview' },
+  { to: '/system/tenants', icon: <Building2 />, zh: '企业', en: 'Tenants' },
+  { to: '/system/datasets', icon: <Database />, zh: '系统数据集', en: 'System Datasets' },
+  { to: '/system/settings', icon: <Settings />, zh: '全局配置', en: 'Settings' },
+] as const
 
-const NAV: NavItem[] = [
-  { to: '/system', labelKey: 'nav.overview', icon: Gauge, end: true },
-  { to: '/system/tenants', labelKey: 'nav.tenants', icon: Building2 },
-  { to: '/system/datasets', labelKey: 'nav.datasets', icon: Database },
-  { to: '/system/settings', labelKey: 'nav.settings', icon: Settings },
-]
-
-function SidebarNav() {
-  const { t } = useTranslation('platform')
-  return (
-    <nav className="flex flex-col gap-1 p-3">
-      <div className="flex items-center gap-2 px-2 py-3">
-        <div className="bg-brand text-brand-foreground flex size-7 items-center justify-center rounded-md text-sm font-semibold">
-          P
-        </div>
-        <span className="font-semibold tracking-tight">{t('title')}</span>
-      </div>
-      {NAV.map((item) => (
-        <NavLink
-          key={item.to}
-          to={item.to}
-          end={item.end}
-          className={({ isActive }) =>
-            cn(
-              'flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors',
-              isActive
-                ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-                : 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground',
-            )
-          }
-        >
-          <item.icon className="size-4" />
-          {t(item.labelKey)}
-        </NavLink>
-      ))}
-    </nav>
-  )
-}
-
-function UserMenu() {
-  const { t } = useTranslation('platform')
+function PlatformSidebar() {
+  const isZh = useIsZh()
   const { me, logout } = usePlatformAuth()
-  const initial = (me?.email ?? '?').slice(0, 1).toUpperCase()
+  const name = me?.display_name ?? me?.email ?? (isZh ? '超管' : 'Admin')
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="bg-muted size-8 rounded-full text-xs font-medium"
-        >
-          {initial}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="flex flex-col">
-          <span>{me?.display_name ?? t('account')}</span>
-          <span className="text-muted-foreground truncate font-mono text-xs">
-            {me?.email}
-          </span>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => void logout()}>
-          <LogOut className="size-4" />
-          {t('logout')}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Sidebar dark>
+      <div className="flex items-center gap-2.5 px-4 pt-[18px] pb-3.5">
+        <PlatformMark size={30} />
+        <div className="leading-tight">
+          <div className="text-[14px] font-extrabold text-white">
+            {isZh ? '平台控制台' : 'Platform Console'}
+          </div>
+          {isZh && <div className="text-[10px] text-[#8990B5]">Platform Console</div>}
+        </div>
+      </div>
+
+      <SidebarNav>
+        {NAV.map((n) => (
+          <SidebarNavItem
+            key={n.to}
+            to={n.to}
+            end={'end' in n ? n.end : undefined}
+            icon={n.icon}
+            dark
+          >
+            <BiLabel zh={n.zh} en={n.en} />
+          </SidebarNavItem>
+        ))}
+      </SidebarNav>
+
+      <SidebarFooter dark>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex w-full items-center gap-2.5 text-left outline-none">
+              <UserAvatar name={name} color="#6D5BD0" size={30} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[12.5px] font-bold text-white">
+                  {name}
+                </div>
+                <div className="truncate text-[10.5px] text-[#8990B5]">
+                  {me?.email ?? ''}
+                </div>
+              </div>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" side="top" className="w-56">
+            <DropdownMenuItem disabled className="flex-col items-start gap-0">
+              <span className="text-[12px] font-semibold">{name}</span>
+              <span className="font-mono text-[11px] text-muted-foreground">
+                {me?.email}
+              </span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={() => void logout()}
+            >
+              <LogOut className="size-4" />
+              {isZh ? '退出控制台' : 'Sign out'}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarFooter>
+    </Sidebar>
   )
 }
 
+/** 平台控制台外壳：深色侧栏 + 顶栏 + 内容（原型 ctxPlatform）。 */
 export function PlatformLayout() {
+  const { pathname } = useLocation()
+  const isZh = useIsZh()
+  const current = [...NAV]
+    .reverse()
+    .find((n) =>
+      'end' in n && n.end ? pathname === n.to : pathname.startsWith(n.to),
+    )
+  const crumbs: Crumb[] = [
+    { label: isZh ? '平台控制台' : 'Platform Console' },
+    { label: current ? (isZh ? current.zh : current.en) : '' },
+  ]
+
   return (
-    <div className="flex min-h-[100dvh]">
-      <aside className="bg-sidebar hidden w-60 shrink-0 border-r md:block">
-        <SidebarNav />
-      </aside>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 items-center gap-2 border-b px-4">
-          <div className="flex-1" />
-          <LangToggle />
-          <ThemeToggle />
-          <UserMenu />
-        </header>
-        <main className="flex-1 overflow-auto p-6">
+    <div className="flex h-screen overflow-hidden">
+      <PlatformSidebar />
+      <div className="relative flex min-w-0 flex-1 flex-col">
+        <Topbar crumbs={crumbs} search={false} />
+        <div className="flex-1 overflow-auto">
           <Suspense
             fallback={
-              <div className="flex h-full items-center justify-center">
-                <Loader2 className="text-muted-foreground size-6 animate-spin" />
+              <div className="flex h-full items-center justify-center py-20">
+                <Loader2 className="size-6 animate-spin text-muted-foreground" />
               </div>
             }
           >
             <Outlet />
           </Suspense>
-        </main>
+        </div>
       </div>
     </div>
   )

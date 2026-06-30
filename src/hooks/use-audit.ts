@@ -7,3 +7,15 @@ export function useAudit(params: AuditParams) {
     queryFn: () => auditApi.list(params),
   })
 }
+
+export function useProjectAudit(
+  projectId: string,
+  params: Omit<AuditParams, 'project_id'>,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ['audit', 'project', projectId, params],
+    queryFn: () => auditApi.listProject(projectId, params),
+    enabled: enabled && !!projectId,
+  })
+}

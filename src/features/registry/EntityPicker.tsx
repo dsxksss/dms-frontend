@@ -1,16 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, ChevronsUpDown } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Select,
   SelectContent,
@@ -18,119 +9,110 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useRecords, useRecord, useEntityTypes } from '@/hooks/use-registry'
+import { useEntityTypes, useRecords } from '@/hooks/use-registry'
 import { shortId } from '@/lib/format'
-import { cn } from '@/lib/utils'
-import type { Entity } from '@/api/registry'
+import { EntityDialog } from './EntityDialog'
 
-export function entityLabel(e: Entity): string {
-  const name = e.data?.name ?? e.data?.key
-  return typeof name === 'string' && name ? name : shortId(e.id)
-}
-
-/** 选引用实体：先选类型，再在可搜索下拉里挑实体。返回实体 id。已有值时回显类型与名称。 */
+/** 选择一条药物资产记录（reference 字段 / 关系目标）；支持内嵌新建目标记录后自动选中。 */
 export function EntityPicker({
   projectId,
   value,
   onChange,
-  excludeId,
+  refType,
 }: {
   projectId: string
-  value?: string
-  onChange: (entityId: string | undefined) => void
-  excludeId?: string
+  value: string | null
+  onChange: (id: string | null) => void
+  /** 字段的 ref_type（目标资产类型 key）：给定时锁定到该类型，仅列其记录。 */
+  refType?: string | null
 }) {
   const { t } = useTranslation('registry')
-  // 引用只指向药物资产记录，故仅列资产类型。
-  const allTypes = useEntityTypes(projectId)
-  const assetTypes = (allTypes.data ?? []).filter((ty) => ty.kind === 'asset')
-  const [typeId, setTypeId] = useState<string>('')
-  const [open, setOpen] = useState(false)
-
-  // 回显：有值但未选类型时，拉取该资产记录以推断类型并显示名称。
-  const valueEntity = useRecord(projectId, 'asset', value ?? '', !!value && !typeId)
-  useEffect(() => {
-    if (value && !typeId && valueEntity.data) setTypeId(valueEntity.data.type_id)
-  }, [value, typeId, valueEntity.data])
-
-  const entities = useRecords(
+  const types = useEntityTypes(projectId)
+  const assetTypes = (types.data ?? []).filter((ty) => ty.kind === 'asset')
+  // ref_type 指定时锁定目标类型（按 key 匹配），否则用户手选类型。
+  const lockedType = refType
+    ? assetTypes.find((ty) => ty.key === refType)
+    : undefined
+  const [pickedTypeId, setPickedTypeId] = useState('')
+  const targetType = refType
+    ? lockedType
+    : assetTypes.find((ty) => ty.id === pickedTypeId)
+  const typeId = targetType?.id ?? ''
+  const records = useRecords(
     projectId,
     'asset',
-    { type: typeId, limit: 100 },
+    { type: typeId, limit: 50 },
     !!typeId,
   )
+  const [createOpen, setCreateOpen] = useState(false)
 
-  const merged = [...(entities.data?.items ?? [])]
-  if (valueEntity.data && !merged.some((e) => e.id === valueEntity.data!.id)) {
-    merged.unshift(valueEntity.data)
-  }
-  const options = merged.filter((e) => e.id !== excludeId)
-  const selected = options.find((e) => e.id === value)
-  const selectedLabel = selected
-    ? entityLabel(selected)
-    : valueEntity.data
-      ? entityLabel(valueEntity.data)
-      : ''
+  const label = (data: Record<string, unknown>, id: string) =>
+    String(data.name ?? data.id ?? shortId(id))
 
   return (
-    <div className="grid grid-cols-2 gap-2">
-      <Select value={typeId} onValueChange={setTypeId}>
-        <SelectTrigger>
-          <SelectValue placeholder={t('picker.type')} />
+    <div className="flex items-center gap-2">
+      {refType ? (
+        <div className="flex h-9 max-w-[40%] shrink-0 items-center truncate rounded-[8px] border border-input bg-muted px-3 text-[13px] text-muted-foreground">
+          {lockedType?.name ?? refType}
+        </div>
+      ) : (
+        <Select value={pickedTypeId} onValueChange={setPickedTypeId}>
+          <SelectTrigger className="w-[34%] shrink-0">
+            <SelectValue placeholder={t('picker.selectType')} />
+          </SelectTrigger>
+          <SelectContent>
+            {assetTypes.map((ty) => (
+              <SelectItem key={ty.id} value={ty.id}>
+                {ty.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+      <Select
+        value={value ?? ''}
+        onValueChange={(v) => onChange(v || null)}
+        disabled={!typeId}
+      >
+        <SelectTrigger className="w-full min-w-0 flex-1">
+          <SelectValue placeholder={t('picker.selectEntity')} />
         </SelectTrigger>
         <SelectContent>
-          {assetTypes.map((ty) => (
-            <SelectItem key={ty.id} value={ty.id}>
-              {ty.name}
+          {(records.data?.items ?? []).map((r) => (
+            <SelectItem key={r.id} value={r.id}>
+              {label(r.data, r.id)}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
 
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            role="combobox"
-            disabled={!typeId}
-            className="justify-between font-normal"
-          >
-            <span className="truncate">
-              {selectedLabel || t('picker.entity')}
-            </span>
-            <ChevronsUpDown className="text-muted-foreground size-4 shrink-0" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-          <Command>
-            <CommandInput placeholder={t('picker.search')} />
-            <CommandList>
-              <CommandEmpty>{t('picker.empty')}</CommandEmpty>
-              <CommandGroup>
-                {options.map((e) => (
-                  <CommandItem
-                    key={e.id}
-                    value={`${entityLabel(e)} ${e.id}`}
-                    onSelect={() => {
-                      onChange(e.id)
-                      setOpen(false)
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        'size-4',
-                        value === e.id ? 'opacity-100' : 'opacity-0',
-                      )}
-                    />
-                    <span className="truncate">{entityLabel(e)}</span>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+      {/* 内嵌新建目标记录：免去先退出去建好再回来 */}
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        className="shrink-0"
+        disabled={!targetType}
+        title={
+          targetType
+            ? t('picker.createNew', { type: targetType.name })
+            : t('picker.createNew', { type: '' })
+        }
+        onClick={() => setCreateOpen(true)}
+      >
+        <Plus className="size-4" />
+      </Button>
+
+      {targetType && (
+        <EntityDialog
+          projectId={projectId}
+          kind="asset"
+          type={targetType}
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          onCreated={(e) => onChange(e.id)}
+        />
+      )}
     </div>
   )
 }

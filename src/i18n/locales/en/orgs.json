@@ -1,6 +1,8 @@
 {
   "title": "Organizations",
   "subtitle": "Organizations, teams and scoped role grants",
+  "defaultBadge": "My Organization",
+  "notMemberDesc": "You are not a member of this organization, so its members, teams, assets and data are not visible. Ask an org admin to invite you.",
   "create": {
     "title": "New organization",
     "slug": "Slug (optional)",
@@ -19,6 +21,7 @@
   "created": "Organization created",
   "addMember": {
     "title": "Add organization member",
+    "alreadyMember": "Already a member",
     "user": "User",
     "userPlaceholder": "Search name or email…",
     "role": "Role",
@@ -26,6 +29,13 @@
     "added": "Member added",
     "userRequired": "Select a user",
     "empty": "No selectable members in this organization"
+  },
+  "members": {
+    "you": "(you)",
+    "removeTitle": "Remove member?",
+    "removeDescription": "This removes the member from the organization.",
+    "remove": "Remove",
+    "removed": "Member removed"
   },
   "orgRole": { "admin": "Admin", "member": "Member" },
   "teams": {
@@ -66,7 +76,8 @@
       "owner": "Owner",
       "manager": "Manager",
       "contributor": "Contributor",
-      "viewer": "Viewer"
+      "viewer": "Viewer",
+      "auditor": "Auditor"
     }
   },
   "permissions": {
@@ -85,5 +96,53 @@
       "write": "Manage"
     }
   },
-  "tabs": { "teams": "Teams", "members": "Members", "grants": "Role grants", "join": "Join requests" }
+  "registry": {
+    "createAssetType": "New asset type",
+    "createTemplate": "New data template",
+    "createRecord": "New record",
+    "noTypes": "No types yet",
+    "noTypesAdmin": "Click \"New type\" to start org-level assets/data.",
+    "noTypesMember": "The org admin hasn't created any types yet.",
+    "notMember": "You are not a member of this organization",
+    "notMemberHint": "Org-level assets/data are visible only to members. Ask an org admin to invite you.",
+    "emptyRecords": "No records",
+    "emptyRecordsHint": "An org admin can click \"New record\" (top-right) to add the first org-level asset/data.",
+    "deleted": "Record deleted",
+    "recordCreated": "Record created",
+    "recordUpdated": "Record updated",
+    "typeCreated": "Type created",
+    "typeKey": "Key",
+    "typeName": "Name",
+    "create": "Create",
+    "edit": "Edit",
+    "delete": "Delete",
+    "total": "{{total}} total"
+  },
+  "datasets": {
+    "description": "Organization-shared datasets. Members can view them; org admins can create, upload versions, edit and delete."
+  },
+  "tabs": {
+    "teams": "Teams",
+    "members": "Members",
+    "assets": "Org assets",
+    "data": "Org data",
+    "datasets": "Org datasets",
+    "grants": "Role grants",
+    "join": "Join requests",
+    "settings": "Settings"
+  },
+  "settings": {
+    "title": "Organization settings",
+    "name": "Organization name",
+    "saveName": "Save name",
+    "discoverable": "Allow search & join requests",
+    "discoverableHint": "When on, other users in this tenant can find this organization and request to join; when off, members can only be added by invitation.",
+    "saved": "Saved",
+    "deleteTitle": "Delete organization",
+    "deleteHint": "Only the organization creator can delete it. Move or delete active projects first.",
+    "delete": "Delete organization",
+    "deleteConfirmTitle": "Delete organization?",
+    "deleteConfirmDesc": "This cannot be undone. Members, teams, and invitations for this organization will be removed.",
+    "deleted": "Organization deleted"
+  }
 }

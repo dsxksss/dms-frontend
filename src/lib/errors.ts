@@ -73,3 +73,22 @@ export function quotaI18nKey(e: unknown): string | null {
   if (d.includes('organization')) return 'error.quota.orgs'
   return 'error.quota.generic'
 }
+
+/** 后端业务 detail → 友好文案 key。 */
+export function detailI18nKey(e: unknown): string | null {
+  if (!(e instanceof AppError)) return null
+  const d = (e.detail ?? '').toLowerCase()
+  if (d === 'grant target must be a project member') {
+    return 'error.grantTargetMustBeProjectMember'
+  }
+  if (/^type still has \d+ record\(s\); delete the records first$/.test(d)) {
+    return 'error.typeStillHasRecords'
+  }
+  if (
+    d ===
+    'type is bound by a data template; unbind or delete that template first'
+  ) {
+    return 'error.typeBoundByDataTemplate'
+  }
+  return null
+}

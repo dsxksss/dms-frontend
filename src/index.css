@@ -4,60 +4,83 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * DMS 设计系统 — Linear-clean 数据驾驶舱
- * 中性底(zinc) + 单一强调色(--brand 冷蓝)，深/浅双主题在根锁定。
- * 单一圆角刻度(--radius)。所有 UI 颜色走语义 token，组件不写裸色值。
+ * Bio-Data OS 设计系统 — 药研数据资产平台
+ * 冷蓝主色(--brand #2F6BFF) + 浅底(#F4F7FC) + 白面板，对标 design_handoff_bio_data_os 原型。
+ * 控件圆角 9px / 卡片 14px / 模态 15px（由 --radius 11px 派生）。
+ * 所有 UI 颜色走语义 token；状态/角色色见 badge.tsx 的 tone 变体。
  */
 
 :root {
-  --radius: 0.5rem;
+  /* 11px 基准 → md(控件)=9px, sm(小标签)=7px, xl(卡片/模态)=15px */
+  --radius: 0.6875rem;
 
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.141 0.005 285.823);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.141 0.005 285.823);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.21 0.006 285.885);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.21 0.006 285.885);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.623 0.188 259.81);
+  --background: #f4f7fc; /* 应用背景 --bg */
+  --foreground: #1b2330; /* 主文字 --tx */
+  --card: #ffffff; /* 面板 --sur */
+  --card-foreground: #1b2330;
+  --popover: #ffffff;
+  --popover-foreground: #1b2330;
+  --primary: #2f6bff; /* 主色（按钮/激活/链接/ID） */
+  --primary-foreground: #ffffff;
+  --secondary: #ffffff; /* 次按钮=白底描边 */
+  --secondary-foreground: #5a6473;
+  --muted: #f1f3f7; /* 浅灰底 --bd2 */
+  --muted-foreground: #727d8d; /* 次文字 --mut */
+  --accent: #eaf0ff; /* 主色浅底 --priS（激活/hover） */
+  --accent-foreground: #2f6bff;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e9edf4; /* 边框 --bd */
+  --input: #e9edf4;
+  --ring: #2f6bff;
 
   /* 单一品牌强调色（冷蓝），全站锁定：链接 / 选中 / 活动态 */
-  --brand: oklch(0.623 0.188 259.81);
-  --brand-foreground: oklch(0.985 0 0);
+  --brand: #2f6bff;
+  --brand-foreground: #ffffff;
 
-  /* 状态语义色（仅用于状态，不当装饰） */
-  --success: oklch(0.627 0.17 149.21);
-  --warning: oklch(0.769 0.166 70.08);
+  /* 状态语义色文字（badge tone 使用具体配对） */
+  --success: #15803d;
+  --warning: #b45309;
 
-  --chart-1: oklch(0.623 0.188 259.81);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.769 0.166 70.08);
-  --chart-4: oklch(0.627 0.17 149.21);
-  --chart-5: oklch(0.645 0.246 16.439);
+  /* 附加表面：表头底 / 行 hover / 行分隔 */
+  --surface-2: #fafbfd;
+  --row-hover: #fbfcfe;
+  --divider: #f1f3f7;
 
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-primary: oklch(0.21 0.006 285.885);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.623 0.188 259.81);
+  /* —— design_handoff 原型短名别名：便于在 JSX 内联 var() 像素级还原原型 —— */
+  --pri: var(--primary);
+  --pri-d: #1f5bef; /* 主色 hover */
+  --pri-s: var(--accent); /* 主色浅底 */
+  --bg: var(--background);
+  --sur: var(--card);
+  --bd: var(--border);
+  --bd2: var(--divider);
+  --tx: var(--foreground);
+  --mut: var(--muted-foreground);
+  --platform: #161a2b; /* 平台深色侧栏 */
+  --platform-sub: #8990b5; /* 平台侧栏次文字 */
 
-  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
-    Roboto, 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --chart-1: #2f6bff;
+  --chart-2: #16a34a;
+  --chart-3: #c77b16;
+  --chart-4: #7c3aed;
+  --chart-5: #db2777;
+
+  /* 全局侧栏：白底（原型 ctxGlobal/ctxProject） */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1b2330;
+  --sidebar-primary: #2f6bff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eaf0ff;
+  --sidebar-accent-foreground: #2f6bff;
+  --sidebar-border: #e9edf4;
+  --sidebar-ring: #2f6bff;
+
+  --font-sans: 'Plus Jakarta Sans', 'Noto Sans SC', system-ui, -apple-system,
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei',
+    sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas,
+    monospace;
 }
 
 .dark {
@@ -67,8 +90,8 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.21 0.006 285.885);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.92 0.004 286.32);
-  --primary-foreground: oklch(0.21 0.006 285.885);
+  --primary: oklch(0.623 0.188 259.81);
+  --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.274 0.006 286.033);
@@ -132,6 +155,9 @@
   --color-brand-foreground: var(--brand-foreground);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-surface-2: var(--surface-2);
+  --color-row-hover: var(--row-hover);
+  --color-divider: var(--divider);
 
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
@@ -163,5 +189,197 @@
   /* 数据驾驶舱：表格数字等宽对齐 */
   .tabular-nums {
     font-variant-numeric: tabular-nums;
+  }
+}
+
+/*
+ * 原型原子类（design_handoff 1:1 移植）。这些是全站复用的视觉原子，
+ * 屏幕用 Tailwind 布局 + 这些类 + React 组件(Badge/Avatar/PageHeader…)组合，
+ * 统一风格、避免逐屏漂移。
+ */
+@layer components {
+  /* 等宽数字：ID / SMILES / 序列 / 数值 */
+  .mono {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 表头单元：11px 大写 + 字距 */
+  .th {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--mut);
+  }
+
+  /* 数据行：hover 高亮 */
+  .trow {
+    transition: background 0.1s;
+  }
+  .trow:hover {
+    background: var(--row-hover);
+  }
+
+  /* 头像：彩色圆 + 首字母（背景色由内联 style 指定） */
+  .av {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 9999px;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  /* 敏感/锁定 chip：红底，「申请查看」 */
+  .lockchip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 7px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #e0492c;
+    background: #fff3f0;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .lockchip:hover {
+    background: #ffe7e0;
+  }
+
+  /* 侧栏导航项：白侧栏（全局/项目） */
+  .nav-i {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 11px;
+    border-radius: 9px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--mut);
+    cursor: pointer;
+    transition: 0.12s;
+  }
+  .nav-i:hover {
+    background: var(--bg);
+    color: var(--tx);
+  }
+  .nav-i.on {
+    background: var(--pri-s);
+    color: var(--pri);
+    font-weight: 700;
+  }
+
+  /* 卡片悬浮投影（原型 .card 默认阴影） */
+  .card-shadow {
+    box-shadow: 0 1px 2px rgba(20, 40, 80, 0.04);
+  }
+
+  /* 实验记录本 Markdown 渲染（react-markdown + GFM）。 */
+  .md-body {
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: var(--tx);
+  }
+  .md-body > :first-child {
+    margin-top: 0;
+  }
+  .md-body h1 {
+    margin: 1.2em 0 0.5em;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  .md-body h2 {
+    margin: 1.1em 0 0.45em;
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .md-body h3 {
+    margin: 1em 0 0.4em;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .md-body p {
+    margin: 0.6em 0;
+  }
+  .md-body ul {
+    margin: 0.6em 0;
+    padding-left: 1.4em;
+    list-style: disc;
+  }
+  .md-body ol {
+    margin: 0.6em 0;
+    padding-left: 1.4em;
+    list-style: decimal;
+  }
+  .md-body li {
+    margin: 0.2em 0;
+  }
+  .md-body a {
+    color: var(--pri);
+    text-decoration: underline;
+  }
+  .md-body blockquote {
+    margin: 0.8em 0;
+    padding-left: 0.8em;
+    border-left: 2px solid color-mix(in srgb, var(--pri) 40%, transparent);
+    color: var(--mut);
+  }
+  .md-body code {
+    padding: 0.1em 0.35em;
+    border-radius: 5px;
+    background: var(--surface-2);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .md-body pre {
+    margin: 0.8em 0;
+    padding: 12px;
+    overflow: auto;
+    border: 1px solid var(--bd);
+    border-radius: 10px;
+    background: var(--surface-2);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .md-body pre code {
+    padding: 0;
+    background: none;
+  }
+  .md-body table {
+    margin: 0.8em 0;
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+  .md-body th,
+  .md-body td {
+    padding: 6px 10px;
+    border: 1px solid var(--bd);
+    text-align: left;
+  }
+  .md-body th {
+    background: var(--surface-2);
+    font-weight: 700;
+  }
+  .md-body hr {
+    margin: 1.2em 0;
+    border: none;
+    border-top: 1px solid var(--bd2);
+  }
+  .md-body img {
+    margin: 0.8em 0;
+    max-width: 100%;
+    border-radius: 8px;
+  }
+  .md-body input[type='checkbox'] {
+    margin-right: 0.4em;
   }
 }

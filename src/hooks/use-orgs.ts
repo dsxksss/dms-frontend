@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { orgsApi, type GrantRequest } from '@/api/orgs'
+import { membershipApi } from '@/api/membership'
 import { useAuth, hasPerm } from '@/auth/auth-context'
 
 const root = ['orgs'] as const
@@ -9,8 +10,12 @@ export const orgKeys = {
   teams: (orgId: string) => [...root, 'teams', orgId] as const,
 }
 
-export function useOrgs() {
-  return useQuery({ queryKey: orgKeys.list(), queryFn: () => orgsApi.listOrgs() })
+export function useOrgs(enabled = true) {
+  return useQuery({
+    queryKey: orgKeys.list(),
+    queryFn: () => orgsApi.listOrgs(),
+    enabled,
+  })
 }
 
 /**
@@ -37,6 +42,14 @@ export function useCreateOrg() {
   })
 }
 
+export function useDeleteOrg() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (orgId: string) => orgsApi.deleteOrg(orgId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: root }),
+  })
+}
+
 export function useTeams(orgId: string) {
   return useQuery({
     queryKey: orgKeys.teams(orgId),
@@ -56,4 +69,14 @@ export function useCreateTeam(orgId: string) {
 
 export function useGrantRole() {
   return useMutation({ mutationFn: (body: GrantRequest) => orgsApi.grantRole(body) })
+}
+
+/** 改组织（名称 / discoverable「允许被搜索并申请加入」）。PATCH /v1/orgs/{id}，org admin。 */
+export function useUpdateOrg(orgId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { name?: string; discoverable?: boolean }) =>
+      membershipApi.updateOrg(orgId, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: root }),
+  })
 }

@@ -1,148 +1,287 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
-
+import { ChevronLeft, Download, MoreHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ErrorState } from '@/components/states'
 import { Skeleton } from '@/components/ui/skeleton'
-import { EmptyState, ErrorState } from '@/components/states'
 import { ConfirmDialog } from '@/components/confirm-dialog'
-import { useDataset, useDeleteDataset } from '@/hooks/use-datasets'
+import {
+  useDataset,
+  useDatasetVersions,
+  useDeleteDataset,
+  useDatasetLineage,
+} from '@/hooks/use-datasets'
 import { useProjectRole } from '@/hooks/use-projects'
-import { roleAtLeast } from '@/lib/roles'
+import { useOrgMembers } from '@/hooks/use-membership'
 import { useToastError } from '@/hooks/use-toast-error'
+import { datasetsApi, orgDatasetScope, type DatasetScope, type DatasetVersion } from '@/api/datasets'
+import { useAuth } from '@/auth/auth-context'
+import { roleAtLeast } from '@/lib/roles'
 import { shortId } from '@/lib/format'
 import { ResourceGrantsPanel } from '@/features/grants/ResourceGrantsPanel'
 import { CreateDatasetDialog } from './CreateDatasetDialog'
-import { DatasetVersionsPanel } from './DatasetVersionsPanel'
+import { DatasetMetaBadges } from './DatasetMetaBadges'
 import { DatasetPreviewPanel } from './DatasetPreviewPanel'
+import { DatasetVersionsPanel } from './DatasetVersionsPanel'
 
+/** 数据集详情整页（项目壳内的子路由）：预览 / 版本 / 协作。 */
 export function DatasetDetailPage() {
-  const { id: projectId = '', dsId = '' } = useParams()
   const { t } = useTranslation('datasets')
+  const { id: projectId = '', orgId = '', dsId = '' } = useParams()
   const navigate = useNavigate()
-  const role = useProjectRole(projectId)
-  const canManage = roleAtLeast(role, 'contributor')
-  const canGrant = roleAtLeast(role, 'manager')
-  const query = useDataset(projectId, dsId)
-  const del = useDeleteDataset(projectId)
   const toastError = useToastError()
+  const { me } = useAuth()
+  const isOrgDataset = !!orgId
+  const datasetScope: DatasetScope = isOrgDataset
+    ? orgDatasetScope(orgId)
+    : projectId
+  const listPath = isOrgDataset ? `/orgs/${orgId}` : `/projects/${projectId}/datasets`
+  const role = useProjectRole(projectId)
+  const orgMembers = useOrgMembers(orgId)
+  const orgRole = orgMembers.data?.find((m) => m.user_id === me?.user_id)?.role
+  const canWrite = isOrgDataset ? orgRole === 'admin' : roleAtLeast(role, 'contributor')
+  const canManage = isOrgDataset ? false : roleAtLeast(role, 'manager')
+
+  const query = useDataset(datasetScope, dsId)
+  const versionsQuery = useDatasetVersions(datasetScope, dsId)
+  const remove = useDeleteDataset(datasetScope)
   const [editOpen, setEditOpen] = useState(false)
-  const [delOpen, setDelOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
 
-  const backToProject = () => navigate(`/projects/${projectId}`)
+  const ds = query.data
+  // 最新版本（version_no 最大）供 schema/列数/行数。
+  const latest = (versionsQuery.data ?? []).reduce<DatasetVersion | undefined>(
+    (acc, v) => (!acc || v.version_no > acc.version_no ? v : acc),
+    undefined,
+  )
 
-  if (query.isLoading) {
+  const backLink = (
+    <Link
+      to={listPath}
+      className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-muted-foreground hover:text-foreground"
+    >
+      <ChevronLeft className="size-3.5" />
+      {t('title')}
+    </Link>
+  )
+
+  if (query.isError) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64 w-full" />
+      <div className="px-[26px] py-[22px] max-w-[1200px]">
+        {backLink}
+        <div className="mt-4">
+          <ErrorState error={query.error} onRetry={() => query.refetch()} />
+        </div>
       </div>
     )
   }
-  if (query.isError) {
-    return <ErrorState error={query.error} onRetry={() => query.refetch()} />
-  }
-  const dataset = query.data
-  if (!dataset) return <EmptyState title={t('empty.title')} />
+
+  const onExport = (format: 'csv' | 'parquet') =>
+    datasetsApi.exportDownload(datasetScope, dsId, format).catch(toastError)
 
   const onDelete = async () => {
+    if (!ds) return
     try {
-      await del.mutateAsync({ id: dataset.id, version: dataset.version })
+      await remove.mutateAsync({ id: ds.id, version: ds.version })
       toast.success(t('toast.deleted'))
-      backToProject()
+      navigate(listPath)
     } catch (e) {
       toastError(e)
     }
   }
 
+  const meta = ds
+    ? [
+        ds.description,
+        `v${ds.version}`,
+        latest && `${latest.row_count} ${t('preview.rows')}`,
+        latest && `${latest.columns.length} ${t('preview.cols')}`,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : ''
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={backToProject}>
-            <ArrowLeft className="size-4" />
-          </Button>
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight">
-              {dataset.name}
+    <div className="px-[26px] py-[22px] max-w-[1200px]">
+      {backLink}
+
+      <div className="mb-5 mt-3 flex flex-wrap items-start gap-x-4 gap-y-3">
+        <div className="min-w-0 flex-1">
+          {ds ? (
+            <h1 className="text-[23px] font-extrabold leading-tight tracking-[-0.01em]">
+              {ds.name}
             </h1>
-            {dataset.description && (
-              <p className="text-muted-foreground text-sm">{dataset.description}</p>
-            )}
-          </div>
+          ) : (
+            <Skeleton className="h-7 w-48" />
+          )}
+          {ds && meta && (
+            <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted-foreground">
+              {meta}
+            </p>
+          )}
+          {ds && (
+            <div className="mt-2.5">
+              <DatasetMetaBadges
+                tags={ds.tags}
+                author={ds.author}
+                references={ds.references}
+              />
+            </div>
+          )}
         </div>
-        {canManage && (
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setEditOpen(true)}>
-              <Pencil className="size-4" />
-              {t('row.edit')}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" onClick={() => onExport('csv')}>
+            <Download className="size-4" />
+            {t('preview.exportCsv')}
+          </Button>
+          {/* Parquet 导出仅在该部署启用了 Parquet 引擎时可用——存储格式即引擎标志
+              （CSV 引擎存 csv/xlsx，Parquet 引擎存 parquet）。否则后端会 422。 */}
+          {latest?.format === 'parquet' && (
+            <Button onClick={() => onExport('parquet')}>
+              <Download className="size-4" />
+              {t('preview.exportParquet')}
             </Button>
-            <Button variant="outline" onClick={() => setDelOpen(true)}>
-              <Trash2 className="text-destructive size-4" />
-            </Button>
-          </div>
-        )}
+          )}
+          {canWrite && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <MoreHorizontal className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setEditOpen(true)}>
+                  {t('row.edit')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => setDeleteOpen(true)}
+                >
+                  {t('row.delete')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
 
-      <Tabs defaultValue="versions">
+      <Tabs defaultValue="preview">
         <TabsList>
-          <TabsTrigger value="overview">{t('tabs.overview')}</TabsTrigger>
-          <TabsTrigger value="versions">{t('tabs.versions')}</TabsTrigger>
           <TabsTrigger value="preview">{t('tabs.preview')}</TabsTrigger>
-          {canGrant && (
+          <TabsTrigger value="versions">{t('tabs.versions')}</TabsTrigger>
+          {!isOrgDataset && (
+            <TabsTrigger value="lineage">{t('lineage.title')}</TabsTrigger>
+          )}
+          {canManage && (
             <TabsTrigger value="collab">
               {t('resourceGrants.title', { ns: 'common' })}
             </TabsTrigger>
           )}
         </TabsList>
 
-        <TabsContent value="overview" className="pt-4">
-          <dl className="grid max-w-xl grid-cols-[8rem_1fr] gap-y-3 text-sm">
-            <dt className="text-muted-foreground">{t('overview.id')}</dt>
-            <dd className="font-mono">{shortId(dataset.id)}</dd>
-            <dt className="text-muted-foreground">{t('overview.version')}</dt>
-            <dd className="tabular-nums">{dataset.version}</dd>
-            <dt className="text-muted-foreground">{t('overview.description')}</dt>
-            <dd>{dataset.description || t('overview.none')}</dd>
-          </dl>
-        </TabsContent>
-
-        <TabsContent value="versions" className="pt-4">
-          <DatasetVersionsPanel
-            projectId={projectId}
+        <TabsContent value="preview" className="mt-4">
+          <DatasetPreviewPanel
+            scope={datasetScope}
             datasetId={dsId}
-            canManage={canManage}
+            schema={latest?.columns}
           />
         </TabsContent>
-        <TabsContent value="preview" className="pt-4">
-          <DatasetPreviewPanel projectId={projectId} datasetId={dsId} />
+        <TabsContent value="versions" className="mt-4">
+          <DatasetVersionsPanel
+            scope={datasetScope}
+            datasetId={dsId}
+            canManage={canWrite}
+          />
         </TabsContent>
-        {canGrant && (
-          <TabsContent value="collab" className="pt-4">
-            <ResourceGrantsPanel resourceType="dataset" resourceId={dsId} />
+        {!isOrgDataset && (
+          <TabsContent value="lineage" className="mt-4">
+            <LineageTab projectId={projectId} datasetId={dsId} />
+          </TabsContent>
+        )}
+        {canManage && (
+          <TabsContent value="collab" className="mt-4 max-w-[560px]">
+            {/* 数据集级细粒度授权：给具体人按 CRUD 叠加放行（resource_type=dataset） */}
+            <ResourceGrantsPanel
+              resourceType="dataset"
+              resourceId={dsId}
+              projectId={projectId}
+            />
           </TabsContent>
         )}
       </Tabs>
 
-      <CreateDatasetDialog
-        projectId={projectId}
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        dataset={dataset}
-      />
+      {ds && (
+        <CreateDatasetDialog
+          scope={datasetScope}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          dataset={ds}
+        />
+      )}
       <ConfirmDialog
-        open={delOpen}
-        onOpenChange={setDelOpen}
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
         title={t('delete.title')}
-        description={t('delete.description', { name: dataset.name })}
+        description={t('delete.description', { name: ds?.name ?? '' })}
         confirmText={t('delete.confirm')}
         destructive
-        loading={del.isPending}
+        loading={remove.isPending}
         onConfirm={onDelete}
       />
+    </div>
+  )
+}
+
+/** 数据集溯源：derived_from 源类型 + 源记录（数据转数据集时记录）。 */
+function LineageTab({
+  projectId,
+  datasetId,
+}: {
+  projectId: string
+  datasetId: string
+}) {
+  const { t } = useTranslation('datasets')
+  const query = useDatasetLineage(projectId, datasetId)
+  const nodes = query.data ?? []
+
+  if (query.isLoading) return <Skeleton className="h-20 w-full" />
+  if (query.isError)
+    return <ErrorState error={query.error} onRetry={() => query.refetch()} />
+  if (nodes.length === 0)
+    return (
+      <p className="text-[12.5px] text-muted-foreground">{t('lineage.empty')}</p>
+    )
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[12.5px] text-muted-foreground">{t('lineage.desc')}</p>
+      <div className="rounded-[10px] border">
+        {nodes.map((n, i) => (
+          <div
+            key={`${n.source_kind}-${n.source_id}-${i}`}
+            className="flex items-center gap-3 border-b border-divider px-4 py-2.5 text-[13px] last:border-b-0"
+          >
+            <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-semibold text-brand">
+              {t(`lineage.kind.${n.source_kind}`, { defaultValue: n.source_kind })}
+            </span>
+            <span className="mono text-[12px] text-muted-foreground">
+              {shortId(n.source_id)}
+            </span>
+            <span className="ml-auto text-[11px] text-muted-foreground">
+              {n.kind}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
