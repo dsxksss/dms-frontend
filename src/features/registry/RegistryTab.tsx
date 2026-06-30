@@ -34,6 +34,7 @@ import { PageHeader } from '@/components/page-header'
 import { TableCard, GridFooter } from '@/components/data-grid'
 import { Pagination } from '@/components/pagination'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { cn } from '@/lib/utils'
 import { roleAtLeast } from '@/lib/roles'
 import { shortId } from '@/lib/format'
@@ -531,6 +532,7 @@ function RecordsGrid({
   const toastError = useToastError()
   const [selected, setSelected] = useState<Entity | null>(null)
   const [editTarget, setEditTarget] = useState<Entity | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Entity | null>(null)
 
   const shown = type.fields.slice(0, 4)
   const cols = `108px ${shown.map(() => 'minmax(0,1fr)').join(' ')} 48px`
@@ -541,11 +543,16 @@ function RecordsGrid({
   // 引用字段：软引用存目标 uuid。解析成目标记录名 + 悬浮卡片（见 ReferenceValue，含权限脱敏）。
   const resolveRef = useRefResolver(projectId, shown)
 
-  const onDelete = (r: Entity) =>
+  const onDelete = () => {
+    if (!deleteTarget) return
     del
-      .mutateAsync({ id: r.id, version: r.version })
-      .then(() => toast.success(t('entities.deleted')))
+      .mutateAsync({ id: deleteTarget.id, version: deleteTarget.version })
+      .then(() => {
+        toast.success(t('entities.deleted'))
+        setDeleteTarget(null)
+      })
       .catch(toastError)
+  }
 
   const onRequestAccess = (field: string) =>
     requestAccess
@@ -670,7 +677,7 @@ function RecordsGrid({
                     {canDelete && (
                       <DropdownMenuItem
                         className="text-destructive"
-                        onClick={() => onDelete(r)}
+                        onClick={() => setDeleteTarget(r)}
                       >
                         <Trash2 className="size-4" />
                         {t('actions.delete', { ns: 'common', defaultValue: '删除' })}
@@ -696,7 +703,10 @@ function RecordsGrid({
               {canDelete && (
                 <>
                   <ContextMenuSeparator />
-                  <ContextMenuItem variant="destructive" onClick={() => onDelete(r)}>
+                  <ContextMenuItem
+                    variant="destructive"
+                    onClick={() => setDeleteTarget(r)}
+                  >
                     <Trash2 className="size-4" />
                     {t('actions.delete', { ns: 'common', defaultValue: '删除' })}
                   </ContextMenuItem>
@@ -742,6 +752,16 @@ function RecordsGrid({
           onOpenChange={(o) => !o && setEditTarget(null)}
         />
       )}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
+        title={t('entities.deleteTitle')}
+        description={t('entities.deleteDesc')}
+        destructive
+        confirmText={t('actions.delete', { ns: 'common', defaultValue: '删除' })}
+        loading={del.isPending}
+        onConfirm={onDelete}
+      />
     </>
   )
 }
