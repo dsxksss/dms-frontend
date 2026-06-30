@@ -435,11 +435,6 @@ function DatasetCanvasTable({
 
   return (
     <TableCard>
-      <div className="border-divider bg-surface-2 text-muted-foreground border-b px-4 py-2 text-[12px]">
-        {t('preview.canvasHint', {
-          defaultValue: '高性能 Canvas 表格：适合大数据集和宽表预览。',
-        })}
-      </div>
       <div
         ref={scrollRef}
         className="max-h-[620px] min-h-[280px] overflow-auto"
