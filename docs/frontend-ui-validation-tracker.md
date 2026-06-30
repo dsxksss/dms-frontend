@@ -30,6 +30,7 @@ The following browser UI areas have been verified as passing during the current 
 - Platform admin workflows: overview; tenant create dialog open/cancel; tenant detail suspend confirmation cancel; platform system dataset create/delete; global settings switch/select draft behavior; tenant plan select draft behavior; tenant detail back link; platform side navigation; language toggle; account menu open.
 - Onboarding guide removal: no onboarding/guide/tour/get-started source or visible browser entry remains; `npm run build` passed.
 - Registry focused button regression after table-control changes: `/projects/019f03a2-cce1-7df3-a08c-ffdfdeae1640/registry` verified `类型` / `返回记录列表`, `查看字段设定` open/close, `新建记录` open/cancel, `记录回收站` open/close, `删除全部记录` confirm/cancel, `转数据集` open/cancel, `更多` menu, `批量导入` open/cancel, `新建资产类型` open/cancel, first-row action menu, `编辑记录` open/cancel, single-record delete confirm/cancel, and type switching to `化合物 Compound` and back to `ADC`; no browser console errors were reported. Runtime record search/sort filtering is still tracked in Open Findings.
+- Data asset focused button regression after table-control changes: `/projects/019f03a2-cce1-7df3-a08c-ffdfdeae1640/data` verified `类型` / `返回记录列表`, `查看字段设定` open/close, `新建记录` open/cancel, `从药物资产新建` open/cancel, `记录回收站` open/close, `删除全部记录` confirm/cancel, `转数据集` open/cancel, `更多` menu, `新建数据模版` open/cancel, first-row action menu, `编辑记录` open/cancel, single-record delete confirm/cancel, and `排序 ID` active state; no browser console errors were reported. Runtime record search filtering is still tracked in Open Findings.
 
 Known intentionally skipped or confirmation-required actions:
 
@@ -44,7 +45,7 @@ Repro: After adding server-side record search/sort support, the already running 
 Expected: After the backend process is restarted with the current code, searching `definitely-no-match-062630` returns 0 matching records and clicking sortable headers changes the server-side order.
 Actual: Browser verified the new frontend controls are loaded, but the current runtime still behaved like the old backend and did not filter the rows.
 Status: Restart the local backend/frontend service and rerun the focused browser search/sort check from this route.
-Latest check: 2026-06-30 in the in-app browser, after reloading `http://localhost:8080/projects/019f03a2-cce1-7df3-a08c-ffdfdeae1640/registry`, typing `definitely-no-match-062630` kept focus in `搜索记录…` but still rendered 10 `ADC` rows and `共 10 条匹配记录`, confirming the running service still needs to be restarted with backend commit `a610ce4`.
+Latest check: 2026-06-30 in the in-app browser, after reloading `http://localhost:8080/projects/019f03a2-cce1-7df3-a08c-ffdfdeae1640/registry`, typing `definitely-no-match-062630` kept focus in `搜索记录…` but still rendered 10 `ADC` rows and `共 10 条匹配记录`, confirming the running service still needs to be restarted with backend commit `a610ce4`. The same runtime condition was observed on `/projects/019f03a2-cce1-7df3-a08c-ffdfdeae1640/data`: typing `abc` kept focus but still rendered `共 10 条匹配记录`.
 
 ## Resolved Findings
 
