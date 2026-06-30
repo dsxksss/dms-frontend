@@ -41,6 +41,15 @@ No open findings at this baseline.
 
 ## Resolved Findings
 
+2026-06-30 - Registry record bulk delete entry
+Route: `/projects/:id/data`, `/projects/:id/registry`
+Repro: When a registry type contains many records, deleting records one by one and permanently deleting records one by one from the record trash is inefficient.
+Expected: Users with delete permission can soft-delete all records of the current type from the record list, and permanently clear the current type's record trash from the trash dialog, with destructive confirmation.
+Actual: Only per-record delete / purge actions were available.
+Fix: Added a delete-permission-gated `删除全部记录` icon action in the current type's record table header action column and a `清空回收站` action inside the record trash dialog. Both actions fetch every page for the current type, execute the existing soft-delete / purge APIs, invalidate registry queries, and require destructive confirmation before doing any work.
+Verification: `npm run build` passed. Browser verified `/projects/019f03a2-cce1-7df3-a08c-ffdfdeae1640/registry` has a single table header row with a `删除全部记录` icon action, opens the `删除全部记录？` confirmation for `ADC` with 10 records, and cancel leaves `共 10 条`; `/projects/019f03a2-cce1-7df3-a08c-ffdfdeae1640/data` record trash shows `清空回收站`, opens the `清空记录回收站？` confirmation for `库存 Inventory` with 34 records, and no console errors were reported. Destructive confirms were not clicked.
+Commit: frontend this commit
+
 2026-06-30 - Field labels support independent zh/en display names
 Route: `/projects/:id/registry`, `/orgs/:id`, `/settings`, `/system/settings`
 Repro: Dynamic registry fields and settings-like fields relied on a single display string or technical `name`, making bilingual UI and field editing inconvenient.

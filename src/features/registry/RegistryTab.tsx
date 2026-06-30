@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useQueries } from '@tanstack/react-query'
+import { useQueries, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   ArrowLeft,
@@ -398,7 +398,10 @@ function TrashRecordsDialog({
   const access = useMyFieldAccess(projectId, kind, type.id)
   const restore = useRestoreRecord(projectId, kind)
   const purge = usePurgeRecord(projectId, kind)
+  const qc = useQueryClient()
   const toastError = useToastError()
+  const [clearOpen, setClearOpen] = useState(false)
+  const [clearing, setClearing] = useState(false)
   const shown = type.fields.slice(0, 2)
   const canRestore = access.data?.can_update ?? false
   const canPurge = access.data?.can_delete ?? false
@@ -416,6 +419,24 @@ function TrashRecordsDialog({
       .catch(toastError)
 
   const records = query.data?.items ?? []
+  const total = query.data?.total ?? 0
+
+  const clearTrash = async () => {
+    setClearing(true)
+    try {
+      const all = await fetchAllTypeRecords(projectId, kind, type.id, true)
+      for (const record of all) {
+        await registryApi.purgeRecord(projectId, kind, record.id, record.version)
+      }
+      await qc.invalidateQueries({ queryKey: ['registry', projectId] })
+      toast.success(t('trash.clearDone', { count: all.length }))
+      setClearOpen(false)
+    } catch (error) {
+      toastError(error)
+    } finally {
+      setClearing(false)
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -424,6 +445,21 @@ function TrashRecordsDialog({
           <DialogTitle>{t('trash.recordsTitle')}</DialogTitle>
           <DialogDescription>{t('trash.desc', { name: type.name })}</DialogDescription>
         </DialogHeader>
+
+        {canPurge && total > 0 && (
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              disabled={clearing}
+              onClick={() => setClearOpen(true)}
+            >
+              <Trash2 className="size-4" />
+              {t('trash.clear')}
+            </Button>
+          </div>
+        )}
 
         {query.isLoading ? (
           <TableSkeleton rows={4} />
@@ -483,17 +519,27 @@ function TrashRecordsDialog({
             ))}
             <GridFooter>
               <span>
-                {t('table.total', { ns: 'common', total: query.data?.total ?? 0 })}
+                {t('table.total', { ns: 'common', total })}
               </span>
               <Pagination
                 limit={page.limit}
                 offset={page.offset}
-                total={query.data?.total ?? 0}
+                total={total}
                 onChange={setPage}
               />
             </GridFooter>
           </TableCard>
         )}
+        <ConfirmDialog
+          open={clearOpen}
+          onOpenChange={setClearOpen}
+          title={t('trash.clearTitle')}
+          description={t('trash.clearDesc', { name: type.name, count: total })}
+          destructive
+          confirmText={t('trash.clearConfirm', { count: total })}
+          loading={clearing}
+          onConfirm={clearTrash}
+        />
       </DialogContent>
     </Dialog>
   )
@@ -529,14 +575,18 @@ function RecordsGrid({
   const canUpdate = access.data?.can_update ?? false
   const canDelete = access.data?.can_delete ?? false
   const del = useDeleteRecord(projectId, kind)
+  const qc = useQueryClient()
   const toastError = useToastError()
   const [selected, setSelected] = useState<Entity | null>(null)
   const [editTarget, setEditTarget] = useState<Entity | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Entity | null>(null)
+  const [deleteAllOpen, setDeleteAllOpen] = useState(false)
+  const [deletingAll, setDeletingAll] = useState(false)
 
   const shown = type.fields.slice(0, 4)
   const cols = `108px ${shown.map(() => 'minmax(0,1fr)').join(' ')} 48px`
   const records = query.data?.items ?? []
+  const total = query.data?.total ?? 0
 
   // 引用字段：软引用存的是目标记录 uuid。把可见列里的引用解析成被引用记录的「name」，
   // 否则用户看到一串 uuid。ref_type 是目标资产类型 key → 找到其 type.id → 拉该类型记录建 id→name。
@@ -552,6 +602,23 @@ function RecordsGrid({
         setDeleteTarget(null)
       })
       .catch(toastError)
+  }
+
+  const onDeleteAll = async () => {
+    setDeletingAll(true)
+    try {
+      const all = await fetchAllTypeRecords(projectId, kind, type.id)
+      for (const record of all) {
+        await registryApi.deleteRecord(projectId, kind, record.id, record.version)
+      }
+      await qc.invalidateQueries({ queryKey: ['registry', projectId] })
+      toast.success(t('entities.deleteAllDone', { count: all.length }))
+      setDeleteAllOpen(false)
+    } catch (error) {
+      toastError(error)
+    } finally {
+      setDeletingAll(false)
+    }
   }
 
   const onRequestAccess = (field: string) =>
@@ -622,7 +689,21 @@ function RecordsGrid({
               )}
             </div>
           ))}
-          <div />
+          <div className="flex justify-end">
+            {canDelete && total > 0 && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                disabled={deletingAll}
+                title={t('entities.deleteAll')}
+                aria-label={t('entities.deleteAll')}
+                onClick={() => setDeleteAllOpen(true)}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            )}
+          </div>
         </div>
 
         {records.map((r) => (
@@ -720,12 +801,12 @@ function RecordsGrid({
 
         <GridFooter>
           <span>
-            {t('table.total', { ns: 'common', total: query.data?.total ?? 0 })}
+            {t('table.total', { ns: 'common', total })}
           </span>
           <Pagination
             limit={page.limit}
             offset={page.offset}
-            total={query.data?.total ?? 0}
+            total={total}
             onChange={setPage}
           />
         </GridFooter>
@@ -764,6 +845,39 @@ function RecordsGrid({
         loading={del.isPending}
         onConfirm={onDelete}
       />
+      <ConfirmDialog
+        open={deleteAllOpen}
+        onOpenChange={setDeleteAllOpen}
+        title={t('entities.deleteAllTitle')}
+        description={t('entities.deleteAllDesc', { name: type.name, count: total })}
+        destructive
+        confirmText={t('entities.deleteAllConfirm', { count: total })}
+        loading={deletingAll}
+        onConfirm={onDeleteAll}
+      />
     </>
   )
+}
+
+async function fetchAllTypeRecords(
+  projectId: string,
+  kind: TypeKind,
+  typeId: string,
+  deleted = false,
+) {
+  const out: Entity[] = []
+  let offset = 0
+  let total = 0
+  do {
+    const page = await registryApi.listRecords(projectId, kind, {
+      type: typeId,
+      ...(deleted ? { deleted: true } : {}),
+      limit: 100,
+      offset,
+    })
+    out.push(...page.items)
+    total = page.total
+    offset += page.limit || 100
+  } while (out.length < total)
+  return out
 }

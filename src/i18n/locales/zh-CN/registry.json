@@ -25,6 +25,11 @@
     "restored": "记录已恢复",
     "purge": "彻底删除",
     "purged": "记录已彻底删除",
+    "clear": "清空回收站",
+    "clearTitle": "清空记录回收站？",
+    "clearDesc": "将永久删除「{{name}}」回收站内的 {{count}} 条记录，此操作不可撤销。",
+    "clearConfirm": "永久删除 {{count}} 条",
+    "clearDone": "已永久删除 {{count}} 条记录",
     "noPreview": "无预览字段"
   },
   "typeTrash": {
@@ -178,6 +183,11 @@
     "deleted": "实体已删除",
     "deleteTitle": "删除实体？",
     "deleteDesc": "将软删除该实体。",
+    "deleteAll": "删除全部记录",
+    "deleteAllTitle": "删除全部记录？",
+    "deleteAllDesc": "将把「{{name}}」下的 {{count}} 条记录移入回收站。",
+    "deleteAllConfirm": "删除 {{count}} 条",
+    "deleteAllDone": "已删除 {{count}} 条记录",
     "relations": "关系与组合",
     "hidden": "已隐藏",
     "selectTypeFirst": "请先选择一个实体类型"

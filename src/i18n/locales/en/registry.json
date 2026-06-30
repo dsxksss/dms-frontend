@@ -21,6 +21,11 @@
     "restored": "Record restored",
     "purge": "Delete forever",
     "purged": "Record permanently deleted",
+    "clear": "Clear trash",
+    "clearTitle": "Clear record trash?",
+    "clearDesc": "This permanently deletes {{count}} record(s) from the trash for \"{{name}}\". This cannot be undone.",
+    "clearConfirm": "Permanently delete {{count}}",
+    "clearDone": "Permanently deleted {{count}} record(s)",
     "noPreview": "No preview fields"
   },
   "typeTrash": {
@@ -171,6 +176,11 @@
     "deleted": "Entity deleted",
     "deleteTitle": "Delete entity?",
     "deleteDesc": "This soft-deletes the entity.",
+    "deleteAll": "Delete all records",
+    "deleteAllTitle": "Delete all records?",
+    "deleteAllDesc": "This moves {{count}} record(s) under \"{{name}}\" to the trash.",
+    "deleteAllConfirm": "Delete {{count}}",
+    "deleteAllDone": "Deleted {{count}} record(s)",
     "relations": "Relations & composition",
     "hidden": "Hidden",
     "selectTypeFirst": "Select an entity type first"
