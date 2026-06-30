@@ -30,6 +30,7 @@ import {
 import { TableCard, GridFooter } from '@/components/data-grid'
 import { EmptyState, ErrorState, TableSkeleton } from '@/components/states'
 import { Pagination } from '@/components/pagination'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { cn } from '@/lib/utils'
 import { shortId } from '@/lib/format'
 import { slugify } from '@/lib/slug'
@@ -196,16 +197,22 @@ function OrgRecordsGrid({
   const del = useDeleteOrgRecord(orgId, kind)
   const toastError = useToastError()
   const [editTarget, setEditTarget] = useState<Entity | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Entity | null>(null)
 
   const shown = type.fields.slice(0, 4)
   const cols = `108px ${shown.map(() => 'minmax(0,1fr)').join(' ')} 48px`
   const records = query.data?.items ?? []
 
-  const onDelete = (r: Entity) =>
+  const onDelete = () => {
+    if (!deleteTarget) return
     del
-      .mutateAsync({ id: r.id, version: r.version })
-      .then(() => toast.success(t('registry.deleted')))
+      .mutateAsync({ id: deleteTarget.id, version: deleteTarget.version })
+      .then(() => {
+        toast.success(t('registry.deleted'))
+        setDeleteTarget(null)
+      })
       .catch(toastError)
+  }
 
   if (query.isLoading) return <TableSkeleton rows={5} />
   if (query.isError)
@@ -278,7 +285,7 @@ function OrgRecordsGrid({
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className="text-destructive"
-                      onClick={() => onDelete(r)}
+                      onClick={() => setDeleteTarget(r)}
                     >
                       <Trash2 className="size-4" />
                       {t('registry.delete')}
@@ -311,6 +318,16 @@ function OrgRecordsGrid({
           onOpenChange={(o) => !o && setEditTarget(null)}
         />
       )}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
+        title={t('entities.deleteTitle', { ns: 'registry' })}
+        description={t('entities.deleteDesc', { ns: 'registry' })}
+        destructive
+        confirmText={t('actions.delete', { ns: 'common' })}
+        loading={del.isPending}
+        onConfirm={onDelete}
+      />
     </>
   )
 }
