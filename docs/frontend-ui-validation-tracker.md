@@ -1,6 +1,6 @@
 # Frontend UI Validation Tracker
 
-Last baseline: 2026-06-30, branch `feat/backend-sync-0624`, frontend commit `73ee923`.
+Last baseline: 2026-06-30, branch `feat/backend-sync-0624`, frontend commit `3a4548a`, backend commit `a610ce4`.
 
 ## Purpose
 
@@ -43,6 +43,7 @@ Repro: After adding server-side record search/sort support, the already running 
 Expected: After the backend process is restarted with the current code, searching `definitely-no-match-062630` returns 0 matching records and clicking sortable headers changes the server-side order.
 Actual: Browser verified the new frontend controls are loaded, but the current runtime still behaved like the old backend and did not filter the rows.
 Status: Restart the local backend/frontend service and rerun the focused browser search/sort check from this route.
+Latest check: 2026-06-30 in the in-app browser, after reloading `http://localhost:8080/projects/019f03a2-cce1-7df3-a08c-ffdfdeae1640/registry`, typing `definitely-no-match-062630` kept focus in `搜索记录…` but still rendered 10 `ADC` rows and `共 10 条匹配记录`, confirming the running service still needs to be restarted with backend commit `a610ce4`.
 
 ## Resolved Findings
 
