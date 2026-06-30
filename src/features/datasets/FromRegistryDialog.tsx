@@ -126,7 +126,7 @@ export function FromRegistryDialog({
       onOpenChange(false)
       navigate(`/projects/${projectId}/datasets/${dataset.id}`)
     } catch (e) {
-      // 后端在缺有效 approved 电子签名时对 from-registry 返回 422（FR-PERM-04）：明确引导去签名。
+      // 后端在缺有效 approved 电子签名时对 from-registry 返回 422（FR-PERM-04）：明确提示去签名。
       if (rawSensitive && e instanceof AppError && e.status === 422) {
         toast.error(t('fromRegistry.needEsign'))
       } else {

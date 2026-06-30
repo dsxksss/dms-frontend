@@ -8,7 +8,7 @@ import {
 import { cn } from '@/lib/utils'
 
 /**
- * 内联说明：难点字段旁的 ⓘ 图标，悬停/聚焦显示解释。降低新手理解成本。
+ * 内联说明：难点字段旁的 ⓘ 图标，悬停/聚焦显示解释。
  */
 export function InfoHint({
   children,

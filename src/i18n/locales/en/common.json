@@ -73,7 +73,6 @@
     "presetClear": "Clear"
   },
   "actions": {
-    "getStarted": "Get started",
     "create": "Create",
     "edit": "Edit",
     "save": "Save",

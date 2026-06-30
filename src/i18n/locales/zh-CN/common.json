@@ -73,7 +73,6 @@
     "presetClear": "清空"
   },
   "actions": {
-    "getStarted": "开始使用",
     "create": "新建",
     "edit": "编辑",
     "save": "保存",

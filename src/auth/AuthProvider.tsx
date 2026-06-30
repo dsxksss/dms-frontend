@@ -10,7 +10,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<Me | null>(null)
   const booted = useRef(false)
 
-  // 启动引导：有 refresh token 则尝试拉 /me（client 会在 401 时自动用 refresh 换 access）。
+  // 启动时：有 refresh token 则尝试拉 /me（client 会在 401 时自动用 refresh 换 access）。
   useEffect(() => {
     if (booted.current) return
     booted.current = true
