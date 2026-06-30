@@ -29,6 +29,7 @@ The following browser UI areas have been verified as passing during the current 
 - Authentication and shell: app logout/login; login mode toggle; platform console link; platform invalid login error; return to app; Wemol login.
 - Platform admin workflows: overview; tenant create dialog open/cancel; tenant detail suspend confirmation cancel; platform system dataset create/delete; global settings switch/select draft behavior; tenant plan select draft behavior; tenant detail back link; platform side navigation; language toggle; account menu open.
 - Onboarding guide removal: no onboarding/guide/tour/get-started source or visible browser entry remains; `npm run build` passed.
+- Registry focused button regression after table-control changes: `/projects/019f03a2-cce1-7df3-a08c-ffdfdeae1640/registry` verified `类型` / `返回记录列表`, `查看字段设定` open/close, `新建记录` open/cancel, `记录回收站` open/close, `删除全部记录` confirm/cancel, `转数据集` open/cancel, `更多` menu, `批量导入` open/cancel, `新建资产类型` open/cancel, first-row action menu, `编辑记录` open/cancel, single-record delete confirm/cancel, and type switching to `化合物 Compound` and back to `ADC`; no browser console errors were reported. Runtime record search/sort filtering is still tracked in Open Findings.
 
 Known intentionally skipped or confirmation-required actions:
 
